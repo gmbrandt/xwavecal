@@ -1,0 +1,8 @@
+astropy
+peakutils
+scipy
+sep
+numpy
+python-coveralls
+coverage
+nose
