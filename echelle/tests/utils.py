@@ -37,6 +37,7 @@ class FakeImage(object):
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
         self.header = fits.Header({'RDNOISE': 11, 'GAIN': 1.0, 'OBSTYPE': 'LAMPFLAT'})
+        self.filepath = 'None'
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
         self.request_number = '0000331403'
@@ -59,6 +60,9 @@ class FakeImage(object):
     @classmethod
     def load(cls, path, extension_name):
         return FakeImage()
+
+    def write(self, fpack=False):
+        pass
 
 
 def gaussian(x, A, b, sigma):

@@ -43,7 +43,7 @@ def test_organize_config():
 
 
 @mock.patch('echelle.main.parse_args')
-def test_run_does_not_error(mock_args):
+def test_run(mock_args):
     with tempfile.TemporaryDirectory() as temp_directory:
         for i in range(5):
             tempfile.NamedTemporaryFile(suffix='.wrong', delete=False, dir=temp_directory)
@@ -54,5 +54,15 @@ def test_run_does_not_error(mock_args):
     assert True
 
 
-def test_reduce_data_does_not_error():
-    pass
+@mock.patch('echelle.main.parse_args')
+def test_reduce_data_does_not_error(mock_args):
+    config = ConfigParser()
+    config.read('echelle/tests/data/test_config.ini')
+    config.set('stages', 'lampflat', '[]')
+    config.set('data', 'data_class', 'echelle.tests.utils.FakeImage')
+    with tempfile.TemporaryDirectory() as temp_directory:
+        tmp = tempfile.NamedTemporaryFile(suffix='.wrong', delete=False, dir=temp_directory)
+        mock_args.return_value = type('', (), {'data_paths': [tmp], 'output_dir': temp_directory,
+                                               'frame_type': 'any', 'fpack': False})
+        reduce_data(config=config)
+    assert True
