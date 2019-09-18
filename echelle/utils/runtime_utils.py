@@ -35,7 +35,7 @@ def get_data_paths(dir_path, files_contain=None):
 
 
 def order_data(data_paths, data_class, primary_ext, header_keys, type_keys):
-    is_not_lampflat = lambda path: 0 if type_keys[data_class.load(path, primary_ext).header[header_keys['type']]] is 'lampflat' else 1
+    is_not_lampflat = lambda path: 0 if data_class.load(path, primary_ext, header_keys, type_keys).header['type'] is 'lampflat' else 1
     data_paths.sort(key=is_not_lampflat)
     return data_paths
 
@@ -43,13 +43,13 @@ def order_data(data_paths, data_class, primary_ext, header_keys, type_keys):
 def select_data_of_type(data_paths, data_class, primary_ext, header_keys, type_keys, frame_type='any'):
     if frame_type == 'any':
         return data_paths
-    correct = lambda path: 1 if type_keys[data_class.load(path, primary_ext).header[header_keys['type']]] is frame_type else 0
+    correct = lambda path: 1 if data_class.load(path, primary_ext, header_keys, type_keys).header['type'] is frame_type else 0
     return np.array(data_paths)[np.where([correct(path) for path in data_paths])]
 
 
-def load_class(full_class_string):
+def import_class(full_class_string):
     """
-    dynamically load a class from a string
+    dynamically import a class from a string
     """
 
     class_data = full_class_string.split(".")

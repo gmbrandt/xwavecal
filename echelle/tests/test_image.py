@@ -4,18 +4,17 @@ import numpy as np
 import tempfile
 import os
 from astropy.table import Table
+from astropy.io.fits import Header
 
 
-from echelle.images import NRESImage, DataProduct
-from banzai.tests.utils import FakeContext, FakeImage
-import echelle.settings as nres_settings
-from banzai import settings
+from echelle.images import Image, DataProduct
+from echelle.tests.utils import FakeContext, FakeImage
 
 
 @mock.patch('banzai.images.Image._init_instrument_info')
 def test_image_class_loads(mock_instrument):
     mock_instrument.return_value = None, None, None
-    image = NRESImage(runtime_context=FakeContext(),
+    image = Image(runtime_context=FakeContext(),
                       header={'OBJECTS': 'tung&tung&none'})
     assert image.trace is None
     assert image.rectified_2d_spectrum is None
@@ -25,10 +24,10 @@ def test_image_class_loads(mock_instrument):
 @mock.patch('banzai.images.Image._init_instrument_info')
 def test_get_num_lit_fibers(mock_instrument):
     mock_instrument.return_value = None, None, None
-    image = NRESImage(runtime_context=FakeContext(),
+    image = Image(runtime_context=FakeContext(),
                       header={'OBJECTS': 'tung&tung&none'})
     assert image.num_lit_fibers() == 2
-    image = NRESImage(runtime_context=FakeContext(),
+    image = Image(runtime_context=FakeContext(),
                       header={'OBJECTS': 'none&tung&none'})
     assert image.num_lit_fibers() == 1
 
@@ -36,12 +35,12 @@ def test_get_num_lit_fibers(mock_instrument):
 @mock.patch('banzai.images.Image._init_instrument_info')
 def test_get_num_lit_wavecal_fibers(mock_instrument):
     mock_instrument.return_value = None, None, None
-    image = NRESImage(runtime_context=FakeContext(),
+    image = Image(runtime_context=FakeContext(),
                       header={'OBJECTS': 'thar&tung&none'})
     assert image.num_wavecal_fibers() == 1
     assert image.fiber0_wavecal == 1
     assert image.fiber1_wavecal == 0
-    image = NRESImage(runtime_context=FakeContext(),
+    image = Image(runtime_context=FakeContext(),
                       header={'OBJECTS': 'none&thar&thar'})
     assert image.num_wavecal_fibers() == 2
     assert image.fiber1_wavecal == 1
@@ -72,3 +71,14 @@ class TestDataProduct:
                 image.header = {'bla': 1}
                 image._update_filepath(fpack)
                 assert image.filepath[-3:] == extension
+
+    def test_translate_header(self):
+        header_keys = {'type': 'OBSTYPE',
+                       'gain': 'GAIN',
+                       'read_noise': 'RDNOISE'}
+        type_translator = {'LAMPFLAT': 'lampflat',
+                           'DOUBLE': 'wavecal'}
+        header = Header({'OBSTYPE': 'DOUBLE', 'GAIN': 1, 'RDNOISE': 10})
+        new = DataProduct.translate_header(header, header_keys, type_translator)
+        assert new['type'] == 'wavecal'
+

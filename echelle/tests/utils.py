@@ -36,7 +36,8 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self.header = fits.Header({'RDNOISE': 11, 'GAIN': 1.0, 'OBSTYPE': 'LAMPFLAT'})
+        self.header = fits.Header({'rdnoise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT',
+                                   'type': 'lampflat'})
         self.filepath = 'None'
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
@@ -58,10 +59,10 @@ class FakeImage(object):
         return len(lit_wavecal_fibers(self))
 
     @classmethod
-    def load(cls, path, extension_name):
+    def load(cls, *args):
         return FakeImage()
 
-    def write(self, fpack=False):
+    def write(self, *args, **kwargs):
         pass
 
 

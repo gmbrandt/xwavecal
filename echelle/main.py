@@ -1,14 +1,17 @@
 """
 main.py: Main driver script for the minimal pipeline included with this package.
 
-This is inspired by the Template Method Pattern and the Framework of Banzai by Curtis McCully.
+Author: G. Mirek Brandt
+
+Note: This is built closely according to the structure of Banzai (https://github.com/lcogt/banzai) by Curtis McCully and
+Las Cumbres Observatory.
 
 """
 import logging as logger
 from ast import literal_eval
 from configparser import ConfigParser
 
-from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, load_class
+from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_class
 
 
 class RuntimeContext(object):
@@ -22,20 +25,19 @@ def reduce_data(data_paths=None, args=None, config=None):
         args = parse_args()
     if config is None:
         config = ConfigParser()
-        config.read(args.config_File)
+        config.read(args.config_file)
     if data_paths is None:
         data_paths = args.data_paths
 
     runtime_context, data_class, extension, header_keys, type_translator = organize_config(config)
-    DataClass = load_class(data_class)
+    DataClass = import_class(data_class)
 
     for data_path in data_paths:
         logger.info('Reducing {path} assuming a data class of {data_class} and raw data in extension {extension}'
                     ''.format(path=data_path, data_class=data_class, extension=extension))
 
-        data = DataClass.load(data_path, extension)
-        frame_type = type_translator[data.header[header_keys['type']]]
-        stages_todo = [load_class(stage) for stage in literal_eval(config.get('stages', frame_type))]
+        data = DataClass.load(data_path, extension, header_keys, type_translator)
+        stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.header['type']))]
 
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
@@ -54,7 +56,7 @@ def run():
 
     # get the data paths of the data to reduce.
     runtime_context, data_class, extension, header_keys, type_translator = organize_config(config)
-    DataClass = load_class(data_class)
+    DataClass = import_class(data_class)
     data_paths = select_data(args.input_dir, args.frame_type, literal_eval(config.get('data', 'files_contain')),
                              DataClass, extension, header_keys, type_translator)
 

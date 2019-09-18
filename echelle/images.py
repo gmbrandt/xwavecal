@@ -30,10 +30,17 @@ class DataProduct(object):
             self.filepath += '.fz'
 
     @classmethod
-    def load(cls, path, extension_name):
+    def load(cls, path, extension_name, header_keys=None, type_translator=None):
         hdu_list = fits.open(path)
-        return cls(data=hdu_list[extension_name].data, header=hdu_list[extension_name].header,
-                   filepath=path)
+        header = DataProduct.translate_header(hdu_list[extension_name].header, header_keys, type_translator)
+        return cls(data=hdu_list[extension_name].data, header=header, filepath=path)
+
+    @staticmethod
+    def translate_header(header, header_keys=None, type_translator=None):
+        if header_keys is not None and type_translator is not None:
+            for echelle_key, data_key in header_keys.items():
+                header[echelle_key] = type_translator.get(header[data_key], header[data_key])
+        return header
 
 
 class Image(DataProduct):
