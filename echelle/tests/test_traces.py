@@ -6,19 +6,12 @@ from astropy.io import fits
 from scipy.optimize import OptimizeResult
 from unittest import mock
 
-from banzai.tests.utils import FakeContext
-
 from echelle.traces import TraceMaker, LoadTrace
-from echelle.tests.utils import array_with_peaks, FakeImage, noisify_image
+from echelle.tests.utils import array_with_peaks, FakeImage, noisify_image, FakeContext
 from echelle.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from echelle.tests.utils import fill_image_with_traces
-import echelle.settings as nres_settings
-from banzai import settings
 
 import logging
-
-
-
 
 
 class FakeTraceImage(FakeImage):

@@ -12,4 +12,6 @@ setup(name='echelle',
       package_dir={'echelle': 'echelle'},
       setup_requires=['pytest-runner'],
       install_requires=requirements,
-      tests_require=['pytest>=3.5'])
+      tests_require=['pytest>=3.5'],
+      entry_points={'console_scripts': ['echelle_reduce_dir=echelle.main:run',
+                                        'echelle_reduce_paths=echelle.main:reduce_data']})

@@ -2,9 +2,8 @@ import datetime
 import pytest
 import mock
 
-from banzai.tests.utils import FakeContext
 from echelle.utils import runtime_utils
-from echelle.tests.utils import FakeImage
+from echelle.tests.utils import FakeImage, FakeContext
 
 
 def test_get_telescope_filename():

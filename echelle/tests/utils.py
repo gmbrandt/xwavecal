@@ -1,11 +1,24 @@
 from datetime import datetime
 import numpy as np
 from astropy.io import fits
+from ast import literal_eval
+from configparser import ConfigParser
 from scipy import ndimage
-from echelle.utils.fiber_utils import lit_fibers, lit_wavecal_fibers
-
-from echelle.utils.trace_utils import SingleTraceFitter
 from scipy.interpolate import UnivariateSpline
+
+from echelle.utils.fiber_utils import lit_fibers, lit_wavecal_fibers
+from echelle.utils.trace_utils import SingleTraceFitter
+
+
+class FakeContext(object):
+    def __init__(self):
+        config = ConfigParser()
+        config.read('echelle/tests/data/test_config.ini')
+        # TODO change to an example ini located in tests.
+        #  or make this class empty and have it required to edit the ncessary attributes in each test.
+        dictionary = {key: literal_eval(item) for key, item in config.items('reduction')}
+        for attribute, value in dictionary.items():
+            setattr(self, attribute, value)
 
 
 class FakeImage(object):
@@ -23,7 +36,7 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self.header = fits.Header({'RDNOISE': 11})
+        self.header = fits.Header({'RDNOISE': 11, 'GAIN': 1.0, 'OBSTYPE': 'LAMPFLAT'})
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
         self.request_number = '0000331403'
@@ -42,6 +55,10 @@ class FakeImage(object):
 
     def num_wavecal_fibers(self):
         return len(lit_wavecal_fibers(self))
+
+    @classmethod
+    def load(cls, path, extension_name):
+        return FakeImage()
 
 
 def gaussian(x, A, b, sigma):

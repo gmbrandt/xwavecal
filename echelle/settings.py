@@ -61,7 +61,7 @@ approx_num_orders = 67
 # principle order number (m0) settings for the IdentifyPrincipleOrderNumber stage
 m0_range = (50, 54)  # start (inclusive), stop (exclusive)
 principle_order_number = 52
-min_num_overlaps = 5 # the minimum number of overlaps which must be fit for the wavelength solution to proceed.
+min_num_overlaps = 5  # the minimum number of overlaps which must be fit for the wavelength solution to proceed.
 # refine wavelength solution settings
 min_peak_snr = 10  # the min signal to noise for an emission peak to be considered in the wavelength solution.
 # initial model that is constrained via the overlaps and is used to find the global scale:
@@ -128,7 +128,6 @@ settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banz
                                     'banzai_nres.wavelength.SolutionRefineFinal',
                                     'banzai_nres.wavelength.IdentifyArcEmissionLinesLowSN',
                                     'banzai_nres.wavelength.ApplyToSpectrum',
-                                    #'banzai_nres.utils.temp_overlaps.FindOverlapsFromWavelengths',
                                     'banzai_nres.wavelength.TabulateArcEmissionLines'],
                          'TARGET': None}
 
