@@ -6,5 +6,5 @@ class Stage(object):
         self.runtime_context = runtime_context
 
     @abc.abstractmethod
-    def do_stage(self, data):
-        return data
+    def do_stage(self, image):
+        return image

@@ -1,8 +1,18 @@
 import os
 import tempfile
 import shutil
+import numpy as np
 
 import logging as logger
+
+
+class Translator(dict):
+    def __init__(self, header_keys, type_keys):
+        self.header_keys = header_keys
+        self.type_keys = type_keys
+
+    def __getitem__(self, key):
+        return self.header_keys.get(key, key)
 
 
 def writeto(hdu_list, filepath, fpack=False, overwrite=True, output_verify='fix+warn', quant=64):
@@ -23,3 +33,13 @@ def writeto(hdu_list, filepath, fpack=False, overwrite=True, output_verify='fix+
             os.system(command.format(quantization=int(quant), temp_directory=temp_directory, basename=base_filename))
             base_filename += '.fz'
             shutil.move(os.path.join(temp_directory, base_filename), filepath)
+
+
+def parse_region_keyword(key):
+    """
+    :param key: string of the form '[x:y],[x:y]'
+    :return: tuple
+             (slice(x,y,None), slice(x,y,None))
+    """
+    boundaries = [np.array(i.split(':')).astype(int) for i in key.replace('[', '').replace(']', '').split(',')]
+    return tuple(slice(*boundary) for boundary in boundaries)

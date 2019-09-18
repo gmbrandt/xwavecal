@@ -8,6 +8,7 @@ from astropy.io.fits import Header
 
 
 from echelle.images import Image, DataProduct
+from echelle.utils.fits_utils import Translator
 from echelle.tests.utils import FakeContext, FakeImage
 
 
@@ -72,13 +73,17 @@ class TestDataProduct:
                 image._update_filepath(fpack)
                 assert image.filepath[-3:] == extension
 
-    def test_translate_header(self):
+    def test_translator(self):
         header_keys = {'type': 'OBSTYPE',
                        'gain': 'GAIN',
                        'read_noise': 'RDNOISE'}
-        type_translator = {'LAMPFLAT': 'lampflat',
-                           'DOUBLE': 'wavecal'}
+        type_keys = {'LAMPFLAT': 'lampflat',
+                     'DOUBLE': 'wavecal'}
+        translator = Translator(header_keys, type_keys)
         header = Header({'OBSTYPE': 'DOUBLE', 'GAIN': 1, 'RDNOISE': 10})
-        new = DataProduct.translate_header(header, header_keys, type_translator)
-        assert new['type'] == 'wavecal'
-
+        image = DataProduct(header=header, translator=translator)
+        assert image.get_header_val('type') == 'wavecal'
+        assert image.get_header_val('gain') == 1
+        assert image.get_header_val('read_noise') == 10
+        image.set_header_val('gain', 5)
+        assert image.get_header_val('gain') == 5
