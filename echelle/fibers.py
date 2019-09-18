@@ -1,15 +1,13 @@
 import numpy as np
 
-from banzai_nres.utils.misc_utils import normalize_by_brightest, n_largest_elements
-from banzai_nres.utils.correlate import correlate2d
-from banzai_nres.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
-import banzai_nres.settings as nres_settings
+from echelle.utils.misc_utils import normalize_by_brightest, n_largest_elements
+from echelle.utils.correlate import correlate2d
+from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
+import echelle.settings as nres_settings
 
 from banzai.calibrations import ApplyCalibration
 
 import logging as logger
-
-
 
 
 class IdentifyFibers(ApplyCalibration):

@@ -2,7 +2,7 @@ import mock
 from astropy.io.fits import HDUList, PrimaryHDU
 from tempfile import TemporaryDirectory
 
-from banzai_nres.utils.fits_utils import writeto
+from echelle.utils.fits_utils import writeto
 
 
 class TmpDir(TemporaryDirectory):

@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 import mock
 
-from banzai_nres import settings as nres_settings
-from banzai_nres.tests.test_traces import FakeTraceImage
-from banzai_nres.tests.utils import fill_image_with_traces
-from banzai_nres.utils.trace_utils import Trace
-from banzai_nres.utils import extract_utils
-from banzai_nres.extract import BoxExtract, RectifyTwodSpectrum, Extract
+from echelle import settings as nres_settings
+from echelle.tests.test_traces import FakeTraceImage
+from echelle.tests.utils import fill_image_with_traces
+from echelle.utils.trace_utils import Trace
+from echelle.utils import extract_utils
+from echelle.extract import BoxExtract, RectifyTwodSpectrum, Extract
 
 from banzai.tests.utils import FakeContext
 

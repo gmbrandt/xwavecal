@@ -3,16 +3,16 @@ import numpy as np
 import pytest
 from astropy.table import Table
 
-from banzai_nres.utils.fiber_utils import fiber_states_from_header, fibers_state_to_filename, \
+from echelle.utils.fiber_utils import fiber_states_from_header, fibers_state_to_filename, \
                                           lit_fibers, lit_wavecal_fibers
-from banzai_nres.fibers import IdentifyFibers
-from banzai_nres.images import NRESImage
-import banzai_nres.settings as nres_settings
+from echelle.fibers import IdentifyFibers
+from echelle.images import NRESImage
+import echelle.settings as nres_settings
 
 from banzai.tests.utils import FakeContext
-from banzai_nres.tests.utils import FakeImage
+from echelle.tests.utils import FakeImage
 
-from banzai_nres.utils.correlate import correlate2d
+from echelle.utils.correlate import correlate2d
 
 
 def test_creation_from_header():

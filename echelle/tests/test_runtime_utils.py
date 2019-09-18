@@ -3,8 +3,8 @@ import pytest
 import mock
 
 from banzai.tests.utils import FakeContext
-from banzai_nres.utils import runtime_utils
-from banzai_nres.tests.utils import FakeImage
+from echelle.utils import runtime_utils
+from echelle.tests.utils import FakeImage
 
 
 def test_get_telescope_filename():

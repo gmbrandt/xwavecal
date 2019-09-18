@@ -4,9 +4,9 @@ import numpy as np
 from scipy import interpolate
 from astropy.table import Table
 
-import banzai_nres.utils.overlap_utils as overlapu
-from banzai_nres.tests.utils import SpectrumUtils
-from banzai_nres.utils.overlap_utils import OverlapFitter
+import echelle.utils.overlap_utils as overlapu
+from echelle.tests.utils import SpectrumUtils
+from echelle.utils.overlap_utils import OverlapFitter
 
 
 class Utils:

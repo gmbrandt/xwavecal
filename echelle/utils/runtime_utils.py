@@ -1,40 +1,30 @@
 import datetime
-
-from banzai_nres.utils.db_utils import get_raw_path
-
-import logging
-
-
+import logging as logger
+import argparse
+import glob
+import os
 
 
-def get_telescope_filename(image):
-    return image.header.get('TELESCOP', '').replace('nres', 'nrs')
+def parse_args():
+    parser = argparse.ArgumentParser(description='Reduce an echelle spectrograph frame.')
+    parser.add_argument("--output-dir", required=True,
+                        help="Directory within which to save the processed data files.")
+    parser.add_argument("--input-dir", required=True,
+                        help="Directory which contains the raw data files.")
+    parser.add_argument("--fpack", required=False, action='store_true',
+                        help="fpack output files with default quantization of 64")
+    parser.add_argument("--config-file", required=True,
+                        help="Path to the instrument specific configuration file.")
+    parser.add_argument("--frame-type", required=False, default='all',
+                        help="Frame type to either fit traces to or wavelength calibrate."
+                             "Make sure frame type settings are appropriately set in the config file."
+                             "lampflat files are used for tracing, wavecals are wavelength calibration"
+                             "frames such as ThAr exposures.",
+                        choices=['lampflat', 'wavecal', 'all'], type=str.lower)
+    args = parser.parse_args()
+    return args
 
 
-def validate_raw_path(runtime_context, raw_path):
-    if raw_path is not None and 'raw' not in raw_path.lower():
-        raw_path = get_raw_path(base_raw_path=raw_path, runtime_context=runtime_context)
-    return raw_path
-
-
-def get_frame_types(runtime_context, default_frames_to_reduce):
-    if getattr(runtime_context, 'frame_type', None) is None:
-        frame_types = default_frames_to_reduce
-    else:
-        frame_types = [runtime_context.frame_type]
-    return frame_types
-
-
-def get_reduction_date_window(runtime_context):
-    max_date = getattr(runtime_context, 'max_date', None)
-    min_date = getattr(runtime_context, 'min_date', None)
-    if max_date is None:
-        max_date = datetime.datetime.utcnow()
-
-    if min_date is None:
-        min_date = max_date - datetime.timedelta(hours=24)
-
-    if min_date > max_date:
-        logger.error('The start cannot be after the end. Aborting reduction!')
-        raise ValueError('min_date > max_date.')
-    return min_date, max_date
+def get_data_paths(dir_path, files_contain=['.fits']):
+    all_files = glob.glob(os.path.join(dir_path, '*'))
+    return [file for file in all_files if all([item in file for item in files_contain])]

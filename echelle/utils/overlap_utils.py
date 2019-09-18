@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import interpolate
 from astropy.table import Table, Column
-from banzai_nres.utils.misc_utils import find_nearest
+from echelle.utils.misc_utils import find_nearest
 import numpy.polynomial.polynomial as poly
 import itertools
 

@@ -4,11 +4,9 @@ import logging as logger
 import copy
 from astropy.table import Table
 
-from banzai_nres.utils import extract_utils
-import banzai_nres.settings as nres_settings
-
-from banzai.stages import Stage
-from banzai.images import DataTable
+from echelle.utils import extract_utils
+import echelle.settings as nres_settings
+from echelle.stages import Stage
 
 
 class Extract(Stage):

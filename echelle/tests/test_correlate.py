@@ -1,6 +1,6 @@
 import numpy as np
 
-from banzai_nres.utils.correlate import correlate2d
+from echelle.utils.correlate import correlate2d
 
 
 def test_correlate2d():

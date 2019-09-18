@@ -5,15 +5,15 @@ from scipy.optimize import OptimizeResult
 import copy
 from astropy.table import Table
 
-import banzai_nres.utils.wavelength_utils as wcsu
-from banzai_nres.utils.trace_utils import legendre as legendre_val
-from banzai_nres.utils.overlap_utils import blank_overlap_table
-from banzai_nres.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal
-from banzai_nres.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
-from banzai_nres.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines
-from banzai_nres import settings as nres_settings
-from banzai_nres.tests.utils import SpectrumUtils, FakeImage
-from banzai_nres.utils.misc_utils import find_nearest
+import echelle.utils.wavelength_utils as wcsu
+from echelle.utils.trace_utils import legendre as legendre_val
+from echelle.utils.overlap_utils import blank_overlap_table
+from echelle.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal
+from echelle.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
+from echelle.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines
+from echelle import settings as nres_settings
+from echelle.tests.utils import SpectrumUtils, FakeImage
+from echelle.utils.misc_utils import find_nearest
 
 from banzai.tests.utils import FakeContext
 from banzai.images import DataTable

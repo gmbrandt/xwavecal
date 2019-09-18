@@ -9,10 +9,10 @@ import os
 import copy
 
 from banzai.calibrations import Stage, ApplyCalibration
-from banzai_nres.images import ImageBase
-from banzai_nres.fibers import lit_wavecal_fibers, lit_fibers
+from echelle.images import DataProduct
+from echelle.fibers import lit_wavecal_fibers, lit_fibers
 
-import banzai_nres.settings as nres_settings
+import echelle.settings as nres_settings
 import sep
 
 import logging as logger
@@ -23,6 +23,7 @@ import logging as logger
 # TODO divide the standard errors in the frame by the calibration as well, so that reduced_chi_sq in overlap
 #  is accurate when S/N is low.
 class ApplyBlaze(ApplyCalibration):
+    #TODO do blaze correction with the 2d frame properly normalized, dont do it after extraction.
     """
     Loads the blaze spectrum from file and divides any arc fibers by the blaze.
     """
@@ -37,7 +38,7 @@ class ApplyBlaze(ApplyCalibration):
         logger.info('Image fiber information', image=image,
                     extra_tags={'Lit fibers': str(lit_fibers(image)),
                                 'Wavecal fibers': str(lit_wavecal_fibers(image))})
-        blaze = ImageBase.load(master_calibration_path, extension_name=nres_settings.BLAZE_TABLE_NAME)
+        blaze = DataProduct.load(master_calibration_path, extension_name=nres_settings.BLAZE_TABLE_NAME)
         master_filename = os.path.basename(master_calibration_path)
         image.header['L1IDBLAZ'] = (master_filename, 'ID of blaze file')
         logger.info('Loaded blaze file', image=image,  extra_tags={'L1IDBLAZ': image.header['L1IDBLAZ']})

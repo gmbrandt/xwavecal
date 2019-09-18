@@ -8,11 +8,11 @@ from unittest import mock
 
 from banzai.tests.utils import FakeContext
 
-from banzai_nres.traces import TraceMaker, LoadTrace
-from banzai_nres.tests.utils import array_with_peaks, FakeImage, noisify_image
-from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
-from banzai_nres.tests.utils import fill_image_with_traces
-import banzai_nres.settings as nres_settings
+from echelle.traces import TraceMaker, LoadTrace
+from echelle.tests.utils import array_with_peaks, FakeImage, noisify_image
+from echelle.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
+from echelle.tests.utils import fill_image_with_traces
+import echelle.settings as nres_settings
 from banzai import settings
 
 import logging

@@ -12,17 +12,14 @@ Authors
 import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
-from banzai_nres.images import ImageBase
+from echelle.images import DataProduct
 
-import banzai_nres.settings as nres_settings  # import to override banzai settings
-from banzai import settings
-
-import logging
+import logging as logger
 
 
 
 
-class Trace(ImageBase):
+class Trace(DataProduct):
     """
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]

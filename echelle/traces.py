@@ -5,11 +5,11 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
+from echelle.utils.trace_utils import Trace, AllTraceFitter
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
 
-import banzai_nres.settings as nres_settings
+import echelle.settings as nres_settings
 import banzai.settings as banzai_settings
 
 import sep

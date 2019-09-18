@@ -3,9 +3,9 @@ import numpy as np
 import copy
 from astropy.table import Table
 
-from banzai_nres.blaze import ApplyBlaze, BackgroundSubtractSpectrum
-import banzai_nres.settings as settings
-from banzai_nres.images import ImageBase
+from echelle.blaze import ApplyBlaze, BackgroundSubtractSpectrum
+import echelle.settings as settings
+from echelle.images import DataProduct
 
 from banzai.tests.utils import FakeContext, FakeImage
 
@@ -15,7 +15,7 @@ class TestApplyBlaze:
     def test_apply_calibration(self, fake_load):
         stage = ApplyBlaze(FakeContext())
         fake_blaze = Table({'id': [1, 2], 'flux': [np.arange(1, 11), np.arange(2, 12)]})
-        fake_load.return_value = ImageBase(data=fake_blaze)
+        fake_load.return_value = DataProduct(data=fake_blaze)
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1

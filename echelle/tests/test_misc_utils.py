@@ -3,8 +3,8 @@ import pytest
 import mock
 from scipy import optimize
 
-from banzai_nres.tests.utils import array_with_peaks
-from banzai_nres.utils.misc_utils import find_peaks, brute_local_min, find_nearest,\
+from echelle.tests.utils import array_with_peaks
+from echelle.utils.misc_utils import find_peaks, brute_local_min, find_nearest,\
                                          overlap_region, normalize_by_brightest
 
 

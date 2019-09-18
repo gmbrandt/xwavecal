@@ -2,9 +2,9 @@ from datetime import datetime
 import numpy as np
 from astropy.io import fits
 from scipy import ndimage
-from banzai_nres.utils.fiber_utils import lit_fibers, lit_wavecal_fibers
+from echelle.utils.fiber_utils import lit_fibers, lit_wavecal_fibers
 
-from banzai_nres.utils.trace_utils import SingleTraceFitter
+from echelle.utils.trace_utils import SingleTraceFitter
 from scipy.interpolate import UnivariateSpline
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from banzai_nres.utils.misc_utils import find_peaks, find_nearest
+from echelle.utils.misc_utils import find_peaks, find_nearest
 from astropy.stats import sigma_clip
 
 

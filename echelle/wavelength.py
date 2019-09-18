@@ -5,17 +5,17 @@ from astropy.stats import median_absolute_deviation
 from astropy.table import Column, Table, vstack
 from numpy.polynomial import legendre
 
-from banzai.stages import Stage
 from banzai.calibrations import ApplyCalibration
 from banzai.images import DataTable
 from scipy import interpolate
 
-from banzai_nres.utils.wavelength_utils import identify_lines, calc_residuals, restrict, Model, _sigma_clip
-from banzai_nres.utils.wavelength_utils import estimate_global_scale, normalize_coordinates, pixel_order_as_array
-from banzai_nres.utils.overlap_utils import flag_bad_overlaps, fit_overlaps, blank_overlap_table, flag_outlier_overlaps
-from banzai_nres.utils.misc_utils import brute_local_min, find_nearest, minmax
-from banzai_nres.utils.fiber_utils import lit_wavecal_fibers
-import banzai_nres.settings as nres
+from echelle.stages import Stage
+from echelle.utils.wavelength_utils import identify_lines, calc_residuals, restrict, Model, _sigma_clip
+from echelle.utils.wavelength_utils import estimate_global_scale, normalize_coordinates, pixel_order_as_array
+from echelle.utils.overlap_utils import flag_bad_overlaps, fit_overlaps, blank_overlap_table, flag_outlier_overlaps
+from echelle.utils.misc_utils import brute_local_min, find_nearest, minmax
+from echelle.utils.fiber_utils import lit_wavecal_fibers
+import echelle.settings as nres
 
 import logging as logger
 
