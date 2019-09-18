@@ -22,6 +22,7 @@ class RuntimeContext(object):
 
 
 def reduce_data(data_paths=None, args=None, config=None):
+    logger.basicConfig(level=logger.DEBUG)
     if args is None:
         args = parse_args()
     if config is None:
@@ -39,6 +40,8 @@ def reduce_data(data_paths=None, args=None, config=None):
                     ''.format(path=data_path, data_class=data_class, extension=extension))
 
         data = DataClass.load(data_path, extension, translator)
+        import pdb
+        pdb.set_trace()
         stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
 
         for stage in stages_todo:
@@ -51,6 +54,7 @@ def reduce_data(data_paths=None, args=None, config=None):
 
 
 def run():
+    logger.basicConfig(level=logger.DEBUG)
     # parse command line arguments and the configuration file.
     args = parse_args()
     config = ConfigParser()
@@ -76,9 +80,9 @@ def organize_config(config):
     return runtime_context, data_class, extension, header_keys, type_keys
 
 
-def select_data(input_dir, frame_type, files_contain, data_class, extension, header_keys, type_translator):
+def select_data(input_dir, frame_type, files_contain, data_class, extension, header_keys, type_keys):
     data_paths = get_data_paths(input_dir, files_contain)
-    data_paths = order_data(data_paths, data_class, extension, header_keys, type_translator)
-    data_paths = select_data_of_type(data_paths, data_class, extension, header_keys, type_translator, frame_type)
+    data_paths = order_data(data_paths, data_class, extension, header_keys, type_keys)
+    data_paths = select_data_of_type(data_paths, data_class, extension, header_keys, type_keys, frame_type)
     return data_paths
 

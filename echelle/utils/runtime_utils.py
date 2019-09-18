@@ -38,16 +38,17 @@ def get_data_paths(dir_path, files_contain=None):
 
 def order_data(data_paths, data_class, primary_ext, header_keys, type_keys):
     translator = Translator(header_keys, type_keys)
-    is_not_lampflat = lambda path: 0 if data_class.load(path, primary_ext, translator).get_header_val('type') is 'lampflat' else 1
+    is_not_lampflat = lambda path: 0 if data_class.load(path, primary_ext, translator).get_header_val('type') == 'lampflat' else 1
     data_paths.sort(key=is_not_lampflat)
     return data_paths
 
 
 def select_data_of_type(data_paths, data_class, primary_ext, header_keys, type_keys, frame_type='any'):
+    is_type = lambda x: x == frame_type
     if frame_type == 'any':
-        return data_paths
+        is_type = lambda x: x == 'lampflat' or x == 'wavecal'
     translator = Translator(header_keys, type_keys)
-    correct = lambda path: 1 if data_class.load(path, primary_ext, translator).get_header_val('type') is frame_type else 0
+    correct = lambda path: 1 if is_type(data_class.load(path, primary_ext, translator).get_header_val('type')) else 0
     return np.array(data_paths)[np.where([correct(path) for path in data_paths])]
 
 
