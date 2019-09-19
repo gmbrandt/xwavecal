@@ -18,8 +18,6 @@ import sep
 import logging as logger
 
 
-
-
 # TODO divide the standard errors in the frame by the calibration as well, so that reduced_chi_sq in overlap
 #  is accurate when S/N is low.
 class ApplyBlaze(ApplyCalibration):
@@ -36,21 +34,21 @@ class ApplyBlaze(ApplyCalibration):
 
     def apply_master_calibration(self, image, master_calibration_path):
         logger.info('Image fiber information',
-                    extra_tags={'Lit fibers': str(lit_fibers(image)),
+                    extra={'Lit fibers': str(lit_fibers(image)),
                                 'Wavecal fibers': str(lit_wavecal_fibers(image))})
         blaze = DataProduct.load(master_calibration_path, extension_name=nres_settings.BLAZE_TABLE_NAME)
         master_filename = os.path.basename(master_calibration_path)
-        image.header['L1IDBLAZ'] = (master_filename, 'ID of blaze file')
-        logger.info('Loaded blaze file',   extra_tags={'L1IDBLAZ': image.header['L1IDBLAZ']})
+        image.set_header_val('L1IDBLAZ', (master_filename, 'ID of blaze file'))
+        logger.info('Loaded blaze file',   extra={'L1IDBLAZ': image.get_header_val('L1IDBLAZ')})
         spectrum = copy.deepcopy(image.data_tables[nres_settings.BOX_SPECTRUM_NAME])
         blaze_spectrum = blaze.data
         if len(spectrum['id']) != len(blaze_spectrum['id']) or (not np.allclose(spectrum['id'].data,
                                                                                 blaze_spectrum['id'].data)):
             logger.error('Trace IDs from blaze spectrum and spectrum do not agree. Aborting '
-                         'blaze correction.', image=image)
+                         'blaze correction.', )
         else:
             # TODO only divide the arc lamp fibers. Right now this is only be valid for DOUBLE exposures.
-            logger.info('Dividing by Blaze', image=image)
+            logger.info('Dividing by Blaze', )
             spectrum['flux'] = spectrum['flux'].data / blaze_spectrum['flux'].data
             spectrum.name = nres_settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME
             image.data_tables[nres_settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME] = spectrum

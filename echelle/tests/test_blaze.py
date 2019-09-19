@@ -9,7 +9,7 @@ from echelle.images import DataProduct
 from echelle.tests.utils import FakeContext, FakeImage
 
 
-@mock.patch('echelle.blaze.ImageBase.load')
+@mock.patch('echelle.blaze.DataProduct.load')
 class TestApplyBlaze:
     def test_apply_calibration(self, fake_load):
         stage = ApplyBlaze(FakeContext())
@@ -23,7 +23,6 @@ class TestApplyBlaze:
         assert np.allclose(image.data_tables[settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME]['flux'].data, 1)
         assert not np.allclose(image.data_tables[settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME]['flux'].data,
                                image.data_tables[settings.BOX_SPECTRUM_NAME]['flux'].data)
-        assert image.data_tables[settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME].name == settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME
 
 
 class TestBackgroundSubtractSpectrum:

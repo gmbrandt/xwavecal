@@ -21,9 +21,7 @@ class FakeTraceImage(FakeImage):
     def __init__(self, nx=500, ny=502, *args, **kwargs):
         super(FakeTraceImage, self).__init__(*args, **kwargs)
         self.caltype = 'TRACE'
-        self.header = fits.Header()
-        self.header['OBSTYPE'] = 'LAMPFLAT'
-        self.header['OBJECTS'] = 'tung&tung&none'
+        self._header['OBJECTS'] = 'tung&tung&none'
         self.nx = nx
         self.ny = ny
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
@@ -303,28 +301,22 @@ class TestTraceMaker:
     def test_properties(self):
         assert TraceMaker(FakeContext()).calibration_type is 'TRACE'
 
-    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
-    def test_get_file_path(self, mock_dir):
-        assert TraceMaker._get_filepath(None, None, master_filename='test.tst') == '/tmp/test.tst'
-
     @pytest.mark.integration
-    @mock.patch('echelle.traces.TraceMaker._get_filepath', return_value=None)
-    def test_trace_fit_does_not_crash_on_blank_frame(self, mock_get_path):
+    def test_trace_fit_does_not_crash_on_blank_frame(self):
         order_of_poly_fit = 4
         image = FakeTraceImage(nx=100, ny=100)
-        image.header['RDNOISE'] = 11
+        image.set_header_val('RDNOISE', 11)
         noisify_image(image)
         fake_context = FakeContext()
         fake_context.db_address = ''
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
         trace_fitter.xmin, trace_fitter.xmax = 50, 60
-        trace_fitter.do_stage([image])
+        trace_fitter.do_stage(image)
         assert True
 
-    @mock.patch('echelle.traces.TraceMaker._get_filepath', return_value=None)
     @mock.patch('echelle.utils.trace_utils.AllTraceFitter.fit_traces')
-    def test_trace_maker(self, fit_traces, mock_get_path):
+    def test_trace_maker(self, fit_traces):
         trace_table_name = 'test'
         data = {'id': [1], 'centers': [np.arange(3)]}
         fit_traces.return_value = Trace(data=data)
@@ -334,13 +326,12 @@ class TestTraceMaker:
         trace_maker.xmin = 5
         trace_maker.xmax = 10
         trace_maker.trace_table_name = trace_table_name
-        loaded_trace = trace_maker.do_stage(images=[FakeImage()])[0]
+        loaded_trace = trace_maker.do_stage(image=FakeImage())
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
     @pytest.mark.integration
-    @mock.patch('echelle.traces.TraceMaker._get_filepath', return_value=None)
-    def test_accuracy_of_trace_fitting(self, mock_get_path):
+    def test_accuracy_of_trace_fitting(self):
         """
         test type: Mock Integration Test with metrics for how well trace fitting is doing.
         info: This tests trace making via a blind fit.
@@ -353,8 +344,7 @@ class TestTraceMaker:
 
         image = FakeTraceImage()
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
-        image.header['RDNOISE'] = read_noise
-        image.is_master = True
+        image.set_header_val('RDNOISE', read_noise)
 
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
                                                                                       poly_order_of_traces=poly_fit_order)
@@ -366,8 +356,7 @@ class TestTraceMaker:
         trace_maker.xmax = image.data.shape[1]//2 + 20
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
-        trace = trace_maker.do_stage([image])[0]
-        assert trace.is_master
+        trace = trace_maker.do_stage(image)
         assert trace.data['centers'].shape[0] == trace_centers.shape[0]
         difference = trace.data['centers'] - trace_centers
         logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
@@ -406,6 +395,6 @@ class TestLoadTrace:
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
         image = trace_loader.do_stage(image=FakeImage())
-        assert image.header['L1IDTRAC'] == 'master_trace.fits'
+        assert image.get_header_val('L1IDTRAC') == 'master_trace.fits'
         assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))

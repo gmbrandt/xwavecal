@@ -30,12 +30,12 @@ class IdentifyFibers(ApplyCalibration):
         NOTE: This stage relies on the fact that only 2 fibers are lit at one time.
         """
         if len(image.data_tables[nres_settings.BOX_SPECTRUM_NAME]['flux']) == 0:
-            logger.error('Image has length 0 spectrum. Skipping fiber identification', image=image)
+            logger.error('Image has length 0 spectrum. Skipping fiber identification', )
         elif image.num_wavecal_fibers() >= 1:
-            logger.info('Identifying fibers via cross correlation.', image=image)
+            logger.info('Identifying fibers via cross correlation.', )
             spectrum = image.data_tables[nres_settings.BOX_SPECTRUM_NAME]
 
-            read_noise = image.header['RDNOISE']
+            read_noise = image.get_header_val('read_noise')
             signal_to_noise = spectrum['flux'] / (np.sqrt(np.abs(spectrum['flux']) + read_noise ** 2))
             spectrum_to_search = normalize_by_brightest(signal_to_noise)
 
@@ -52,7 +52,7 @@ class IdentifyFibers(ApplyCalibration):
 
             image.data_tables[nres_settings.BOX_SPECTRUM_NAME] = spectrum
         else:
-            logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', image=image)
+            logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image
 
     def do_stage(self, image):

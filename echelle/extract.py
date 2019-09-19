@@ -61,7 +61,7 @@ class BoxExtract(Extract):
         return Table(extracted_spectrum_per_order)
 
     def do_stage(self, image):
-        logger.info('Box extracting spectrum', image=image)
+        logger.info('Box extracting spectrum', )
         rectified_2d_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
         spectrum = self.extract(rectified_2d_spectrum)
         table_name = nres_settings.BOX_SPECTRUM_NAME
@@ -101,9 +101,9 @@ class RectifyTwodSpectrum(Stage):
         self.max_extraction_half_window = nres_settings.MAX_EXTRACTION_HALF_WINDOW
 
     def do_stage(self, image):
-        logger.info('Rectifying the 2d spectrum', image=image)
+        logger.info('Rectifying the 2d spectrum', )
         if image.trace is None:
-            logger.error('Image has empty trace attribute. Aborting extraction.', image=image)
+            logger.error('Image has empty trace attribute. Aborting extraction.', )
             image.is_bad = True
             image.rectified_2d_spectrum = {}
             return image

@@ -100,7 +100,7 @@ class TestRectify:
     def test_empty_spectrum_on_missing_trace(self):
         image = FakeTraceImage()
         image.trace = None
-        image = RectifyTwodSpectrum(runtime_context=FakeContext()).do_stage(image=image)
+        image = RectifyTwodSpectrum(runtime_context=FakeContext()).do_stage(image)
         assert image.rectified_2d_spectrum == {}
 
 

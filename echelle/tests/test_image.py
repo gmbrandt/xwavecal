@@ -12,37 +12,26 @@ from echelle.utils.fits_utils import Translator
 from echelle.tests.utils import FakeContext, FakeImage
 
 
-@mock.patch('banzai.images.Image._init_instrument_info')
-def test_image_class_loads(mock_instrument):
-    mock_instrument.return_value = None, None, None
-    image = Image(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'tung&tung&none'})
+def test_image_class_loads():
+    image = Image(header={'OBJECTS': 'tung&tung&none'})
     assert image.trace is None
     assert image.rectified_2d_spectrum is None
     assert image.wavelength_solution == {}
 
 
-@mock.patch('banzai.images.Image._init_instrument_info')
-def test_get_num_lit_fibers(mock_instrument):
-    mock_instrument.return_value = None, None, None
-    image = Image(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'tung&tung&none'})
+def test_get_num_lit_fibers():
+    image = Image(header={'OBJECTS': 'tung&tung&none'})
     assert image.num_lit_fibers() == 2
-    image = Image(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'none&tung&none'})
+    image = Image(header={'OBJECTS': 'none&tung&none'})
     assert image.num_lit_fibers() == 1
 
 
-@mock.patch('banzai.images.Image._init_instrument_info')
-def test_get_num_lit_wavecal_fibers(mock_instrument):
-    mock_instrument.return_value = None, None, None
-    image = Image(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'thar&tung&none'})
+def test_get_num_lit_wavecal_fibers():
+    image = Image(header={'OBJECTS': 'thar&tung&none'})
     assert image.num_wavecal_fibers() == 1
     assert image.fiber0_wavecal == 1
     assert image.fiber1_wavecal == 0
-    image = Image(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'none&thar&thar'})
+    image = Image(header={'OBJECTS': 'none&thar&thar'})
     assert image.num_wavecal_fibers() == 2
     assert image.fiber1_wavecal == 1
     assert image.fiber2_wavecal == 1
@@ -55,12 +44,12 @@ class TestDataProduct:
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
             image.filepath = path
-            image.header = {'bla': 1}
+            image._header = {'bla': 1}
             image.write(False)
             loaded_image = DataProduct.load(path=path, extension_name=name)
             assert np.allclose(loaded_image.data['centers'][0], image.data['centers'][0])
             assert np.allclose(loaded_image.data['id'][0], image.data['id'][0])
-            assert np.isclose(loaded_image.header['bla'], 1)
+            assert np.isclose(loaded_image.get_header_val('bla'), 1)
 
     def test_write_gets_correct_filename(self):
         name = 'trace'
@@ -69,7 +58,7 @@ class TestDataProduct:
             for fpack, extension in zip([True, False], ['.fz', 'its']):
                 path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
                 image.filepath = path
-                image.header = {'bla': 1}
+                image._header = {'bla': 1}
                 image._update_filepath(fpack)
                 assert image.filepath[-3:] == extension
 

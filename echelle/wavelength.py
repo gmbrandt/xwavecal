@@ -74,7 +74,7 @@ class WavelengthSolution(object):
         if 0 in self.model:
             logger.error('Model contains parameters independent of pixel coordinate x. '
                          'Overlap fit will fail. Do not include 0: [...] terms in '
-                         'the initial wavelength model.', extra_tags={'model': self.model})
+                         'the initial wavelength model.', extra={'model': self.model})
             raise ValueError('0 in self.model.keys(). Not allowed for overlap fit.')
         coordinates = self._format_overlaps(overlaps, pixel_key='pixel', order_key='ref_id')
         matched_coordinates = self._format_overlaps(overlaps, pixel_key='matched_pixel', order_key='matched_ref_id')
@@ -162,7 +162,7 @@ class Initialize(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         logger.info('Appending blank WavelengthSolution object to image for this fiber.',
-                    extra_tags={'fiber': str(fiber)})
+                    extra={'fiber': str(fiber)})
         spectrum = image.data_tables[nres.BOX_SPECTRUM_NAME]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         image.wavelength_solution[fiber] = WavelengthSolution(model=nres.initial_wavelength_model,
@@ -195,7 +195,7 @@ class AddWavelengthColumn(WavelengthStage):
     def do_stage(self, image):
         if len(self._valid_fibers(image)) > 0:
             for name in self.spectrum_table_names:
-                logger.info('Appending a blank wavelengths column onto {0} data table'.format(name), image=image)
+                logger.info('Appending a blank wavelengths column onto {0} data table'.format(name))
                 image.data_tables[name].add_column(Column(np.zeros_like(image.data_tables[name]['flux'], dtype=np.float64),
                                                           unit='angstrom'), name='wavelength')
         return image
@@ -250,7 +250,7 @@ class FitOverlaps(WavelengthStage):
         return image
 
     def do_stage_fiber(self, image, fiber):
-        logger.info('Fitting overlaps.', extra_tags={'fiber': str(fiber)})
+        logger.info('Fitting overlaps.', extra={'fiber': str(fiber)})
         spectrum = image.data_tables[nres.BOX_SPECTRUM_NAME]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         overlaps = fit_overlaps(spec=single_fiber_spectrum,
@@ -261,17 +261,17 @@ class FitOverlaps(WavelengthStage):
                                 fiber=fiber)
         overlaps = flag_bad_overlaps(overlaps)
         logger.info('{0} overlaps verified.'.format(np.count_nonzero(overlaps['good'])),
-                    extra_tags={'fiber': str(fiber)})
+                    extra={'fiber': str(fiber)})
         overlaps = flag_outlier_overlaps(overlaps)
         logger.info('{0} overlaps will be used.'.format(np.count_nonzero(overlaps['good'])),
-                    extra_tags={'fiber': str(fiber)})
+                    extra={'fiber': str(fiber)})
 
         image.data_tables[nres.OVERLAP_TABLE_NAME] = vstack([overlaps,
                                                              image.data_tables[nres.OVERLAP_TABLE_NAME]])
         if np.count_nonzero(overlaps['good']) < nres.min_num_overlaps:
             logger.error('Less than {0} overlaps verified as good,'
                          'setting wavelength solution to None.'.format(nres.min_num_overlaps),
-                         extra_tags={'fiber': str(fiber)})
+                         extra={'fiber': str(fiber)})
             image.wavelength_solution[fiber] = None
         return image
 
@@ -285,7 +285,7 @@ class SolveFromOverlaps(WavelengthStage):
         overlaps = image.data_tables.get(nres.OVERLAP_TABLE_NAME, blank_overlap_table(1))
         overlaps = self._prune_overlaps(overlaps, fiber)
         logger.info('Initializing wavelength solution from overlaps.',
-                    extra_tags={'fiber': str(fiber)})
+                    extra={'fiber': str(fiber)})
         image.wavelength_solution[fiber].overlap_range = minmax([overlaps['ref_id'], overlaps['matched_ref_id']])
         image.wavelength_solution[fiber].solve_from_overlaps(overlaps)
         return image
@@ -322,7 +322,7 @@ class IdentifyArcEmissionLines(WavelengthStage):
         image.wavelength_solution[fiber].measured_lines = measured_lines
         logger.info('{0} emission lines identified from {1} unique '
                     'diffraction orders'.format(len(measured_lines['pixel']), len(set(measured_lines['order']))),
-                    extra_tags={'fiber': str(fiber)})
+                    extra={'fiber': str(fiber)})
         return image
     # TODO modify valid_fibers to include a check if nres.BOX_SPECTRUM_NAME is not None.
 
@@ -368,11 +368,11 @@ class FindGlobalScale(WavelengthStage):
         image.wavelength_solution[fiber].update_model(nres.intermediate_wavelength_model)
         image.wavelength_solution[fiber].apply_scale(scale)
         logger.info('The scale guess was {:.6e} and the search yielded {:.6e}'.format(scale_guess, scale),
-                     extra_tags={'fiber': str(fiber)})
+                     extra={'fiber': str(fiber)})
         if not np.isclose(scale_guess, scale, rtol=2):
             logger.error('Global scale is more than a factor of two away from initial guess, '
                          'an error in the wavelength solution for this fiber is likely.',
-                          extra_tags={'fiber': str(fiber)})
+                          extra={'fiber': str(fiber)})
         return image
 
     @staticmethod
@@ -412,7 +412,7 @@ class SolutionRefineInitial(WavelengthStage):
 
         mad, std = median_absolute_deviation(rsd), np.std(rsd)
         logger.info('median absolute deviation is {0} and the standard deviation is {1}'.format(mad, std),
-                     extra_tags={'fiber': str(fiber)})
+                     extra={'fiber': str(fiber)})
         logger.info('{0} lines within 4.5 median absolute deviations and {1} lines within 4.5 standard deviations'
                     ''.format(np.count_nonzero(np.isclose(rsd, 0, atol=4.5*mad)),
                               np.count_nonzero(np.isclose(rsd, 0, atol=4.5*std))))
@@ -497,7 +497,7 @@ class SolutionRefineFinal(WavelengthStage):
 
         mad, std = median_absolute_deviation(rsd), np.std(rsd)
         logger.info('median absolute deviation is {0} and the standard deviation is {1}'.format(mad, std),
-                     extra_tags={'fiber': str(fiber)})
+                     extra={'fiber': str(fiber)})
         logger.info('{0} lines within 4.5 median absolute deviations and {1} lines within 4.5 standard deviations'
                     ''.format(np.count_nonzero(np.isclose(rsd, 0, atol=4.5*mad)),
                               np.count_nonzero(np.isclose(rsd, 0, atol=4.5*std))))
@@ -611,7 +611,7 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         logger.info('Looking for the principle order number between {0} and {1}'.format(*nres.m0_range),
-                     extra_tags={'fiber': str(fiber)})
+                     extra={'fiber': str(fiber)})
         logger.disabled = True
         merits, m0_values = self.merit_per_m0(image, fiber, nres.m0_range)
         logger.disabled = False
@@ -619,12 +619,12 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
 
         if not merit < 1/10 * np.median(merits):
             logger.warning('A definitive principle order number was not found. Aborting wavelength solution',
-                             extra_tags={'fiber': str(fiber)})
+                             extra={'fiber': str(fiber)})
             image.wavelength_solution[fiber] = None
         else:
             image.wavelength_solution[fiber].m0 = best_m0
             logger.info('The best principle order number is {0}'.format(best_m0),
-                         extra_tags={'fiber': str(fiber)})
+                         extra={'fiber': str(fiber)})
         return image
 
     def merit_per_m0(self, image, fiber, m0_range):

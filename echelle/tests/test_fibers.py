@@ -23,11 +23,8 @@ def test_creation_from_header():
     assert (0, 1, 0) == fiber_states_from_header(header)
 
 
-@mock.patch('banzai.images.Image._init_instrument_info')
-def test_fiber_state_to_filename(mock_instrument):
-    mock_instrument.return_value = None, None, None
-    image = Image(runtime_context=FakeContext(),
-                  header={'OBJECTS': 'tung&tung&none'})
+def test_fiber_state_to_filename():
+    image = Image(header={'OBJECTS': 'tung&tung&none'})
     assert fibers_state_to_filename(image) == '110'
 
 
@@ -106,7 +103,7 @@ class TestIdentifyFibers:
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
-        image.header = {'RDNOISE': 0}
+        image.set_header_val('read_noise', 0)
         spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30))})
         mock_load.return_value = spec['flux'].data[1].reshape(-1, 1)
         image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: spec}

@@ -36,7 +36,8 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self.header = fits.Header({'rdnoise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT'})
+        self._header = fits.Header({'read_noise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT',
+                                    'rdnoise': 11, 'type': 'lampflat'})
         self.filepath = 'None'
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
@@ -50,6 +51,12 @@ class FakeImage(object):
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = 0, 1, 1
         self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = 0, 1, 1
         self.wavelength_solution = {}
+
+    def get_header_val(self, key):
+        return self._header[key]
+
+    def set_header_val(self, key, value):
+        self._header[key] = value
 
     def num_lit_fibers(self):
         return len(lit_fibers(self))
@@ -74,7 +81,7 @@ def noisify_image(image):
     :param image: Banzai_nres FakeImage object.
     This adds poisson and read noise to an image with traces already on it, in that order.
     """
-    image.data = np.random.poisson(image.data) + np.random.normal(0, image.header['RDNOISE'], image.data.shape)
+    image.data = np.random.poisson(image.data) + np.random.normal(0, image.get_header_val('RDNOISE'), image.data.shape)
 
 
 def noisify_spectrum(spectrum, rdnoise=10):

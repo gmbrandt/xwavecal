@@ -32,7 +32,7 @@ class TraceMaker(Stage):
 
     def do_stage(self, image):
         # need to set obstype to TRACE and set master filename.
-        logger.info('fitting traces order by order', image=image)
+        logger.info('fitting traces order by order', )
         bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
         fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                 min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
@@ -42,7 +42,7 @@ class TraceMaker(Stage):
         trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                   poly_fit_order=self.order_of_poly_fit,
                                   second_order_coefficient_guess=self.second_order_coefficient_guess,
-                                  image_noise_estimate=image.header['RDNOISE'])
+                                  image_noise_estimate=image.get_header_val('RDNOISE'))
         logger.info('Created master trace') # need to show information about the image.
         return trace
 
@@ -61,8 +61,8 @@ class LoadTrace(ApplyCalibration):
     def apply_master_calibration(self, image, master_calibration_path):
         image.trace = Trace.load(master_calibration_path, extension_name=nres_settings.TRACE_TABLE_NAME)
         master_trace_filename = os.path.basename(master_calibration_path)
-        image.header['L1IDTRAC'] = (master_trace_filename, 'ID of trace centers file')
-        logger.info('Loading trace centers',   extra_tags={'L1IDTRAC': image.header['L1IDTRAC']})
+        image.set_header_val('L1IDTRAC', (master_trace_filename, 'ID of trace centers file'))
+        logger.info('Loading trace centers',   extra={'L1IDTRAC': image.get_header_val('L1IDTRAC')})
         return image
 
     def do_stage(self, image):
