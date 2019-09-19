@@ -40,6 +40,7 @@ def test_organize_config():
     assert type(runtime_context.final_wavelength_model) is dict
     assert type(runtime_context.ref_id) is int
     assert type(runtime_context.m0_range) is tuple
+    assert runtime_context.time_format == '%Y-%m-%dT%H:%M:%S.%f'
 
 
 @mock.patch('echelle.main.parse_args')

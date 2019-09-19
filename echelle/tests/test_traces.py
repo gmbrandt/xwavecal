@@ -321,12 +321,11 @@ class TestTraceMaker:
         data = {'id': [1], 'centers': [np.arange(3)]}
         fit_traces.return_value = Trace(data=data)
         expected_trace = Trace(data=data)
-        fake_context = FakeContext()
-        trace_maker = TraceMaker(fake_context)
+        trace_maker = TraceMaker(FakeContext())
         trace_maker.xmin = 5
         trace_maker.xmax = 10
         trace_maker.trace_table_name = trace_table_name
-        loaded_trace = trace_maker.do_stage(image=FakeImage())
+        loaded_trace = trace_maker.do_stage(image=FakeImage())[1]
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
@@ -356,7 +355,7 @@ class TestTraceMaker:
         trace_maker.xmax = image.data.shape[1]//2 + 20
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
-        trace = trace_maker.do_stage(image)
+        trace = trace_maker.do_stage(image)[1]
         assert trace.data['centers'].shape[0] == trace_centers.shape[0]
         difference = trace.data['centers'] - trace_centers
         logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'

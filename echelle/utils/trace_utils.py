@@ -23,9 +23,9 @@ class Trace(DataProduct):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None):
+                 header=None, translator=None):
         super(Trace, self).__init__(data=data, data_name=table_name, filepath=filepath,
-                                    header=header)
+                                    header=header, translator=translator)
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:

@@ -64,3 +64,14 @@ def import_class(full_class_string):
 
     module = importlib.import_module(module_path)
     return getattr(module, class_str)
+
+
+def safe_eval(item):
+    """
+    :param item: str, int or dict
+    :return: Any strings have erroneous leading " or ' removed.
+    """
+    out = literal_eval(item)
+    if isinstance(out, str):
+        return out.replace("'", '').replace('"', '')
+    return out

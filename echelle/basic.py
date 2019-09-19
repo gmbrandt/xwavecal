@@ -7,6 +7,7 @@ import numpy as np
 
 from echelle.stages import Stage
 from echelle.utils.fits_utils import parse_region_keyword
+import logging as logger
 
 
 class OverscanSubtractor(Stage):
@@ -14,7 +15,8 @@ class OverscanSubtractor(Stage):
         super(OverscanSubtractor, self).__init__(runtime_context)
 
     def do_stage(self, image):
-        image.data = np.array(image.data.copy(order='C'), dtype=float)
+        logger.info('Subtracting by median overscan')
+        image.data = np.ascontiguousarray(image.data).astype(np.float16)
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         overscan_section = parse_region_keyword(image.get_header_val('overscan_section'))
         image.data[data_section] -= np.median(image.data[overscan_section])
@@ -26,8 +28,9 @@ class GainNormalizer(Stage):
         super(GainNormalizer, self).__init__(runtime_context)
 
     def do_stage(self, image):
+        logger.info('Multiplying by gain')
         image.data *= image.get_header_val('gain')
-        # set gain in image to 1.
+        image.set_header_val('gain', 1.0)
         return image
 
 
@@ -36,6 +39,8 @@ class Trimmer(Stage):
         super(Trimmer, self).__init__(runtime_context)
 
     def do_stage(self, image):
+        logger.info('Trimming image to {0}'.format(image.get_header_val('data_section')))
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         image.data = image.data[data_section]
+        image.data = np.ascontiguousarray(image.data).astype(np.float16)
         return image

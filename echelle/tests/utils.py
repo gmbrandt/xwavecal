@@ -1,9 +1,7 @@
 from datetime import datetime
 import numpy as np
-from astropy.io import fits
 from ast import literal_eval
 from configparser import ConfigParser
-from scipy import ndimage
 from scipy.interpolate import UnivariateSpline
 
 from echelle.utils.fiber_utils import lit_fibers, lit_wavecal_fibers
@@ -53,6 +51,7 @@ class FakeImage(object):
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = 0, 1, 1
         self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = 0, 1, 1
         self.wavelength_solution = {}
+        self.translator=None
 
     def get_header_val(self, key):
         return self.header[key]

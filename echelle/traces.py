@@ -7,6 +7,7 @@ Authors
 import sep
 import os
 import logging as logger
+from copy import deepcopy, copy
 
 from echelle.utils.trace_utils import Trace, AllTraceFitter
 from echelle.stages import Stage, ApplyCalibration
@@ -37,15 +38,17 @@ class TraceMaker(Stage):
         fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                 min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                 min_snr=self.min_snr)
-        trace = Trace(data=None, filepath=image.filepath, header=image.header,
+        trace = Trace(data=None, filepath=copy(image.filepath), header=deepcopy(image.header), translator=image.translator,
                       num_centers_per_trace=image.data.shape[1], table_name=self.trace_table_name)
         trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                   poly_fit_order=self.order_of_poly_fit,
                                   second_order_coefficient_guess=self.second_order_coefficient_guess,
                                   image_noise_estimate=image.get_header_val('read_noise'))
         trace.set_header_val('type', self.calibration_type.lower())
-        logger.info('Created master trace') # need to show information about the image.
-        return trace
+        trace.fiber0_lit, trace.fiber1_lit, trace.fiber2_lit = image.fiber0_lit, image.fiber1_lit, image.fiber2_lit
+        logger.info('Created master trace')
+        image.trace = trace
+        return [image, trace]
 
 
 class LoadTrace(ApplyCalibration):

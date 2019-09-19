@@ -11,8 +11,9 @@ import logging as logger
 from configparser import ConfigParser
 from datetime import datetime
 from ast import literal_eval
+import os
 
-from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_class
+from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_class, safe_eval
 from echelle.utils.fits_utils import Translator
 from echelle.database import format_db_info, add_data_to_db
 
@@ -43,18 +44,22 @@ def reduce_data(data_paths=None, args=None, config=None):
 
         data = DataClass.load(data_path, extension, translator)
         stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
+        auxiliary_products = []
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
-            # consider having auxilary data products which can be peeled off and written out (e.g. traces)
-            # consider feeding in the logger as do_stage(data, logger)
+            if isinstance(data, list):
+                auxiliary_products.extend(data[1:])
+                data = data[0]
 
-        # TODO choice of function for output names (e.g. make_output_path) should be set in config.py
-        data.filepath = make_output_path(data)
-        logger.info('Writing output to {path}'.format(path=data.filepath))
-        data.write(fpack=args.fpack)
-        logger.info('Adding file to processed image database at {path}'.format(path=config.get('reduction', 'database_path')))
-        db_info = format_db_info(data, config.get('reduction', 'time_format'))
-        add_data_to_db(config.get('reduction', 'database_path'), db_info)
+        to_write = [data] + auxiliary_products
+
+        for data in to_write:
+            data.filepath = make_output_path(args.output_dir, data)
+            logger.info('Writing output to {path}'.format(path=data.filepath))
+            data.write(fpack=args.fpack)
+            logger.info('Adding file to processed image database at {path}'.format(path=runtime_context.database_path))
+            db_info = format_db_info(data, runtime_context.time_format)
+            add_data_to_db(runtime_context.database_path, db_info)
 
 
 def run():
@@ -76,7 +81,7 @@ def run():
 
 def organize_config(config):
     # pull information from the configuration file.
-    runtime_context = RuntimeContext({key: literal_eval(item) for key, item in config.items('reduction')})
+    runtime_context = RuntimeContext({key: safe_eval(item) for key, item in config.items('reduction')})
     data_class = config.get('data', 'data_class', fallback='echelle.images.Image')
     extension = config.getint('data', 'primary_data_extension')
     header_keys = literal_eval(config.get('data', 'header_keys'))
@@ -91,16 +96,17 @@ def select_data(input_dir, frame_type, files_contain, data_class, extension, hea
     return data_paths
 
 
-def make_output_path(data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
+def make_output_path(output_dir, data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
     """
     :param data: Image
     :return: string
     """
     id = str(data.get_header_val('unique_id')).zfill(4)
     dayobs = datetime.strptime(data.get_header_val('observation_date'), time_fmt).strftime('%Y%m%d')
-    return '{inst}_{site}_{dayobs}_{id}_{type}_{f0}{f1}{f2}.fits'.format(inst=data.get_header_val('instrument'),
+    filename = '{site}_{inst}_{dayobs}_{id}_{type}_{f0}{f1}{f2}.fits'.format(inst=data.get_header_val('instrument'),
                                                                          site=data.get_header_val('site_name'),
                                                                          dayobs=dayobs, id=id,
                                                                          type=data.get_header_val('type'),
                                                                          f0=data.fiber0_lit, f1=data.fiber1_lit,
                                                                          f2=data.fiber2_lit)
+    return os.path.join(output_dir, filename)
