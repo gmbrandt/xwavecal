@@ -36,8 +36,10 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self._header = fits.Header({'read_noise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT',
-                                    'rdnoise': 11, 'type': 'lampflat'})
+        self._header = {'read_noise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT',
+                        'rdnoise': 11, 'type': 'lampflat',
+                        'observation_date': '2019-04-10T12:56:44.466',
+                        'instrument': 'nres03', 'site_name': 'test'}
         self.filepath = 'None'
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)

@@ -41,12 +41,12 @@ def reduce_data(data_paths=None, args=None, config=None):
 
         data = DataClass.load(data_path, extension, translator)
         stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
-
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
-                # consider feeding in the logger as do_stage(data, logger)
+            # consider having auxilary data products which can be peeled off and written out (e.g. traces)
+            # consider feeding in the logger as do_stage(data, logger)
 
-        # data.update_filepath(base_dir=args.output_dir)
+        # data.filepath = make_output_path(data.filepath, data.get_header_val('type'))
         logger.info('Writing output to {path}'.format(path=data.filepath))
         data.write(fpack=args.fpack)
 

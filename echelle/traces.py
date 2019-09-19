@@ -42,7 +42,7 @@ class TraceMaker(Stage):
         trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                   poly_fit_order=self.order_of_poly_fit,
                                   second_order_coefficient_guess=self.second_order_coefficient_guess,
-                                  image_noise_estimate=image.get_header_val('RDNOISE'))
+                                  image_noise_estimate=image.get_header_val('read_noise'))
         logger.info('Created master trace') # need to show information about the image.
         return trace
 

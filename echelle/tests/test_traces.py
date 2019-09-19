@@ -395,6 +395,5 @@ class TestLoadTrace:
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
         image = trace_loader.do_stage(image=FakeImage())
-        assert image.get_header_val('L1IDTRAC') == 'master_trace.fits'
         assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))
