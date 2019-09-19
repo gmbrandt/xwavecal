@@ -138,14 +138,3 @@ class TestBoxExtract:
         image = BoxExtract(fake_context).do_stage(image)
         for spectrum in image.data_tables[nres_settings.BOX_SPECTRUM_NAME]['flux']:
             assert np.median(spectrum) > 1E4
-
-
-@mock.patch.multiple(Extract, __abstractmethods__=set())
-class TestExtract:
-    def test_do_stage(self):
-        assert Extract(FakeContext()).do_stage(True)
-
-    def test_extract_order(self):
-        stage = Extract(FakeContext())
-        assert np.allclose(stage.extract_order(np.ones((2, 2))), [2, 2])
-        assert np.allclose(stage.extract_order(np.ones((2, 2)), 1/2), [1, 1])

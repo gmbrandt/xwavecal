@@ -12,19 +12,6 @@ class Utils:
     def fake_overlap(b_lines, r_lines, b_flux, r_flux, linearscale, *args, **kwargs):
         return {'pixel': r_lines, 'matched_pixel': b_lines, 'peaks': 1}
 
-    def uniform_sample_stretched_signal(self, signal, coords, coefficients):
-        signal_f, transformed_coords = self.stretch_signal(signal, coords, coefficients)
-        uniformly_sampled_coords = np.arange(int(np.min(transformed_coords)), int(np.max(transformed_coords)) + 1)
-        return signal_f(uniformly_sampled_coords), uniformly_sampled_coords
-
-    @staticmethod
-    def stretch_signal(signal, coords, coefficients, fill_value=0):
-        transformed_coords = overlapu.coordinate_transform(coords, coefficients=coefficients)
-        signal_f = interpolate.interp1d(x=transformed_coords,
-                                        y=signal,
-                                        bounds_error=False, kind='linear', fill_value=fill_value)
-        return signal_f, transformed_coords
-
 
 class TestOverlapFitter:
     def test_fit_overlap(self):

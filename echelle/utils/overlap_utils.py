@@ -197,5 +197,3 @@ def _is_bad(overlap):
     if overlap['peaks'] >= 6:
         is_bad = False
     return is_bad
-
-

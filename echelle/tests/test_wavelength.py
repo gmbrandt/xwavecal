@@ -546,7 +546,7 @@ class TestOnSyntheticData:
                                                               7.61239901e-01, -8.78661806e-01, -1.73232452e+00, -1.96449284e+00,
                                                               -3.57462413e+00]))
 
-        measured_lines, line_list = SpectrumUtils().generate_measured_lines(n_list=500, n_true=0,
+        measured_lines, line_list = SpectrumUtils().generate_measured_lines(n_list=1000, n_true=0,
                                                                             n_garb=0, wcs=wcs)
         # normalize line coordinates for use in refine.
         measured_lines['normed_pixel'] = wcsu.normalize_coordinates(measured_lines['pixel'], max_value=wcs.max_pixel,

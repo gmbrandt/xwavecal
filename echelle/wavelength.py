@@ -228,7 +228,7 @@ class LoadReferenceLineList(ApplyCalibration):
         return image
 
     def get_calibration_filename(self, image):
-        return '/home/gmbrandt/Documents/banzai-nres/banzai_nres/data/ThAr_atlas_ESO.txt'
+        return 'echelle/data/ThAr_atlas_ESO.txt'
 
 
 class FitOverlaps(WavelengthStage):

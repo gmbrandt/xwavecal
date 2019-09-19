@@ -63,7 +63,7 @@ class IdentifyFibers(ApplyCalibration):
         return self.apply_master_calibration(image, template_path)
 
     def get_calibration_filename(self, image):
-        template_path = '/home/gmbrandt/Documents/banzai-nres/banzai_nres/data/nres_arc_template.dat'
+        template_path = 'echelle/data/nres_arc_template.dat'
         return template_path
 
     @staticmethod
