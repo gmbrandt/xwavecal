@@ -48,12 +48,6 @@ class DataProduct(object):
         return cls(data=hdu_list[extension_name].data, header=hdu_list[extension_name].header,
                    filepath=path, translator=translator)
 
-    #def translate_header(header, header_keys=None, type_translator=None):
-    #    if header_keys is not None and type_translator is not None:
-    #        for echelle_key, data_key in header_keys.items():
-    #            header[echelle_key] = type_translator.get(header.get(data_key), header.get(data_key))
-    #    return header
-
 
 class Image(DataProduct):
     # TODO THIS IS NRES SPECIFIC because of fiber_states_from_header

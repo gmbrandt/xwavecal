@@ -17,17 +17,15 @@ from echelle.images import DataProduct
 import logging as logger
 
 
-
-
 class Trace(DataProduct):
     """
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None, image=None, obstype='TRACE'):
-        super(Trace, self).__init__(data=data, table_name=table_name, filepath=filepath,
-                                    header=header, image=image, obstype=obstype)
+                 header=None):
+        super(Trace, self).__init__(data=data, data_name=table_name, filepath=filepath,
+                                    header=header)
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:

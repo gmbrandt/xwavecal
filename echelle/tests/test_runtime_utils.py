@@ -62,7 +62,7 @@ def test_validate_good_path():
     assert raw_path == 'test/raw'
 
 
-@mock.patch('banzai_nres.utils.runtime_utils.get_raw_path', return_value='test/raw')
+@mock.patch('echelle.utils.runtime_utils.get_raw_path', return_value='test/raw')
 def test_complete_raw_path(mock_get_raw_path):
     fake_context = FakeContext()
     raw_path = runtime_utils.validate_raw_path(raw_path='test/', runtime_context=fake_context)

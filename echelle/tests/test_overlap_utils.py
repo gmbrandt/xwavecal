@@ -1,11 +1,9 @@
-import pytest
 import mock
 import numpy as np
 from scipy import interpolate
 from astropy.table import Table
 
 import echelle.utils.overlap_utils as overlapu
-from echelle.tests.utils import SpectrumUtils
 from echelle.utils.overlap_utils import OverlapFitter
 
 
@@ -39,7 +37,7 @@ class TestOverlapFitter:
         coeffs = OverlapFitter()._fit_overlap(b_lines, r_lines, b_flux, r_flux, (0.5, 2), pixel_tol=2, flux_tol=0.2, deg=2)
         assert np.allclose(coeffs, true_coeffs, rtol=0.05)
 
-    @mock.patch('banzai_nres.utils.overlap_utils.OverlapFitter._fit_overlap', return_value=[100, 1.4, 2E-5])
+    @mock.patch('echelle.utils.overlap_utils.OverlapFitter._fit_overlap', return_value=[100, 1.4, 2E-5])
     def test_peaks_save(self, mock_fit):
         r_lines = np.random.randint(0, 100, 20)
         b_lines = overlapu.coordinate_transform(r_lines, [100, 1.4, 2E-5])
@@ -48,7 +46,7 @@ class TestOverlapFitter:
         assert np.allclose(overlap['pixel'], r_lines)
         assert np.isclose(overlap['peaks'], 20)
 
-    @mock.patch('banzai_nres.utils.overlap_utils.OverlapFitter.fit', side_effect=Utils.fake_overlap)
+    @mock.patch('echelle.utils.overlap_utils.OverlapFitter.fit', side_effect=Utils.fake_overlap)
     def test_fit_overlaps(self, mock_overlap):
         spectrum = {'flux': np.zeros((3, 3)), 'pixel': np.array([np.arange(3), np.arange(1, 4), np.arange(3)]),
                     'ref_id': np.arange(1, 4)}
@@ -65,7 +63,7 @@ class TestOverlapFitter:
             assert np.isclose(overlaps['ref_id'][i], i + 1)
             assert np.isclose(overlaps['matched_ref_id'][i], i + 2)
 
-    @mock.patch('banzai_nres.utils.overlap_utils._is_bad', side_effect=min)
+    @mock.patch('echelle.utils.overlap_utils._is_bad', side_effect=min)
     def test_flag_bad_overlaps(self, fake_overlap_check):
         overlaps = Table({'pixel': np.array([0, 1, 1, 0]), 'good': np.array([True, True, True, True])})
         overlaps = overlapu.flag_bad_overlaps(overlaps)

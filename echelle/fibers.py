@@ -4,8 +4,7 @@ from echelle.utils.misc_utils import normalize_by_brightest, n_largest_elements
 from echelle.utils.correlate import correlate2d
 from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
 import echelle.settings as nres_settings
-
-from banzai.calibrations import ApplyCalibration
+from echelle.stages import ApplyCalibration
 
 import logging as logger
 
@@ -20,7 +19,7 @@ class IdentifyFibers(ApplyCalibration):
 
     def apply_master_calibration(self, image, template_path):
         """
-        :param image: NRESImage
+        :param image: DataProduct
         :param template_path: path to the arc lamp template which will be used to identify the fibers
         :return: image. The spectrum data_table has two columns appended to it: fiber and ref_id.
 

@@ -8,7 +8,7 @@ import numpy as np
 import os
 import copy
 
-from banzai.calibrations import Stage, ApplyCalibration
+from echelle.stages import Stage, ApplyCalibration
 from echelle.images import DataProduct
 from echelle.fibers import lit_wavecal_fibers, lit_fibers
 
@@ -35,13 +35,13 @@ class ApplyBlaze(ApplyCalibration):
         return 'BLAZE'
 
     def apply_master_calibration(self, image, master_calibration_path):
-        logger.info('Image fiber information', image=image,
+        logger.info('Image fiber information',
                     extra_tags={'Lit fibers': str(lit_fibers(image)),
                                 'Wavecal fibers': str(lit_wavecal_fibers(image))})
         blaze = DataProduct.load(master_calibration_path, extension_name=nres_settings.BLAZE_TABLE_NAME)
         master_filename = os.path.basename(master_calibration_path)
         image.header['L1IDBLAZ'] = (master_filename, 'ID of blaze file')
-        logger.info('Loaded blaze file', image=image,  extra_tags={'L1IDBLAZ': image.header['L1IDBLAZ']})
+        logger.info('Loaded blaze file',   extra_tags={'L1IDBLAZ': image.header['L1IDBLAZ']})
         spectrum = copy.deepcopy(image.data_tables[nres_settings.BOX_SPECTRUM_NAME])
         blaze_spectrum = blaze.data
         if len(spectrum['id']) != len(blaze_spectrum['id']) or (not np.allclose(spectrum['id'].data,

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 import mock
 from scipy import optimize
 

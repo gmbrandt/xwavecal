@@ -4,12 +4,10 @@ import mock
 
 from echelle import settings as nres_settings
 from echelle.tests.test_traces import FakeTraceImage
-from echelle.tests.utils import fill_image_with_traces
+from echelle.tests.utils import fill_image_with_traces, FakeContext
 from echelle.utils.trace_utils import Trace
 from echelle.utils import extract_utils
 from echelle.extract import BoxExtract, RectifyTwodSpectrum, Extract
-
-from banzai.tests.utils import FakeContext
 
 
 class TestRectify:

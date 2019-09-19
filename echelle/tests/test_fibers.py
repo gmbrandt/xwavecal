@@ -6,13 +6,10 @@ from astropy.table import Table
 from echelle.utils.fiber_utils import fiber_states_from_header, fibers_state_to_filename, \
                                           lit_fibers, lit_wavecal_fibers
 from echelle.fibers import IdentifyFibers
-from echelle.images import NRESImage
+from echelle.images import Image
 import echelle.settings as nres_settings
 
-from banzai.tests.utils import FakeContext
-from echelle.tests.utils import FakeImage
-
-from echelle.utils.correlate import correlate2d
+from echelle.tests.utils import FakeImage, FakeContext
 
 
 def test_creation_from_header():
@@ -29,8 +26,8 @@ def test_creation_from_header():
 @mock.patch('banzai.images.Image._init_instrument_info')
 def test_fiber_state_to_filename(mock_instrument):
     mock_instrument.return_value = None, None, None
-    image = NRESImage(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'tung&tung&none'})
+    image = Image(runtime_context=FakeContext(),
+                  header={'OBJECTS': 'tung&tung&none'})
     assert fibers_state_to_filename(image) == '110'
 
 
@@ -91,20 +88,20 @@ class TestIdentifyFibers:
     def test_calibration_type(self):
         assert IdentifyFibers(FakeContext()).calibration_type == 'TRACE'
 
-    @mock.patch('banzai_nres.fibers.IdentifyFibers.get_calibration_filename', return_value=None)
-    @mock.patch('banzai_nres.fibers.IdentifyFibers.on_missing_master_calibration')
+    @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value=None)
+    @mock.patch('echelle.fibers.IdentifyFibers.on_missing_master_calibration')
     def test_do_stage_aborts_on_missing_cal(self, mock_warn, mock_cal):
         assert 'image' == IdentifyFibers(FakeContext()).do_stage(image='image')
 
-    @mock.patch('banzai_nres.fibers.IdentifyFibers.apply_master_calibration')
-    @mock.patch('banzai_nres.fibers.IdentifyFibers.get_calibration_filename', return_value='/path/')
+    @mock.patch('echelle.fibers.IdentifyFibers.apply_master_calibration')
+    @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value='/path/')
     def test_do_stage(self, fake_cal, mock_apply_cal):
         IdentifyFibers(FakeContext()).do_stage(image='image')
         mock_apply_cal.assert_called_with('image', '/path/')
 
     @pytest.mark.integration
-    @mock.patch('banzai_nres.settings.ref_id', new=1)
-    @mock.patch('banzai_nres.fibers.np.genfromtxt')
+    @mock.patch('echelle.settings.ref_id', new=1)
+    @mock.patch('echelle.fibers.np.genfromtxt')
     def test_apply_master_calibration(self, mock_load):
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
@@ -125,7 +122,7 @@ def test_construct_single_fiber_template(mock_template):
     assert np.allclose(template, np.array([np.ones(5), np.zeros(5), np.ones(5)]))
 
 
-@mock.patch('banzai_nres.fibers.correlate2d')
+@mock.patch('echelle.fibers.correlate2d')
 def test_identify_matching_orders(fake_correlate):
     fake_correlate.return_value = np.array([[0, 1, 0],
                                             [0, 1, 2],

@@ -6,11 +6,10 @@ from astropy.table import Table
 from echelle.blaze import ApplyBlaze, BackgroundSubtractSpectrum
 import echelle.settings as settings
 from echelle.images import DataProduct
+from echelle.tests.utils import FakeContext, FakeImage
 
-from banzai.tests.utils import FakeContext, FakeImage
 
-
-@mock.patch('banzai_nres.blaze.ImageBase.load')
+@mock.patch('echelle.blaze.ImageBase.load')
 class TestApplyBlaze:
     def test_apply_calibration(self, fake_load):
         stage = ApplyBlaze(FakeContext())

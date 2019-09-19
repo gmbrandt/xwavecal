@@ -12,11 +12,7 @@ from echelle.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefi
 from echelle.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
 from echelle.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines
 from echelle import settings as nres_settings
-from echelle.tests.utils import SpectrumUtils, FakeImage
-from echelle.utils.misc_utils import find_nearest
-
-from banzai.tests.utils import FakeContext
-from banzai.images import DataTable
+from echelle.tests.utils import SpectrumUtils, FakeImage, FakeContext
 
 
 class TestWavelengthSolution:
@@ -37,7 +33,7 @@ class TestWavelengthSolution:
         assert np.allclose(coordinates['order'], [1, 1, 2, 2])
 
     @pytest.mark.integration
-    @mock.patch('banzai_nres.wavelength.WavelengthSolution._format_overlaps')
+    @mock.patch('echelle.wavelength.WavelengthSolution._format_overlaps')
     def test_solve_from_overlaps(self, mock_format):
         m0 = 52
         m_coordinates = {'normed_pixel': np.array([1]), 'normed_order': np.array([1]), 'order': np.array([21])}
@@ -138,7 +134,7 @@ class TestModel:
 
 
 class TestStatistics:
-    @mock.patch('banzai_nres.utils.wavelength_utils.find_nearest', return_value=np.array([1, 2.]))
+    @mock.patch('echelle.utils.wavelength_utils.find_nearest', return_value=np.array([1, 2.]))
     def test_calc_residuals(self, fake_match):
         assert np.allclose(wcsu.calc_residuals(np.array([1., 3]), None), [0, 1.0])
         assert np.allclose(wcsu.calc_residuals(np.array([1., 2]), None), [0, 0])
@@ -152,7 +148,7 @@ class TestWavelengthStage:
         image = WavelengthStage(FakeContext()).do_stage(image)
         assert image.wavelength_solution[1] == 'placeholder'
 
-    @mock.patch('banzai_nres.wavelength.WavelengthStage.do_stage_fiber', return_value=None)
+    @mock.patch('echelle.wavelength.WavelengthStage.do_stage_fiber', return_value=None)
     def test_do_stage_skips_if_no_valid_fibers(self, fake_fiber_stage):
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 0, 1
@@ -170,7 +166,7 @@ class TestWavelengthStage:
 
 
 class TestFitOverlaps:
-    @mock.patch('banzai_nres.wavelength.fit_overlaps')
+    @mock.patch('echelle.wavelength.fit_overlaps')
     def test_do_stage(self, mock_overlaps):
         num = 2
         image = FakeImage()
@@ -186,9 +182,9 @@ class TestFitOverlaps:
         image.wavelength_solution = {0: wcs, 1: wcs}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
         image = FitOverlaps(FakeContext()).do_stage(image)
-        assert isinstance(image.data_tables[nres_settings.OVERLAP_TABLE_NAME], DataTable)
+        assert isinstance(image.data_tables[nres_settings.OVERLAP_TABLE_NAME], Table)
 
-    @mock.patch('banzai_nres.wavelength.fit_overlaps')
+    @mock.patch('echelle.wavelength.fit_overlaps')
     def test_do_stage_single_fiber_stacks_overlap_tables(self, fake_fit):
         image = FakeImage()
         image.data_tables = {nres_settings.OVERLAP_TABLE_NAME: Table({'ref_id': [0], 'fiber': [0], 'matched_ref_id': [1],
@@ -201,7 +197,7 @@ class TestFitOverlaps:
         image = FitOverlaps(FakeContext()).do_stage_fiber(image, fiber=1)
         assert len(image.data_tables[nres_settings.OVERLAP_TABLE_NAME]['fiber']) == 2
 
-    @mock.patch('banzai_nres.wavelength.fit_overlaps', return_value=blank_overlap_table(3))
+    @mock.patch('echelle.wavelength.fit_overlaps', return_value=blank_overlap_table(3))
     def test_do_stage_sets_wcs_to_none(self, fake_overlaps):
         image = FakeImage()
         image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: Table({'ref_id': [0, 1],
@@ -215,8 +211,8 @@ class TestFitOverlaps:
 
 
 class TestSolveFromOverlaps:
-    @mock.patch('banzai_nres.settings.min_num_overlaps', new=0)
-    @mock.patch('banzai_nres.wavelength.WavelengthSolution.solve_from_overlaps')
+    @mock.patch('echelle.settings.min_num_overlaps', new=0)
+    @mock.patch('echelle.wavelength.WavelengthSolution.solve_from_overlaps')
     def test_do_stage_does_not_crash(self, fake_solve):
         image = FakeImage()
         image.data_tables = {nres_settings.OVERLAP_TABLE_NAME: Table({'ref_id': [0, 1],
@@ -227,8 +223,8 @@ class TestSolveFromOverlaps:
         image = SolveFromOverlaps(FakeContext()).do_stage_fiber(image, fiber=0)
         assert np.allclose(image.wavelength_solution[0].overlap_range, (0, 2))
 
-    @mock.patch('banzai_nres.settings.min_num_overlaps', new=0)
-    @mock.patch('banzai_nres.wavelength.WavelengthSolution.solve_from_overlaps')
+    @mock.patch('echelle.settings.min_num_overlaps', new=0)
+    @mock.patch('echelle.wavelength.WavelengthSolution.solve_from_overlaps')
     def test_do_stage_does_not_overwrite_overlaps(self, fake_solve):
         image = FakeImage()
         image.data_tables = {nres_settings.OVERLAP_TABLE_NAME: Table({'fiber': [1, 0],
@@ -243,7 +239,7 @@ class TestSolveFromOverlaps:
 
 class TestIdentifyArcEmissionLines:
     @pytest.mark.integration
-    @mock.patch('banzai_nres.wavelength.identify_lines')
+    @mock.patch('echelle.wavelength.identify_lines')
     def test_do_stage_fiber(self, fake_measured_lines):
         fake_measured_lines.return_value = {'pixel': np.array([0, 20]), 'order': np.array([0, 5])}
         image = FakeImage()
@@ -259,9 +255,9 @@ class TestIdentifyArcEmissionLines:
 
 
 class TestFindGlobalScale:
-    @mock.patch('banzai_nres.wavelength.WavelengthSolution.update_model')
-    @mock.patch('banzai_nres.wavelength.FindGlobalScale._find_scale', return_value=3)
-    @mock.patch('banzai_nres.wavelength.estimate_global_scale', return_value=1)
+    @mock.patch('echelle.wavelength.WavelengthSolution.update_model')
+    @mock.patch('echelle.wavelength.FindGlobalScale._find_scale', return_value=3)
+    @mock.patch('echelle.wavelength.estimate_global_scale', return_value=1)
     def test_do_stage_fiber(self, fake_guess, fake_result, fake_change):
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(model_coefficients=1)}
@@ -272,7 +268,7 @@ class TestFindGlobalScale:
         assert np.isclose(wcsu.estimate_global_scale(5000, n=67, m0=52), 461791, atol=2)
         assert np.isclose(wcsu.estimate_global_scale(6000, n=67, m0=50), 523880, atol=2)
 
-    @mock.patch('banzai_nres.wavelength.calc_residuals', return_value=np.arange(10))
+    @mock.patch('echelle.wavelength.calc_residuals', return_value=np.arange(10))
     def test_chi_squared_many_scales(self, fake_chi_squared):
         chi_squared = FindGlobalScale._chi_squared(scales=np.array([1, 2]), unscaled_wavelengths=np.ones(5),
                                                    reference_wavelengths=None)
@@ -288,16 +284,16 @@ class TestFindGlobalScale:
                                                    reference_wavelengths=ref)
         assert np.allclose(chi_squared, chi_squared_s)
 
-    @mock.patch('banzai_nres.wavelength.calc_residuals', return_value=np.arange(5))
+    @mock.patch('echelle.wavelength.calc_residuals', return_value=np.arange(5))
     def test_chi_squared_single_scale(self, fake_chi_squared):
         chi_squared = FindGlobalScale._chi_squared(scales=1, unscaled_wavelengths=np.ones(5),
                                                    reference_wavelengths=None)
         assert chi_squared.shape == (1,)
         assert np.allclose(chi_squared[0], np.sum(np.arange(5) ** 2))
 
-    @mock.patch('banzai_nres.wavelength.WavelengthSolution.wavelength_normed_input', return_value=1)
-    @mock.patch('banzai_nres.wavelength.restrict')
-    @mock.patch('banzai_nres.wavelength.optimize.minimize')
+    @mock.patch('echelle.wavelength.WavelengthSolution.wavelength_normed_input', return_value=1)
+    @mock.patch('echelle.wavelength.restrict')
+    @mock.patch('echelle.wavelength.optimize.minimize')
     def test_find_scale(self, fake_minimize, fake_restrict, fake_wavelength):
         wcs = WavelengthSolution(reference_lines=np.arange(10)[::-1])
 
@@ -347,8 +343,8 @@ class TestFindGlobalScale:
 
 
 class TestSolutionRefineInitial:
-    @mock.patch('banzai_nres.settings.intermediate_wavelength_model', new={1: [0], 2: [0, 1]})
-    @mock.patch('banzai_nres.wavelength.SolutionRefineInitial.constrain_solution_over_detector')
+    @mock.patch('echelle.settings.intermediate_wavelength_model', new={1: [0], 2: [0, 1]})
+    @mock.patch('echelle.wavelength.SolutionRefineInitial.constrain_solution_over_detector')
     def test_do_stage_fiber(self, fake_constrain):
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(model_coefficients=np.arange(2), model={1: [0], 2: [0]},
@@ -378,8 +374,8 @@ class TestSolutionRefineInitial:
 
 
 class TestSolutionRefineFinal:
-    @mock.patch('banzai_nres.settings.final_wavelength_model', new={1: [0], 2: [0, 1]})
-    @mock.patch('banzai_nres.wavelength.SolutionRefineFinal._refine')
+    @mock.patch('echelle.settings.final_wavelength_model', new={1: [0], 2: [0, 1]})
+    @mock.patch('echelle.wavelength.SolutionRefineFinal._refine')
     def test_do_stage_fiber(self, fake_refine):
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(model={1: [0], 2: [0]})}
@@ -391,7 +387,7 @@ class TestSolutionRefineFinal:
         image = SolutionRefineFinal(FakeContext).do_stage_fiber(image, fiber=1)
         assert image.wavelength_solution[1].model == {1: [0], 2: [0, 1]}
 
-    @mock.patch('banzai_nres.wavelength.refine_wcs')
+    @mock.patch('echelle.wavelength.refine_wcs')
     def test_refine(self, fake_refine):
         def refine(wcs, *args, **kwargs):
             wcs.models_tried.append(wcs.model)
@@ -485,7 +481,7 @@ def test_normalize_coordinates_raises_error():
 
 
 class TestLineIdentification:
-    @mock.patch('banzai_nres.utils.wavelength_utils.find_peaks', return_value=(np.array([0.1, 1.1]), np.array([0, 1])))
+    @mock.patch('echelle.utils.wavelength_utils.find_peaks', return_value=(np.array([0.1, 1.1]), np.array([0, 1])))
     def test_identify_lines(self, fake_peaks):
         spectrum = Table({'flux': [[10, 20]], 'pixel': [[1, 2]], 'id': [32]})
         lines = wcsu.identify_lines(spectrum, stderr=10, order_key='id')
@@ -524,7 +520,7 @@ class TestRefineUtils:
     def test_clip_returns_lines_without_residuals(self):
         assert np.allclose([1, 2, 3], wcsu._sigma_clip([], [1, 2, 3]))
 
-    @mock.patch('banzai_nres.utils.wavelength_utils.sigma_clip', return_value=np.ma.masked_array([1, 1, 1], mask=[1, 0, 0]))
+    @mock.patch('echelle.utils.wavelength_utils.sigma_clip', return_value=np.ma.masked_array([1, 1, 1], mask=[1, 0, 0]))
     def test_clip(self, fake_sigma_clip):
         clipped_lines = wcsu._sigma_clip([1, 1, 1], {'a': np.array([1, 2, 3])})
         assert np.allclose(clipped_lines['a'], [2, 3])

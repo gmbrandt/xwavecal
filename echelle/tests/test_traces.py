@@ -11,7 +11,7 @@ from echelle.tests.utils import array_with_peaks, FakeImage, noisify_image, Fake
 from echelle.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from echelle.tests.utils import fill_image_with_traces
 
-import logging
+import logging as logger
 
 
 class FakeTraceImage(FakeImage):
@@ -37,7 +37,6 @@ class TestTrace:
     """
     def test_trace_instantiates_from_num_centers(self):
         trace = Trace(num_centers_per_trace=5)
-        assert trace.table_name is None
         assert trace.data.colnames == ['id', 'centers']
         assert len(trace.data['id']) == 0
         assert trace.data['centers'].shape == (0, 5)
@@ -49,15 +48,7 @@ class TestTrace:
         data['id'].description = 'test'
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
-        assert trace.table_name is None
         assert trace.filepath is None
-        assert trace.header == {}
-        assert trace.obstype is 'TRACE'
-        assert trace.dateobs is None
-        assert trace.datecreated is None
-        assert trace.instrument is None
-        assert trace.is_master is False
-        assert trace.is_bad is False
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
@@ -124,9 +115,9 @@ class TestTrace:
 
 
 class TestAllTraceFitter:
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.update_initial_guess_to_run_through_pt')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.fit_trace')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.use_fit_as_initial_guess')
+    @mock.patch('echelle.utils.trace_utils.SingleTraceFitter.update_initial_guess_to_run_through_pt')
+    @mock.patch('echelle.utils.trace_utils.SingleTraceFitter.fit_trace')
+    @mock.patch('echelle.utils.trace_utils.SingleTraceFitter.use_fit_as_initial_guess')
     def test_step_through_detector(self, use_last, fit, update):
         fit.return_value = np.arange(10)
         num_traces = 3
@@ -137,9 +128,9 @@ class TestAllTraceFitter:
         for i in range(num_traces):
             assert np.allclose(trace.get_centers(i), np.arange(10))
 
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._step_through_detector')
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._identify_traces')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.__init__', return_value=None)
+    @mock.patch('echelle.utils.trace_utils.AllTraceFitter._step_through_detector')
+    @mock.patch('echelle.utils.trace_utils.AllTraceFitter._identify_traces')
+    @mock.patch('echelle.utils.trace_utils.SingleTraceFitter.__init__', return_value=None)
     def test_fit_traces(self, fitter, identify, step):
         step.return_value = Trace(data={'id': [0, 2, 1], 'centers': np.array([np.arange(3),
                                                                             np.arange(2,5),
@@ -159,7 +150,7 @@ class TestAllTraceFitter:
         expected_slice = np.array([1, 10, 1, 10, 1])/np.sqrt(image_noise_estimate**2 + np.array([1, 10, 1, 10, 1]))
         assert np.allclose(flux_signal, expected_slice)
 
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._filtered_flux_down_detector')
+    @mock.patch('echelle.utils.trace_utils.AllTraceFitter._filtered_flux_down_detector')
     def test_identify_traces(self, flux):
         min_snr = 2
         peak_centers = np.array([15, 40, 60, 80])
@@ -294,8 +285,8 @@ class TestSingleTraceFitter:
         assert np.allclose(design_matrix,
                            SingleTraceFitter._generate_design_matrix(xnorm, poly_fit_order=1))
 
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_from_coefficients')
-    @mock.patch('banzai_nres.utils.trace_utils.optimize.minimize')
+    @mock.patch('echelle.utils.trace_utils.SingleTraceFitter._centers_from_coefficients')
+    @mock.patch('echelle.utils.trace_utils.optimize.minimize')
     def test_fit_trace(self, minimize, centers):
         coefficients = np.arange(4)
         centers.return_value = None
@@ -317,7 +308,7 @@ class TestTraceMaker:
         assert TraceMaker._get_filepath(None, None, master_filename='test.tst') == '/tmp/test.tst'
 
     @pytest.mark.integration
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
+    @mock.patch('echelle.traces.TraceMaker._get_filepath', return_value=None)
     def test_trace_fit_does_not_crash_on_blank_frame(self, mock_get_path):
         order_of_poly_fit = 4
         image = FakeTraceImage(nx=100, ny=100)
@@ -331,8 +322,8 @@ class TestTraceMaker:
         trace_fitter.do_stage([image])
         assert True
 
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter.fit_traces')
+    @mock.patch('echelle.traces.TraceMaker._get_filepath', return_value=None)
+    @mock.patch('echelle.utils.trace_utils.AllTraceFitter.fit_traces')
     def test_trace_maker(self, fit_traces, mock_get_path):
         trace_table_name = 'test'
         data = {'id': [1], 'centers': [np.arange(3)]}
@@ -348,7 +339,7 @@ class TestTraceMaker:
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
     @pytest.mark.integration
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
+    @mock.patch('echelle.traces.TraceMaker._get_filepath', return_value=None)
     def test_accuracy_of_trace_fitting(self, mock_get_path):
         """
         test type: Mock Integration Test with metrics for how well trace fitting is doing.
@@ -395,7 +386,7 @@ class TestLoadTrace:
     def test_properties(self):
         assert LoadTrace(FakeContext()).calibration_type is 'TRACE'
 
-    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value=None)
+    @mock.patch('echelle.traces.LoadTrace.get_calibration_filename', return_value=None)
     def test_load_trace_flags_images_without_calibration(self, mock_get_cal):
         fake_context = FakeContext()
         setattr(fake_context, 'db_address', None)
@@ -403,10 +394,10 @@ class TestLoadTrace:
         image = trace_loader.do_stage(image=FakeImage())
         assert getattr(image, 'trace') is None
 
-    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value='/path/to/master_trace.fits')
+    @mock.patch('echelle.traces.LoadTrace.get_calibration_filename', return_value='/path/to/master_trace.fits')
     @mock.patch('os.path.exists', return_value=True)
     @mock.patch('astropy.io.fits.open', return_value=None)
-    @mock.patch('banzai_nres.utils.trace_utils.Trace.load')
+    @mock.patch('echelle.utils.trace_utils.Trace.load')
     def test_load_trace(self, mock_load, mock_open, mock_os, mock_get_cal):
         data = {'id': [1], 'centers': [np.arange(3)]}
         expected_trace = Trace(data=data)

@@ -40,8 +40,6 @@ def reduce_data(data_paths=None, args=None, config=None):
                     ''.format(path=data_path, data_class=data_class, extension=extension))
 
         data = DataClass.load(data_path, extension, translator)
-        import pdb
-        pdb.set_trace()
         stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
 
         for stage in stages_todo:
