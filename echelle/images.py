@@ -14,7 +14,7 @@ class DataProduct(object):
                  translator=None):
         if header is None:
             header = {}
-        self._header = header
+        self.header = header
         self.filepath = filepath
         self.data = Table(data)
         self.data_name = data_name
@@ -23,16 +23,16 @@ class DataProduct(object):
     def get_header_val(self, key):
         if self.translator is not None:
             key = self.translator[key]
-            return self.translator.type_keys.get(self._header[key], self._header[key])
-        return self._header[key]
+            return self.translator.type_keys.get(self.header[key], self.header[key])
+        return self.header[key]
 
     def set_header_val(self, key, value):
         if self.translator is not None:
             key = self.translator[key]
-        self._header[key] = value
+        self.header[key] = value
 
     def write(self, fpack=False):
-        hdu = fits.BinTableHDU(self.data, name=self.data_name, header=fits.Header(self._header))
+        hdu = fits.BinTableHDU(self.data, name=self.data_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
         self._update_filepath(fpack)
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath, fpack=fpack,
@@ -61,14 +61,14 @@ class Image(DataProduct):
         self.filepath = filepath
         self.trace = None
         self.rectified_2d_spectrum = None
-        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self._header)
-        self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self._header)
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
+        self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self.header)
 
         self.wavelength_solution = {}
 
     def write(self, fpack=False):
         table_hdus = [fits.BinTableHDU(table, name=name) for name, table in self.data_tables.items()]
-        hdu_list = fits.HDUList([fits.PrimaryHDU(data=self.data, header=fits.Header(self._header)), *table_hdus])
+        hdu_list = fits.HDUList([fits.PrimaryHDU(data=self.data, header=fits.Header(self.header)), *table_hdus])
         self._update_filepath(fpack)
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath, fpack=fpack,
                            overwrite=True, output_verify='fix+warn')

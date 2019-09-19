@@ -3,6 +3,7 @@ import glob
 import os
 import numpy as np
 import importlib
+from ast import literal_eval
 
 from echelle.utils.fits_utils import Translator
 

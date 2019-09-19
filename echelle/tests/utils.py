@@ -36,10 +36,10 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self._header = {'read_noise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT',
-                        'rdnoise': 11, 'type': 'lampflat',
-                        'observation_date': '2019-04-10T12:56:44.466',
-                        'instrument': 'nres03', 'site_name': 'test'}
+        self.header = {'read_noise': 11, 'gain': 1.0, 'OBSTYPE': 'LAMPFLAT',
+                       'rdnoise': 11, 'type': 'lampflat',
+                       'observation_date': '2019-04-10T12:56:44.466',
+                       'instrument': 'nres03', 'site_name': 'test', 'unique_id': 77}
         self.filepath = 'None'
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
@@ -55,10 +55,10 @@ class FakeImage(object):
         self.wavelength_solution = {}
 
     def get_header_val(self, key):
-        return self._header[key]
+        return self.header[key]
 
     def set_header_val(self, key, value):
-        self._header[key] = value
+        self.header[key] = value
 
     def num_lit_fibers(self):
         return len(lit_fibers(self))

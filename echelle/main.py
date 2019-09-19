@@ -8,11 +8,13 @@ Las Cumbres Observatory.
 
 """
 import logging as logger
-from ast import literal_eval
 from configparser import ConfigParser
+from datetime import datetime
+from ast import literal_eval
 
 from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_class
 from echelle.utils.fits_utils import Translator
+from echelle.database import format_db_info, add_data_to_db
 
 
 class RuntimeContext(object):
@@ -46,9 +48,13 @@ def reduce_data(data_paths=None, args=None, config=None):
             # consider having auxilary data products which can be peeled off and written out (e.g. traces)
             # consider feeding in the logger as do_stage(data, logger)
 
-        # data.filepath = make_output_path(data.filepath, data.get_header_val('type'))
+        # TODO choice of function for output names (e.g. make_output_path) should be set in config.py
+        data.filepath = make_output_path(data)
         logger.info('Writing output to {path}'.format(path=data.filepath))
         data.write(fpack=args.fpack)
+        logger.info('Adding file to processed image database at {path}'.format(path=config.get('reduction', 'database_path')))
+        db_info = format_db_info(data, config.get('reduction', 'time_format'))
+        add_data_to_db(config.get('reduction', 'database_path'), db_info)
 
 
 def run():
@@ -84,3 +90,17 @@ def select_data(input_dir, frame_type, files_contain, data_class, extension, hea
     data_paths = select_data_of_type(data_paths, data_class, extension, header_keys, type_keys, frame_type)
     return data_paths
 
+
+def make_output_path(data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
+    """
+    :param data: Image
+    :return: string
+    """
+    id = str(data.get_header_val('unique_id')).zfill(4)
+    dayobs = datetime.strptime(data.get_header_val('observation_date'), time_fmt).strftime('%Y%m%d')
+    return '{inst}_{site}_{dayobs}_{id}_{type}_{f0}{f1}{f2}.fits'.format(inst=data.get_header_val('instrument'),
+                                                                         site=data.get_header_val('site_name'),
+                                                                         dayobs=dayobs, id=id,
+                                                                         type=data.get_header_val('type'),
+                                                                         f0=data.fiber0_lit, f1=data.fiber1_lit,
+                                                                         f2=data.fiber2_lit)

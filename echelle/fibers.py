@@ -55,13 +55,6 @@ class IdentifyFibers(ApplyCalibration):
             logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image
 
-    def do_stage(self, image):
-        template_path = self.get_calibration_filename(image)
-        if template_path is None:
-            self.on_missing_master_calibration(image)
-            return image
-        return self.apply_master_calibration(image, template_path)
-
     def get_calibration_filename(self, image):
         template_path = 'echelle/data/nres_arc_template.dat'
         return template_path

@@ -54,13 +54,6 @@ class ApplyBlaze(ApplyCalibration):
             image.data_tables[nres_settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME] = spectrum
         return image
 
-    def do_stage(self, image):
-        master_calibration_path = self.get_calibration_filename(image)
-        if master_calibration_path is None:
-            self.on_missing_master_calibration(image)
-            return image
-        return self.apply_master_calibration(image, master_calibration_path)
-
 
 class BackgroundSubtractSpectrum(Stage):
     def __init__(self, runtime_context=None):

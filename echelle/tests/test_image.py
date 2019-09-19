@@ -44,7 +44,7 @@ class TestDataProduct:
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
             image.filepath = path
-            image._header = {'bla': 1}
+            image.header = {'bla': 1}
             image.write(False)
             loaded_image = DataProduct.load(path=path, extension_name=name)
             assert np.allclose(loaded_image.data['centers'][0], image.data['centers'][0])
@@ -58,7 +58,7 @@ class TestDataProduct:
             for fpack, extension in zip([True, False], ['.fz', 'its']):
                 path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
                 image.filepath = path
-                image._header = {'bla': 1}
+                image.header = {'bla': 1}
                 image._update_filepath(fpack)
                 assert image.filepath[-3:] == extension
 

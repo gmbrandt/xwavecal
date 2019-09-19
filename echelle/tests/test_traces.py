@@ -21,7 +21,7 @@ class FakeTraceImage(FakeImage):
     def __init__(self, nx=500, ny=502, *args, **kwargs):
         super(FakeTraceImage, self).__init__(*args, **kwargs)
         self.caltype = 'TRACE'
-        self._header['OBJECTS'] = 'tung&tung&none'
+        self.header['OBJECTS'] = 'tung&tung&none'
         self.nx = nx
         self.ny = ny
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)

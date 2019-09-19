@@ -208,23 +208,15 @@ class LoadReferenceLineList(ApplyCalibration):
     def __init__(self, runtime_context=None):
         super(LoadReferenceLineList, self).__init__(runtime_context=runtime_context)
 
-    def do_stage(self, image):
-        line_list_path = self.get_calibration_filename(image)
-        if line_list_path is None:
-            self.on_missing_master_calibration(image)
-            return image
-
-        line_list = np.sort(np.genfromtxt(line_list_path, usecols=[1]).flatten())
-        return self.apply_master_calibration(image, line_list)
-
     @property
     def calibration_type(self):
         return 'WAVELENGTH'
 
-    def apply_master_calibration(self, image, reference_line_list):
+    def apply_master_calibration(self, image, reference_list_path):
+        line_list = np.sort(np.genfromtxt(reference_list_path, usecols=[1]).flatten())
         for fiber in [fiber for fiber in lit_wavecal_fibers(image) if
                       image.wavelength_solution[fiber] is not None]:
-            image.wavelength_solution[fiber].reference_lines = reference_line_list
+            image.wavelength_solution[fiber].reference_lines = line_list
         return image
 
     def get_calibration_filename(self, image):
@@ -398,6 +390,7 @@ class FindGlobalScale(WavelengthStage):
         residuals = calc_residuals(wavelengths.flatten(), reference_wavelengths).reshape(wavelengths.shape)
         return np.sum(residuals ** 2, axis=1).flatten()
         #return np.sum(np.sort(residuals**2, axis=1)[:, :nmax], axis=1).flatten()
+
 
 class SolutionRefineInitial(WavelengthStage):
     """

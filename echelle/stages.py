@@ -1,6 +1,8 @@
 import abc
 import logging as logger
 
+from echelle.database import query_db_for_nearest
+
 
 class Stage(object):
     def __init__(self, runtime_context):
@@ -15,6 +17,10 @@ class ApplyCalibration(Stage):
     def __init__(self, runtime_context):
         super(ApplyCalibration, self).__init__(runtime_context)
 
+    @property
+    def calibration_type(self):
+        return 'None'
+
     def do_stage(self, image):
         master_calibration_path = self.get_calibration_filename(image)
         if master_calibration_path is None:
@@ -26,7 +32,9 @@ class ApplyCalibration(Stage):
         logger.error('Master calibration file not found.')
 
     def get_calibration_filename(self, image):
-        return ''
+        return query_db_for_nearest(self.runtime_context.database_path,
+                                    image, self.calibration_type.lower(),
+                                    time_format=self.runtime_context.time_format)
 
     @abc.abstractmethod
     def apply_master_calibration(self, image, path):
