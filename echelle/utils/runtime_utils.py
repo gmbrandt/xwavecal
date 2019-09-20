@@ -40,7 +40,8 @@ def get_data_paths(dir_path, files_contain=None):
 def order_data(data_paths, data_class, primary_ext, header_keys, type_keys):
     translator = Translator(header_keys, type_keys)
     is_not_lampflat = lambda path: 0 if data_class.load(path, primary_ext, translator).get_header_val('type') == 'lampflat' else 1
-    data_paths.sort(key=is_not_lampflat)
+    if len(data_paths) > 0:
+        data_paths.sort(key=is_not_lampflat)
     return data_paths
 
 

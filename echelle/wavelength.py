@@ -178,8 +178,8 @@ class Initialize(WavelengthStage):
             image.wavelength_solution[fiber] = None
         logger.error('Image has a length 0 spectrum. Aborting wavelength calibration')
 
-    @staticmethod
-    def _valid_fibers(image):
+    def _valid_fibers(self, image):
+        #TODO check for blaze corrected box spectrum, or rather have it use it only if it exists.
         return lit_wavecal_fibers(image) if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) > 0 else []
 
 
@@ -315,7 +315,6 @@ class IdentifyArcEmissionLines(WavelengthStage):
                     'diffraction orders'.format(len(measured_lines['pixel']), len(set(measured_lines['order']))),
                     extra={'fiber': str(fiber)})
         return image
-    # TODO modify valid_fibers to include a check if self.runtime_context.BOX_SPECTRUM_NAME is not None.
 
 
 class BlazeCorrectArcEmissionLines(WavelengthStage):

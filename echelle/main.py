@@ -35,9 +35,9 @@ def reduce_data(data_paths=None, args=None, config=None):
         data_paths = args.data_paths
 
     runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
-    data_paths = order_data(data_paths, data_class, extension, header_keys, type_keys)
     translator = Translator(header_keys, type_keys)
     DataClass = import_class(data_class)
+    data_paths = order_data(data_paths, DataClass, extension, header_keys, type_keys)
 
     for data_path in data_paths:
         logger.info('Reducing {path} assuming a data class of {data_class} and raw data in extension {extension}'
