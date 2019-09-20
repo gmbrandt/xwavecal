@@ -1,8 +1,6 @@
 import numpy as np
 import pytest
-import mock
 
-from echelle import settings as nres_settings
 from echelle.tests.test_traces import FakeTraceImage
 from echelle.tests.utils import fill_image_with_traces, FakeContext
 from echelle.utils.trace_utils import Trace
@@ -92,8 +90,8 @@ class TestRectify:
         rectified_order, image_data = extract_utils.rectify_order(image.data, image_coordinates,
                                                                   single_order_centers, half_window=10,
                                                                   nullify_mapped_values=False)
-        rectified_spectrum = BoxExtract().extract_order(rectified_order['flux'])
-        spectrum = BoxExtract().extract_order(image_data)
+        rectified_spectrum = BoxExtract(FakeContext()).extract_order(rectified_order['flux'])
+        spectrum = BoxExtract(FakeContext()).extract_order(image_data)
         assert np.allclose(spectrum / np.median(spectrum), 1)
         assert np.allclose(rectified_spectrum, spectrum)
 
@@ -109,7 +107,7 @@ class TestBoxExtract:
         image = FakeTraceImage()
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image, poly_order_of_traces=4,
                                                                                       max_num_traces=1)
-        spectrum = BoxExtract().extract_order(image.data)
+        spectrum = BoxExtract(FakeContext()).extract_order(image.data)
         assert np.allclose(spectrum / np.median(spectrum), 1)
 
     def test_box_extract_trims_rectified_2d_spectrum(self):
@@ -136,5 +134,5 @@ class TestBoxExtract:
         image.trace = Trace(data={'id': np.arange(trace_centers.shape[0]), 'centers': trace_centers})
         image = RectifyTwodSpectrum(fake_context).do_stage(image)
         image = BoxExtract(fake_context).do_stage(image)
-        for spectrum in image.data_tables[nres_settings.BOX_SPECTRUM_NAME]['flux']:
+        for spectrum in image.data_tables[fake_context.box_spectrum_name]['flux']:
             assert np.median(spectrum) > 1E4

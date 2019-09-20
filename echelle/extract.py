@@ -5,12 +5,11 @@ import copy
 from astropy.table import Table
 
 from echelle.utils import extract_utils
-import echelle.settings as nres_settings
 from echelle.stages import Stage
 
 
 class Extract(Stage):
-    def __init__(self, runtime_context=None):
+    def __init__(self, runtime_context):
         super(Extract, self).__init__(runtime_context=runtime_context)
 
     @abc.abstractmethod
@@ -46,10 +45,10 @@ class Extract(Stage):
 
 
 class BoxExtract(Extract):
-    def __init__(self, runtime_context=None):
+    def __init__(self, runtime_context):
         super(Extract, self).__init__(runtime_context=runtime_context)
-        self.extraction_half_window = nres_settings.BOX_EXTRACTION_HALF_WINDOW
-        self.max_extraction_half_window = nres_settings.MAX_EXTRACTION_HALF_WINDOW
+        self.extraction_half_window = runtime_context.box_extraction_half_window
+        self.max_extraction_half_window = runtime_context.max_extraction_half_window
 
     def extract(self, rectified_2d_spectrum):
         extracted_spectrum_per_order = {'id': [], 'flux': [], 'pixel': []}
@@ -64,7 +63,7 @@ class BoxExtract(Extract):
         logger.info('Box extracting spectrum', )
         rectified_2d_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
         spectrum = self.extract(rectified_2d_spectrum)
-        table_name = nres_settings.BOX_SPECTRUM_NAME
+        table_name = self.runtime_context.box_spectrum_name
         image.data_tables[table_name] = Table(spectrum)
         return image
 
@@ -85,8 +84,8 @@ class BoxExtract(Extract):
         trimmed_rectified_spectrum = copy.deepcopy(rectified_2d_spectrum)
         if self.extraction_half_window >= self.max_extraction_half_window:
             # short circuit
-            logger.warning('Box extraction window was chosen to be >= the max extraction window defined in settings.py.'
-                           ' Defaulting to the max extraction window.')
+            logger.warning('Box extraction window was chosen to be >= the max extraction window '
+                           'defined in the config file. Defaulting to the max extraction window.')
             return rectified_2d_spectrum
         trim = self.max_extraction_half_window - self.extraction_half_window
         for order_id in list(rectified_2d_spectrum.keys()):
@@ -96,9 +95,9 @@ class BoxExtract(Extract):
 
 
 class RectifyTwodSpectrum(Stage):
-    def __init__(self, runtime_context=None):
+    def __init__(self, runtime_context):
         super(RectifyTwodSpectrum, self).__init__(runtime_context=runtime_context)
-        self.max_extraction_half_window = nres_settings.MAX_EXTRACTION_HALF_WINDOW
+        self.max_extraction_half_window = runtime_context.max_extraction_half_window
 
     def do_stage(self, image):
         logger.info('Rectifying the 2d spectrum', )

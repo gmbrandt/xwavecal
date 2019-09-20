@@ -12,20 +12,17 @@ from copy import deepcopy, copy
 from echelle.utils.trace_utils import Trace, AllTraceFitter
 from echelle.stages import Stage, ApplyCalibration
 
-import echelle.settings as nres_settings
-
 
 class TraceMaker(Stage):
     def __init__(self, runtime_context):
         super(TraceMaker, self).__init__(runtime_context)
-        self.runtime_context = runtime_context
-        self.order_of_poly_fit = nres_settings.TRACE_FIT_POLYNOMIAL_ORDER
-        self.second_order_coefficient_guess = nres_settings.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
-        self.trace_table_name = nres_settings.TRACE_TABLE_NAME
-        self.xmin = nres_settings.WINDOW_FOR_TRACE_IDENTIFICATION['min']
-        self.xmax = nres_settings.WINDOW_FOR_TRACE_IDENTIFICATION['max']
-        self.min_peak_to_peak_spacing = nres_settings.MIN_FIBER_TO_FIBER_SPACING
-        self.min_snr = nres_settings.MIN_SNR_FOR_TRACE_IDENTIFICATION
+        self.order_of_poly_fit = runtime_context.trace_fit_polynomial_order
+        self.second_order_coefficient_guess = runtime_context.trace_fit_initial_degree_two_guess
+        self.trace_table_name = runtime_context.trace_table_name
+        self.xmin = runtime_context.window_for_trace_identification['min']
+        self.xmax = runtime_context.window_for_trace_identification['max']
+        self.min_peak_to_peak_spacing = runtime_context.min_fiber_to_fiber_spacing
+        self.min_snr = runtime_context.min_snr_for_trace_identification
 
     @property
     def calibration_type(self):
@@ -63,7 +60,7 @@ class LoadTrace(ApplyCalibration):
         return 'TRACE'
 
     def apply_master_calibration(self, image, master_calibration_path):
-        image.trace = Trace.load(master_calibration_path, extension_name=nres_settings.TRACE_TABLE_NAME)
+        image.trace = Trace.load(master_calibration_path, extension_name=self.runtime_context.trace_table_name)
         master_trace_filename = os.path.basename(master_calibration_path)
         image.set_header_val('L1IDTRAC', (master_trace_filename, 'ID of trace centers file'))
         logger.info('Loading trace centers',   extra={'L1IDTRAC': image.get_header_val('L1IDTRAC')})

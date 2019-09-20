@@ -11,7 +11,6 @@ from echelle.utils.overlap_utils import blank_overlap_table
 from echelle.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal
 from echelle.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
 from echelle.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines
-from echelle import settings as nres_settings
 from echelle.tests.utils import SpectrumUtils, FakeImage, FakeContext
 
 
@@ -170,52 +169,56 @@ class TestFitOverlaps:
     def test_do_stage(self, mock_overlaps):
         num = 2
         image = FakeImage()
+        context = FakeContext()
         spectrum = Table({'ref_id': [0, 1], 'fiber': [0, 1], 'flux': [[0, 1, 2], [0, 1, 2]],
                           'pixel': [[-1, 0, 1], [-1, 0, 1]]})
         lines = Table({'order': [0, 1], 'fiber': [0, 1], 'flux': [[0, 1, 2], [0, 1, 2]],
                        'pixel': [[-1, 0, 1], [-1, 0, 1]]})
         mock_overlaps.return_value = Table({'fiber': [1, 0], 'ref_id': [0, 1], 'matched_ref_id': [1, 2],
                                             'good': [True, True], 'peaks': [10, 10]})
-        image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: spectrum}
+        image.data_tables = {context.box_spectrum_name: spectrum}
         wcs = WavelengthSolution(min_order=0, max_order=num, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
         wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
         image = FitOverlaps(FakeContext()).do_stage(image)
-        assert isinstance(image.data_tables[nres_settings.OVERLAP_TABLE_NAME], Table)
+        assert isinstance(image.data_tables[context.overlap_table_name], Table)
 
     @mock.patch('echelle.wavelength.fit_overlaps')
     def test_do_stage_single_fiber_stacks_overlap_tables(self, fake_fit):
         image = FakeImage()
-        image.data_tables = {nres_settings.OVERLAP_TABLE_NAME: Table({'ref_id': [0], 'fiber': [0], 'matched_ref_id': [1],
+        context = FakeContext()
+        image.data_tables = {context.overlap_table_name: Table({'ref_id': [0], 'fiber': [0], 'matched_ref_id': [1],
                                                                       'good': [False], 'peaks': [10]})}
-        image.data_tables[nres_settings.BOX_SPECTRUM_NAME] = Table({'fiber': [0, 1]})
+        image.data_tables[context.box_spectrum_name] = Table({'fiber': [0, 1]})
         wcs = WavelengthSolution(min_order=0, max_order=10, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
         wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
         fake_fit.return_value = Table({'ref_id': [0], 'fiber': [1], 'matched_ref_id': [1], 'good': [False], 'peaks': [2]})
         image = FitOverlaps(FakeContext()).do_stage_fiber(image, fiber=1)
-        assert len(image.data_tables[nres_settings.OVERLAP_TABLE_NAME]['fiber']) == 2
+        assert len(image.data_tables[context.overlap_table_name]['fiber']) == 2
 
     @mock.patch('echelle.wavelength.fit_overlaps', return_value=blank_overlap_table(3))
     def test_do_stage_sets_wcs_to_none(self, fake_overlaps):
         image = FakeImage()
-        image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: Table({'ref_id': [0, 1],
+        context = FakeContext()
+        image.data_tables = {context.box_spectrum_name: Table({'ref_id': [0, 1],
                                                                      'fiber': [0, 1],
                                                                      'flux': [[0, 1, 2], [0, 1, 2]],
                                                                      'pixel': [[-1, 0, 1], [-1, 0, 1]]}),
-                             nres_settings.OVERLAP_TABLE_NAME: blank_overlap_table(3)}
+                             context.overlap_table_name: blank_overlap_table(3)}
         image.wavelength_solution = {0: WavelengthSolution()}
         image = FitOverlaps(FakeContext()).do_stage_fiber(image, fiber=0)
         assert image.wavelength_solution[0] is None
 
 
 class TestSolveFromOverlaps:
-    @mock.patch('echelle.settings.min_num_overlaps', new=0)
     @mock.patch('echelle.wavelength.WavelengthSolution.solve_from_overlaps')
     def test_do_stage_does_not_crash(self, fake_solve):
         image = FakeImage()
-        image.data_tables = {nres_settings.OVERLAP_TABLE_NAME: Table({'ref_id': [0, 1],
+        context = FakeContext()
+        context.min_num_overlaps = 0
+        image.data_tables = {context.overlap_table_name: Table({'ref_id': [0, 1],
                                                                      'matched_ref_id': [1, 2],
                                                                      'good': [True, True],
                                                                      'fiber': [0, 0]})}
@@ -223,18 +226,19 @@ class TestSolveFromOverlaps:
         image = SolveFromOverlaps(FakeContext()).do_stage_fiber(image, fiber=0)
         assert np.allclose(image.wavelength_solution[0].overlap_range, (0, 2))
 
-    @mock.patch('echelle.settings.min_num_overlaps', new=0)
     @mock.patch('echelle.wavelength.WavelengthSolution.solve_from_overlaps')
     def test_do_stage_does_not_overwrite_overlaps(self, fake_solve):
         image = FakeImage()
-        image.data_tables = {nres_settings.OVERLAP_TABLE_NAME: Table({'fiber': [1, 0],
+        context = FakeContext()
+        context.min_num_overlaps = 0
+        image.data_tables = {context.overlap_table_name: Table({'fiber': [1, 0],
                                                                      'ref_id': [0, 1],
                                                                      'matched_ref_id': [1, 2],
                                                                      'good': [True, True]})}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
         image.wavelength_solution = {0: Utils.simple_wcs(), 1: Utils.simple_wcs()}
         image = SolveFromOverlaps(FakeContext()).do_stage(image)
-        assert np.allclose(image.data_tables[nres_settings.OVERLAP_TABLE_NAME]['fiber'], [1, 0])
+        assert np.allclose(image.data_tables[context.overlap_table_name]['fiber'], [1, 0])
 
 
 class TestIdentifyArcEmissionLines:
@@ -245,7 +249,7 @@ class TestIdentifyArcEmissionLines:
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(min_pixel=0, max_pixel=20, min_order=-5,
                                                            max_order=5)}
-        image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: Table({'fiber': np.array([0, 1]),
+        image.data_tables = {FakeContext().box_spectrum_name: Table({'fiber': np.array([0, 1]),
                                                                      'stderr': [0, 0]})}
         image = IdentifyArcEmissionLines(FakeContext()).do_stage_fiber(image, fiber=1)
         measured_lines = image.wavelength_solution[1].measured_lines
@@ -343,16 +347,17 @@ class TestFindGlobalScale:
 
 
 class TestSolutionRefineInitial:
-    @mock.patch('echelle.settings.intermediate_wavelength_model', new={1: [0], 2: [0, 1]})
     @mock.patch('echelle.wavelength.SolutionRefineInitial.constrain_solution_over_detector')
     def test_do_stage_fiber(self, fake_constrain):
         image = FakeImage()
+        context = FakeContext()
+        context.intermediate_wavelength_model = {1: [0], 2: [0, 1]}
         image.wavelength_solution = {1: WavelengthSolution(model_coefficients=np.arange(2), model={1: [0], 2: [0]},
                                                            min_order=0, max_order=5, min_pixel=0, max_pixel=400)}
         def constrain(wcs):
             return wcs, 1
         fake_constrain.side_effect = constrain
-        image = SolutionRefineInitial(FakeContext).do_stage_fiber(image, fiber=1)
+        image = SolutionRefineInitial(context).do_stage_fiber(image, fiber=1)
         assert image.wavelength_solution[1].model == {1: [0], 2: [0, 1]}
 
     def test_selecting_orders(self):
@@ -374,17 +379,18 @@ class TestSolutionRefineInitial:
 
 
 class TestSolutionRefineFinal:
-    @mock.patch('echelle.settings.final_wavelength_model', new={1: [0], 2: [0, 1]})
     @mock.patch('echelle.wavelength.SolutionRefineFinal._refine')
     def test_do_stage_fiber(self, fake_refine):
         image = FakeImage()
+        context = FakeContext()
+        context.final_wavelength_model = {1: [0], 2: [0, 1]}
         image.wavelength_solution = {1: WavelengthSolution(model={1: [0], 2: [0]})}
 
         def refine(wcs, final_model):
             wcs.model = final_model
             return wcs, 1
         fake_refine.side_effect = refine
-        image = SolutionRefineFinal(FakeContext).do_stage_fiber(image, fiber=1)
+        image = SolutionRefineFinal(context).do_stage_fiber(image, fiber=1)
         assert image.wavelength_solution[1].model == {1: [0], 2: [0, 1]}
 
     @mock.patch('echelle.wavelength.refine_wcs')
@@ -419,15 +425,16 @@ class TestApplyToSpectrum:
     @pytest.mark.integration
     def test_do_stage(self):
         image = FakeImage()
-        image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: Table({'ref_id': [0, 1],
+        context = FakeContext()
+        image.data_tables = {context.box_spectrum_name: Table({'ref_id': [0, 1],
                                                                      'fiber': [1, 2],
                                                                      'flux': [[0, 1, 2], [0, 1, 2]],
                                                                      'pixel': [[-1, 0, 1], [-1, 0, 1]],
                                                                      'wavelength': np.zeros((2, 3))})}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
         image.wavelength_solution = {0: None, 1: Utils.simple_wcs(), 2: Utils.simple_wcs()}
-        image = ApplyToSpectrum(FakeContext()).do_stage(image)
-        spectrum = image.data_tables[nres_settings.BOX_SPECTRUM_NAME]
+        image = ApplyToSpectrum(context).do_stage(image)
+        spectrum = image.data_tables[context.box_spectrum_name]
         assert not np.allclose(spectrum['wavelength'], 0)
         assert len(spectrum.colnames) == 5
 
@@ -435,7 +442,8 @@ class TestApplyToSpectrum:
 class TestBlazeCorrectArcEmissionLines:
     def test_fluxes_are_assigned(self):
         image = FakeImage()
-        image.data_tables = {nres_settings.BLAZE_CORRECTED_BOX_SPECTRUM_NAME: Table({'ref_id': [0, 1, 0],
+        context = FakeContext()
+        image.data_tables = {context.blaze_corrected_box_spectrum_name: Table({'ref_id': [0, 1, 0],
                                                                      'fiber': [1, 1, 0],
                                                                      'flux': [[0, 10, 2], [0, 20, 2], [0, 15, 2]],
                                                                      'pixel': [[0, 1, 2], [0, 1, 2], [0, 1, 2]]})}
@@ -444,7 +452,7 @@ class TestBlazeCorrectArcEmissionLines:
         image.wavelength_solution[1].measured_lines = {'pixel': np.array([1, 1]), 'order': np.array([0, 1]),
                                                        'flux': np.array([-9, -8]),
                                                        'corrected_flux': np.array([80, 60])}
-        image = BlazeCorrectArcEmissionLines(FakeContext()).do_stage(image)
+        image = BlazeCorrectArcEmissionLines(context).do_stage(image)
         assert np.allclose(image.wavelength_solution[1].measured_lines['corrected_flux'], [10, 20])
 
 
@@ -460,11 +468,12 @@ class TestTabulateArcEmissionLines:
 
     def test_do_stage(self):
         image = FakeImage()
+        context = FakeContext()
         image.data_tables = {}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
         image.wavelength_solution = {0: Utils.simple_wcs(50), 1: Utils.simple_wcs(52)}
-        image = TabulateArcEmissionLines(FakeContext()).do_stage(image)
-        lines = image.data_tables[nres_settings.EMISSION_LINES_TABLE_NAME]
+        image = TabulateArcEmissionLines(context).do_stage(image)
+        lines = image.data_tables[context.emission_lines_table_name]
         length = len(image.wavelength_solution[0].measured_lines['pixel']) * 2
         assert np.allclose([len(lines['fiber']), len(lines['pixel']), len(lines['wavelength'])], length)
         assert np.allclose([len(lines['reference_wavelength']), len(lines['order'])], length)
@@ -529,6 +538,7 @@ class TestRefineUtils:
 class TestOnSyntheticData:
     @pytest.mark.integration
     def test_performance(self):
+        context = FakeContext()
         # Generate emission line positions from a real wavelength solution on NRES.
         num_orders = 67
         wcs = WavelengthSolution(model={0: [0, 1, 2, 3, 4, 5],
@@ -558,7 +568,7 @@ class TestOnSyntheticData:
         spectrum = Table({'ref_id': np.arange(num_orders), 'fiber': np.ones(num_orders),
                           'flux': np.zeros((num_orders, 4096)),
                           'pixel': np.arange(4096) * np.ones((num_orders, 4096))})
-        image.data_tables[nres_settings.BOX_SPECTRUM_NAME] = spectrum
+        image.data_tables[context.box_spectrum_name] = spectrum
         image.fiber2_lit, image.fiber2_wavecal = 0, 0
         image.wavelength_solution = {1: WavelengthSolution(model={1: [0, 1, 2], 2: [0, 1, 2]},
                                                            min_order=0, max_order=num_orders - 1,
@@ -568,7 +578,7 @@ class TestOnSyntheticData:
         stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,
                        SolutionRefineFinal, TabulateArcEmissionLines]
         for stage in stages_todo:
-            image = stage(FakeContext()).do_stage(image)
+            image = stage(context).do_stage(image)
         measured_lines['wavelength'] = image.wavelength_solution[1].wavelength(measured_lines['pixel'],
                                                                                measured_lines['order'])
         assert np.allclose(measured_lines['wavelength'], measured_lines['true_wavelength'], rtol=1e-8)

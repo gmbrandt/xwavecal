@@ -13,7 +13,6 @@ from echelle.utils.wavelength_utils import estimate_global_scale, normalize_coor
 from echelle.utils.overlap_utils import flag_bad_overlaps, fit_overlaps, blank_overlap_table, flag_outlier_overlaps
 from echelle.utils.misc_utils import brute_local_min, find_nearest, minmax
 from echelle.utils.fiber_utils import lit_wavecal_fibers
-import echelle.settings as nres
 
 import logging as logger
 
@@ -163,10 +162,10 @@ class Initialize(WavelengthStage):
     def do_stage_fiber(self, image, fiber):
         logger.info('Appending blank WavelengthSolution object to image for this fiber.',
                     extra={'fiber': str(fiber)})
-        spectrum = image.data_tables[nres.BOX_SPECTRUM_NAME]
+        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
-        image.wavelength_solution[fiber] = WavelengthSolution(model=nres.initial_wavelength_model,
-                                                              m0=nres.principle_order_number,
+        image.wavelength_solution[fiber] = WavelengthSolution(model=self.runtime_context.initial_wavelength_model,
+                                                              m0=self.runtime_context.principle_order_number,
                                                               max_order=np.max(single_fiber_spectrum['ref_id']),
                                                               min_order=np.min(single_fiber_spectrum['ref_id']),
                                                               max_pixel=np.max(single_fiber_spectrum['pixel']),
@@ -181,7 +180,7 @@ class Initialize(WavelengthStage):
 
     @staticmethod
     def _valid_fibers(image):
-        return lit_wavecal_fibers(image) if len(image.data_tables[nres.BOX_SPECTRUM_NAME]['flux']) > 0 else []
+        return lit_wavecal_fibers(image) if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) > 0 else []
 
 
 class AddWavelengthColumn(WavelengthStage):
@@ -190,7 +189,7 @@ class AddWavelengthColumn(WavelengthStage):
     """
     def __init__(self, runtime_context=None):
         super(AddWavelengthColumn, self).__init__(runtime_context=runtime_context)
-        self.spectrum_table_names = [nres.BOX_SPECTRUM_NAME, nres.BLAZE_CORRECTED_BOX_SPECTRUM_NAME]
+        self.spectrum_table_names = [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_box_spectrum_name]
 
     def do_stage(self, image):
         if len(self._valid_fibers(image)) > 0:
@@ -232,24 +231,24 @@ class FitOverlaps(WavelengthStage):
         super(FitOverlaps, self).__init__(runtime_context=runtime_context)
 
     def do_stage(self, image):
-        if image.data_tables.get(nres.OVERLAP_TABLE_NAME, None) is None:
-            image.data_tables[nres.OVERLAP_TABLE_NAME] = blank_overlap_table(nres.max_red_overlap)
+        if image.data_tables.get(self.runtime_context.overlap_table_name, None) is None:
+            image.data_tables[self.runtime_context.overlap_table_name] = blank_overlap_table(self.runtime_context.max_red_overlap)
 
         image = super(FitOverlaps, self).do_stage(image)
 
-        name = nres.OVERLAP_TABLE_NAME
+        name = self.runtime_context.overlap_table_name
         image.data_tables[name] = Table(image.data_tables[name])
         return image
 
     def do_stage_fiber(self, image, fiber):
         logger.info('Fitting overlaps.', extra={'fiber': str(fiber)})
-        spectrum = image.data_tables[nres.BOX_SPECTRUM_NAME]
+        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         overlaps = fit_overlaps(spec=single_fiber_spectrum,
                                 lines=image.wavelength_solution[fiber].measured_lines,
-                                max_overlap_red=nres.max_red_overlap,
-                                max_overlap_blue=nres.max_blue_overlap,
-                                linear_scale_range=nres.overlap_linear_scale_range,
+                                max_overlap_red=self.runtime_context.max_red_overlap,
+                                max_overlap_blue=self.runtime_context.max_blue_overlap,
+                                linear_scale_range=self.runtime_context.overlap_linear_scale_range,
                                 fiber=fiber)
         overlaps = flag_bad_overlaps(overlaps)
         logger.info('{0} overlaps verified.'.format(np.count_nonzero(overlaps['good'])),
@@ -258,11 +257,11 @@ class FitOverlaps(WavelengthStage):
         logger.info('{0} overlaps will be used.'.format(np.count_nonzero(overlaps['good'])),
                     extra={'fiber': str(fiber)})
 
-        image.data_tables[nres.OVERLAP_TABLE_NAME] = vstack([overlaps,
-                                                             image.data_tables[nres.OVERLAP_TABLE_NAME]])
-        if np.count_nonzero(overlaps['good']) < nres.min_num_overlaps:
+        image.data_tables[self.runtime_context.overlap_table_name] = vstack([overlaps,
+                                                             image.data_tables[self.runtime_context.overlap_table_name]])
+        if np.count_nonzero(overlaps['good']) < self.runtime_context.min_num_overlaps:
             logger.error('Less than {0} overlaps verified as good,'
-                         'setting wavelength solution to None.'.format(nres.min_num_overlaps),
+                         'setting wavelength solution to None.'.format(self.runtime_context.min_num_overlaps),
                          extra={'fiber': str(fiber)})
             image.wavelength_solution[fiber] = None
         return image
@@ -273,8 +272,8 @@ class SolveFromOverlaps(WavelengthStage):
         super(SolveFromOverlaps, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        image.wavelength_solution[fiber].model = Model(nres.initial_wavelength_model)
-        overlaps = image.data_tables.get(nres.OVERLAP_TABLE_NAME, blank_overlap_table(1))
+        image.wavelength_solution[fiber].model = Model(self.runtime_context.initial_wavelength_model)
+        overlaps = image.data_tables.get(self.runtime_context.overlap_table_name, blank_overlap_table(1))
         overlaps = self._prune_overlaps(overlaps, fiber)
         logger.info('Initializing wavelength solution from overlaps.',
                     extra={'fiber': str(fiber)})
@@ -295,10 +294,10 @@ class IdentifyArcEmissionLines(WavelengthStage):
     """
     def __init__(self, runtime_context=None):
         super(IdentifyArcEmissionLines, self).__init__(runtime_context=runtime_context)
-        self.min_peak_snr = nres.min_peak_snr
+        self.min_peak_snr = self.runtime_context.min_peak_snr
 
     def do_stage_fiber(self, image, fiber):
-        spectrum = image.data_tables[nres.BOX_SPECTRUM_NAME]
+        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         measured_lines = identify_lines(spectrum=single_fiber_spectrum,
                                         stderr=100,
@@ -316,7 +315,7 @@ class IdentifyArcEmissionLines(WavelengthStage):
                     'diffraction orders'.format(len(measured_lines['pixel']), len(set(measured_lines['order']))),
                     extra={'fiber': str(fiber)})
         return image
-    # TODO modify valid_fibers to include a check if nres.BOX_SPECTRUM_NAME is not None.
+    # TODO modify valid_fibers to include a check if self.runtime_context.BOX_SPECTRUM_NAME is not None.
 
 
 class BlazeCorrectArcEmissionLines(WavelengthStage):
@@ -324,7 +323,7 @@ class BlazeCorrectArcEmissionLines(WavelengthStage):
         super(BlazeCorrectArcEmissionLines, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        spectrum = image.data_tables.get(nres.BLAZE_CORRECTED_BOX_SPECTRUM_NAME)
+        spectrum = image.data_tables.get(self.runtime_context.blaze_corrected_box_spectrum_name)
         lines = image.wavelength_solution[fiber].measured_lines
         if spectrum is None:
             image.wavelength_solution[fiber].measured_lines['corrected_flux'] = lines['flux']
@@ -353,11 +352,11 @@ class FindGlobalScale(WavelengthStage):
         super(FindGlobalScale, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        scale_guess = estimate_global_scale(detector_range=nres.approx_detector_range_angstroms,
-                                            n=nres.approx_num_orders,
+        scale_guess = estimate_global_scale(detector_range=self.runtime_context.approx_detector_range_angstroms,
+                                            n=self.runtime_context.approx_num_orders,
                                             m0=image.wavelength_solution[fiber].m0)
-        scale = self._find_scale(image.wavelength_solution[fiber], scale_guess, nres.global_scale_range)
-        image.wavelength_solution[fiber].update_model(nres.intermediate_wavelength_model)
+        scale = self._find_scale(image.wavelength_solution[fiber], scale_guess, self.runtime_context.global_scale_range)
+        image.wavelength_solution[fiber].update_model(self.runtime_context.intermediate_wavelength_model)
         image.wavelength_solution[fiber].apply_scale(scale)
         logger.info('The scale guess was {:.6e} and the search yielded {:.6e}'.format(scale_guess, scale),
                      extra={'fiber': str(fiber)})
@@ -400,7 +399,7 @@ class SolutionRefineInitial(WavelengthStage):
         super(SolutionRefineInitial, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        image.wavelength_solution[fiber].update_model(new_model=nres.intermediate_wavelength_model)
+        image.wavelength_solution[fiber].update_model(new_model=self.runtime_context.intermediate_wavelength_model)
         image.wavelength_solution[fiber], rsd = self.constrain_solution_over_detector(image.wavelength_solution[fiber])
 
         mad, std = median_absolute_deviation(rsd), np.std(rsd)
@@ -486,7 +485,7 @@ class SolutionRefineFinal(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         image.wavelength_solution[fiber], rsd = self._refine(image.wavelength_solution[fiber],
-                                                             nres.final_wavelength_model)
+                                                             self.runtime_context.final_wavelength_model)
 
         mad, std = median_absolute_deviation(rsd), np.std(rsd)
         logger.info('median absolute deviation is {0} and the standard deviation is {1}'.format(mad, std),
@@ -547,13 +546,13 @@ class ApplyToSpectrum(WavelengthStage):
         super(ApplyToSpectrum, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        spectrum = image.data_tables[nres.BOX_SPECTRUM_NAME]
+        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
         fiber_mask = np.where(spectrum['fiber'] == fiber)
         wcs = image.wavelength_solution[fiber]
         pixel_coordinates, order_coordinates = pixel_order_as_array(spectrum[fiber_mask])
         spectrum['wavelength'][fiber_mask] = wcs.wavelength(pixel=pixel_coordinates,
                                                             order=order_coordinates)
-        image.data_tables[nres.BOX_SPECTRUM_NAME] = spectrum
+        image.data_tables[self.runtime_context.box_spectrum_name] = spectrum
         return image
 
 
@@ -575,7 +574,7 @@ class TabulateArcEmissionLines(WavelengthStage):
                 lines['wavelength'][fib] = wcs.wavelength(lines['pixel'][fib].data, lines['order'][fib].data)
                 lines['reference_wavelength'][fib] = find_nearest(lines['wavelength'][fib], wcs.reference_lines)
 
-            image.data_tables[nres.EMISSION_LINES_TABLE_NAME] = Table(lines)
+            image.data_tables[self.runtime_context.emission_lines_table_name] = Table(lines)
         return image
 
     @staticmethod
@@ -596,17 +595,17 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
     """
     Stage for identifying the principle order number m0. This should be run between IdentifyArcEmissionLines and
     SolveFromOverlaps. This stage is meant to be run once on a batch of stages to find the principle order
-    number. The principle order number should then be fixed in settings.py.
+    number. The principle order number should then be fixed in the config.ini file for your instrument.
     """
     def __init__(self, runtime_context=None):
         super(IdentifyPrincipleOrderNumber, self).__init__(runtime_context=runtime_context)
         self.STAGES_TODO = [SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal]
 
     def do_stage_fiber(self, image, fiber):
-        logger.info('Looking for the principle order number between {0} and {1}'.format(*nres.m0_range),
+        logger.info('Looking for the principle order number between {0} and {1}'.format(*self.runtime_context.m0_range),
                      extra={'fiber': str(fiber)})
         logger.disabled = True
-        merits, m0_values = self.merit_per_m0(image, fiber, nres.m0_range)
+        merits, m0_values = self.merit_per_m0(image, fiber, self.runtime_context.m0_range)
         logger.disabled = False
         best_m0, merit = m0_values[np.argmin(merits)], np.min(merits)
 

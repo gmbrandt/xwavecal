@@ -3,7 +3,6 @@ import numpy as np
 from echelle.utils.misc_utils import normalize_by_brightest, n_largest_elements
 from echelle.utils.correlate import correlate2d
 from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
-import echelle.settings as nres_settings
 from echelle.stages import ApplyCalibration
 
 import logging as logger
@@ -29,11 +28,11 @@ class IdentifyFibers(ApplyCalibration):
 
         NOTE: This stage relies on the fact that only 2 fibers are lit at one time.
         """
-        if len(image.data_tables[nres_settings.BOX_SPECTRUM_NAME]['flux']) == 0:
+        if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) == 0:
             logger.error('Image has length 0 spectrum. Skipping fiber identification', )
         elif image.num_wavecal_fibers() >= 1:
             logger.info('Identifying fibers via cross correlation.', )
-            spectrum = image.data_tables[nres_settings.BOX_SPECTRUM_NAME]
+            spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
 
             read_noise = image.get_header_val('read_noise')
             signal_to_noise = spectrum['flux'] / (np.sqrt(np.abs(spectrum['flux']) + read_noise ** 2))
@@ -45,12 +44,12 @@ class IdentifyFibers(ApplyCalibration):
                                                         num_arc_lamp_fibers=image.num_wavecal_fibers())
 
             fiber_ids = self.build_fiber_column(matched_ids, image, spectrum)
-            ref_ids = self.build_ref_id_column(matched_ids, image, spectrum, nres_settings.ref_id)
+            ref_ids = self.build_ref_id_column(matched_ids, image, spectrum, self.runtime_context.ref_id)
             # WARNING: ref_ids must be such that the mean wavelength of an order always increases with increasing ref_id
             spectrum.add_column(fiber_ids, name='fiber')
             spectrum.add_column(ref_ids, name='ref_id')
 
-            image.data_tables[nres_settings.BOX_SPECTRUM_NAME] = spectrum
+            image.data_tables[self.runtime_context.box_spectrum_name] = spectrum
         else:
             logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image

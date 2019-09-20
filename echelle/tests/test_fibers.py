@@ -7,7 +7,6 @@ from echelle.utils.fiber_utils import fiber_states_from_header, fibers_state_to_
                                           lit_fibers, lit_wavecal_fibers
 from echelle.fibers import IdentifyFibers
 from echelle.images import Image
-import echelle.settings as nres_settings
 
 from echelle.tests.utils import FakeImage, FakeContext
 
@@ -97,18 +96,19 @@ class TestIdentifyFibers:
         mock_apply_cal.assert_called_with('image', '/path/')
 
     @pytest.mark.integration
-    @mock.patch('echelle.settings.ref_id', new=1)
     @mock.patch('echelle.fibers.np.genfromtxt')
     def test_apply_master_calibration(self, mock_load):
         image = FakeImage()
+        context = FakeContext()
+        context.ref_id = 1
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
         image.set_header_val('read_noise', 0)
         spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30))})
         mock_load.return_value = spec['flux'].data[1].reshape(-1, 1)
-        image.data_tables = {nres_settings.BOX_SPECTRUM_NAME: spec}
-        image = IdentifyFibers(FakeContext()).apply_master_calibration(image, '')
-        spec = image.data_tables[nres_settings.BOX_SPECTRUM_NAME]
+        image.data_tables = {context.box_spectrum_name: spec}
+        image = IdentifyFibers(context).apply_master_calibration(image, '')
+        spec = image.data_tables[context.box_spectrum_name]
         assert np.allclose(spec['ref_id'], [0, 1, 1])
         assert np.allclose(spec['fiber'], [2, 1, 2])
     
