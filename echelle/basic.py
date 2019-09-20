@@ -16,7 +16,7 @@ class OverscanSubtractor(Stage):
 
     def do_stage(self, image):
         logger.info('Subtracting by median overscan')
-        image.data = np.ascontiguousarray(image.data).astype(np.float16)
+        image.data = np.ascontiguousarray(image.data).astype(float)
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         overscan_section = parse_region_keyword(image.get_header_val('overscan_section'))
         image.data[data_section] -= np.median(image.data[overscan_section])
@@ -42,5 +42,5 @@ class Trimmer(Stage):
         logger.info('Trimming image to {0}'.format(image.get_header_val('data_section')))
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         image.data = image.data[data_section]
-        image.data = np.ascontiguousarray(image.data).astype(np.float16)
+        image.data = np.ascontiguousarray(image.data).astype(float)
         return image

@@ -55,7 +55,6 @@ def reduce_data(data_paths=None, args=None, config=None):
 
         for data in to_write:
             data.filepath = make_output_path(args.output_dir, data)
-            logger.info('Writing output to {path}'.format(path=data.filepath))
             data.write(fpack=args.fpack)
             logger.info('Adding file to processed image database at {path}'.format(path=runtime_context.database_path))
             db_info = format_db_info(data, runtime_context.time_format)

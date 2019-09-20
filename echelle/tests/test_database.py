@@ -2,6 +2,7 @@ import tempfile
 import os
 from datetime import datetime, timedelta
 import sqlite3
+import mock
 
 import echelle.database as db
 from echelle.tests.utils import FakeImage
@@ -11,7 +12,7 @@ def test_format_db_info():
     data = FakeImage()
     fmt = '%Y-%m-%dT%H:%M:%S.%f'
     db_info = db.format_db_info(data, fmt)
-    obstype, dateobs, datenow, inst, site, fib0, fib1, fib2, is_bad, path = db_info[0]
+    obstype, dateobs, datenow, inst, site, fib0, fib1, fib2, is_bad, path = db_info
     assert all([obstype == data.get_header_val('type'),
                 dateobs == datetime.strptime(data.get_header_val('observation_date'), fmt),
                 datenow - datetime.now() <= timedelta(seconds=20),
@@ -21,19 +22,38 @@ def test_format_db_info():
                 is_bad == 0, path == data.filepath])
 
 
-def test_add_caldata_to_db():
+@mock.patch('echelle.database.query_db_for_match', return_value=None)
+def test_add_to_db(mock_match):
     data = FakeImage()
     fmt = '%Y-%m-%dT%H:%M:%S.%f'
-    db_info = db.format_db_info([data, data], fmt)
+    db_info = db.format_db_info(data, fmt)
     with tempfile.TemporaryDirectory() as temp_directory:
         db_path = os.path.join(temp_directory, 'test.db')
         db.add_data_to_db(db_path, db_info)
-        db.add_data_to_db(db_path, db_info[0])
+        db.add_data_to_db(db_path, db_info)
+        db.add_data_to_db(db_path, db_info)
         # expect 3 identical entries in the database.
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         c.execute('SELECT * FROM caldata')
         assert len(c.fetchall()) == 3
+        conn.close()
+
+
+def test_update_db():
+    data = FakeImage()
+    fmt = '%Y-%m-%dT%H:%M:%S.%f'
+    db_info = db.format_db_info(data, fmt)
+    with tempfile.TemporaryDirectory() as temp_directory:
+        db_path = os.path.join(temp_directory, 'test.db')
+        db.add_data_to_db(db_path, db_info)
+        db.add_data_to_db(db_path, db_info)
+        db.add_data_to_db(db_path, db_info)
+        # expect the 3 identical entries in the database to be culled into one.
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('SELECT * FROM caldata')
+        assert len(c.fetchall()) == 1
         conn.close()
 
 
@@ -47,13 +67,14 @@ def test_query_database():
     data1.set_header_val('observation_date', '2019-04-11T12:56:44.466')
     reference_data.set_header_val('observation_date', '2019-04-16T12:56:44.466')
     fmt = '%Y-%m-%dT%H:%M:%S.%f'
-    db_info = db.format_db_info([data1, data2, data3], fmt)
     with tempfile.TemporaryDirectory() as temp_directory:
         db_path = os.path.join(temp_directory, 'test.db')
-        db.add_data_to_db(db_path, db_info)
-        filepath = db.query_db_for_nearest(db_path, reference_data, 'lampflat', '%Y-%m-%dT%H:%M:%S.%f')
+        for data in [data1, data2, data3]:
+            db_info = db.format_db_info(data, fmt)
+            db.add_data_to_db(db_path, db_info)
+        filepath = db.query_db_for_nearest(db_path, reference_data, 'lampflat', fmt)
         assert filepath == data2.filepath
-        assert db.query_db_for_nearest(db_path, reference_data, 'no_type', '%Y-%m-%dT%H:%M:%S.%f') is None
+        assert db.query_db_for_nearest(db_path, reference_data, 'no_type', fmt) is None
 
 
 def test_query_database_returns_none():
