@@ -35,11 +35,15 @@ def writeto(hdu_list, filepath, fpack=False, overwrite=True, output_verify='fix+
             shutil.move(os.path.join(temp_directory, base_filename), filepath)
 
 
-def parse_region_keyword(key):
+def parse_region_keyword(key, index_from_one=True):
     """
     :param key: string of the form '[x:y],[x:y]'
     :return: tuple
              (slice(x,y,None), slice(x,y,None))
+             or if index_from_one:
+             (slice(x-1,y,None), slice(x-1,y,None))
     """
     boundaries = [np.array(i.split(':')).astype(int) for i in key.replace('[', '').replace(']', '').split(',')]
+    if index_from_one:
+        boundaries[0][0], boundaries[1][0] = boundaries[0][0] - 1, boundaries[1][0] - 1
     return tuple(slice(*boundary) for boundary in boundaries)

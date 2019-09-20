@@ -2,7 +2,7 @@ import mock
 from astropy.io.fits import HDUList, PrimaryHDU
 from tempfile import TemporaryDirectory
 
-from echelle.utils.fits_utils import writeto
+from echelle.utils.fits_utils import writeto, parse_region_keyword
 
 
 class TmpDir(TemporaryDirectory):
@@ -30,3 +30,7 @@ class TestWriteTo:
         mock_write.assert_called_with('t3mp/path', overwrite=True, output_verify='verify')
         mock_sys.assert_called_with('fpack -q 64 t3mp/path')
         mock_move.assert_called_with('t3mp/path.fz', 'path.fz')
+
+
+def test_parse_region_keyword():
+    assert (slice(0, 4096), slice(0, 4096)) == parse_region_keyword('[1:4096,1:4096]')

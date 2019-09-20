@@ -35,6 +35,7 @@ def reduce_data(data_paths=None, args=None, config=None):
         data_paths = args.data_paths
 
     runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
+    data_paths = order_data(data_paths, data_class, extension, header_keys, type_keys)
     translator = Translator(header_keys, type_keys)
     DataClass = import_class(data_class)
 
@@ -90,7 +91,6 @@ def organize_config(config):
 
 def select_data(input_dir, frame_type, files_contain, data_class, extension, header_keys, type_keys):
     data_paths = get_data_paths(input_dir, files_contain)
-    data_paths = order_data(data_paths, data_class, extension, header_keys, type_keys)
     data_paths = select_data_of_type(data_paths, data_class, extension, header_keys, type_keys, frame_type)
     return data_paths
 
