@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 setup(name='echelle',
       author=['G. Mirek Brandt, Curtis McCully'],
       version='0.1.0',
-      python_requires='>=3.5',
+      python_requires='>=3.6',
       packages=find_packages(),
       package_dir={'echelle': 'echelle'},
       setup_requires=['pytest-runner'],
