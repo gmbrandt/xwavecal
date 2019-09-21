@@ -131,11 +131,23 @@ You could do the following to plot the trace centers atop the raw data.
 
 The output will look like:
 
-Extracted Spectra
------------------
-Here we address how use the extracted spectra of an arc lamp file, its wavelength solution, and
-the fluxes and associated standard 1-sigma uncertainties.
+Blaze
+-----
 
+Arc (wavecal) data products
+-----------------
+Here we address how see the extracted spectra and other products from a wavecal lamp file,
+including the spectrum's wavelength solution, and
+the fluxes and associated standard 1-sigma uncertainties. The data products associated with
+a calibration file are
+
+.. code-block:: python
+    import matplotlib.pyplot as plt
+
+    im = fits.open('arc.fits.fz')
+    im.info()
+
+TODO ...
 
 Configuring a new instrument
 ============================

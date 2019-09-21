@@ -25,13 +25,14 @@ class IdentifyFibers(ApplyCalibration):
         NOTE: We follow the convention that the lowest lying ThAr fiber (i.e. has smallest x and y coordinate
         on the detector) corresponds to the smallest lit fiber index. E.g. if 0, 1 are lit with ThAr, then the lowest
         lying ThAr fiber is denoted 0. If 1,2 are lit, then the lowest lying ThAr fiber is denoted 1.
+        ref_ids must be such that the mean wavelength of an order always increases with increasing ref_id
 
         NOTE: This stage relies on the fact that only 2 fibers are lit at one time.
         """
         if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) == 0:
-            logger.error('Image has length 0 spectrum. Skipping fiber identification', )
+            logger.error('Image has length 0 spectrum. Skipping fiber identification')
         elif image.num_wavecal_fibers() >= 1:
-            logger.info('Identifying fibers via cross correlation.', )
+            logger.info('Identifying fibers via cross correlation.')
             spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
 
             read_noise = image.get_header_val('read_noise')
@@ -45,11 +46,11 @@ class IdentifyFibers(ApplyCalibration):
 
             fiber_ids = self.build_fiber_column(matched_ids, image, spectrum)
             ref_ids = self.build_ref_id_column(matched_ids, image, spectrum, self.runtime_context.ref_id)
-            # WARNING: ref_ids must be such that the mean wavelength of an order always increases with increasing ref_id
-            spectrum.add_column(fiber_ids, name='fiber')
-            spectrum.add_column(ref_ids, name='ref_id')
-
-            image.data_tables[self.runtime_context.box_spectrum_name] = spectrum
+            # TODO refactor storing information about which spectra exist.
+            for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_box_spectrum_name]:
+                if image.data_tables.get(key) is not None:
+                    image.data_tables[key].add_column(fiber_ids, name='fiber')
+                    image.data_tables[key].add_column(ref_ids, name='ref_id')
         else:
             logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image

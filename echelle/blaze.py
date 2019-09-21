@@ -60,8 +60,11 @@ class BackgroundSubtractSpectrum(Stage):
         super(BackgroundSubtractSpectrum, self).__init__(runtime_context=runtime_context)
 
     def do_stage(self, image):
-        logger.info('Background subtracting the extracted 1d spectrum')
-        if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) > 0:
-            spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
-            spectrum['flux'] -= sep.Background(spectrum['flux'].data).back()
+        #TODO refactor storing information about which spectra exist.
+        logger.info('Background subtracting the extracted 1d spectra')
+        for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_box_spectrum_name]:
+            if image.data_tables.get(key) is not None:
+                spectrum = image.data_tables[key]
+                spectrum['flux'] -= sep.Background(spectrum['flux'].data).back()
+                image.data_tables[key] = spectrum
         return image
