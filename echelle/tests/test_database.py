@@ -12,14 +12,14 @@ def test_format_db_info():
     data = FakeImage()
     fmt = '%Y-%m-%dT%H:%M:%S.%f'
     db_info = db.format_db_info(data, fmt)
-    obstype, dateobs, datenow, inst, site, fib0, fib1, fib2, is_bad, path = db_info
-    assert all([obstype == data.get_header_val('type'),
-                dateobs == datetime.strptime(data.get_header_val('observation_date'), fmt),
-                datenow - datetime.now() <= timedelta(seconds=20),
-                inst == data.get_header_val('instrument'),
-                site == data.get_header_val('site_name'),
+    fib0, fib1, fib2 = db_info['fiber0'], db_info['fiber1'], db_info['fiber2']
+    assert all([db_info['type'] == data.get_header_val('type'),
+                db_info['observation_date'] == datetime.strptime(data.get_header_val('observation_date'), fmt),
+                db_info['date_created'] - datetime.now() <= timedelta(seconds=20),
+                db_info['instrument'] == data.get_header_val('instrument'),
+                db_info['site_name'] == data.get_header_val('site_name'),
                 fib0 == data.fiber0_lit, fib1 == data.fiber1_lit, fib2 == data.fiber2_lit,
-                is_bad == 0, path == data.filepath])
+                db_info['is_bad'] == 0, db_info['filepath'] == data.filepath])
 
 
 @mock.patch('echelle.database.query_db_for_match', return_value=None)

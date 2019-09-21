@@ -3,7 +3,6 @@ language: python
 python:
   - "3.6"
   - "3.7"
-  - "3.8-dev"
 notifications:
   email: false
 # command to install dependencies

@@ -12,28 +12,36 @@ def add_data_to_db(db_path, db_info):
     if not db_exists:
         logger.info('No existing database found at {0}. Creating a new one at {1}.'.format(db_path, db_path))
         # Create table
-        c.execute('''CREATE TABLE caldata (id integer primary key autoincrement, type text, dateobs text,
-                     datecreated text, instrument text, site text, 
+        c.execute('''CREATE TABLE caldata (id integer primary key autoincrement, 
+                     type text, observation_date text,
+                     date_created text, instrument text, site_name text, 
                      fiber0 integer, fiber1 integer, fiber2 integer, 
                      is_bad integer, filepath text)''')
     match = query_db_for_match(c, db_info)
     if match is None:
-        c.execute('INSERT INTO caldata (type, dateobs, datecreated, instrument, site,'
+        entries = tuple(db_info[key] for key in ['type', 'observation_date', 'date_created', 'instrument',
+                                                 'site_name', 'fiber0', 'fiber1', 'fiber2', 'is_bad',
+                                                 'filepath'])
+        c.execute('INSERT INTO caldata (type, observation_date, date_created, instrument, site_name,'
                       ' fiber0, fiber1, fiber2, is_bad, filepath) '
-                      'VALUES (?,?,?,?,?,?,?,?,?,?)', db_info)
+                      'VALUES (?,?,?,?,?,?,?,?,?,?)', entries)
     else:
-        c.execute('UPDATE caldata SET datecreated=?, is_bad=?, filepath=? WHERE id=?',
-                  (db_info[2], db_info[8], db_info[9], match))
+        c.execute('UPDATE caldata SET date_created=?, is_bad=?, filepath=? WHERE id=?',
+                  (db_info['date_created'], db_info['is_bad'], db_info['filepath'], match))
     conn.commit()
     conn.close()
 
 
 def format_db_info(data, time_format='%Y-%m-%dT%H:%M:%S.%f'):
-    db_info = ((data.get_header_val('type'), datetime.strptime(data.get_header_val('observation_date'), time_format),
-                datetime.now(), data.get_header_val('instrument'),
-                data.get_header_val('site_name'),
-                int(data.fiber0_lit), int(data.fiber1_lit), int(data.fiber2_lit),
-                0, data.filepath))
+    db_info = {'type': data.get_header_val('type'),
+               'observation_date': datetime.strptime(data.get_header_val('observation_date'), time_format),
+               'date_created': datetime.now(),
+               'instrument': data.get_header_val('instrument'),
+               'site_name': data.get_header_val('site_name'),
+               'fiber0': int(data.fiber0_lit),
+               'fiber1': int(data.fiber1_lit),
+               'fiber2': int(data.fiber2_lit),
+               'is_bad': 0, 'filepath': data.filepath}
     return db_info
 
 
@@ -41,17 +49,17 @@ def query_db_for_nearest(db_path, data, type_to_find, time_format='%Y-%m-%dT%H:%
     if not os.path.exists(db_path):
         logger.error('No existing database found at {0}. Cannot fetch calibration.'.format(db_path, db_path))
         return None
+    db_info = format_db_info(data, time_format)
     if date is None:
-        date = datetime.strptime(data.get_header_val('observation_date'), time_format)
+        date = db_info['observation_date']
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
-    search_criteria = (0, type_to_find, data.get_header_val('instrument'),
-                       data.get_header_val('site_name'),
-                       int(data.fiber0_lit), int(data.fiber1_lit), int(data.fiber2_lit),
+    search_criteria = (type_to_find, db_info['instrument'], db_info['site_name'],
+                       db_info['fiber0'], db_info['fiber1'], db_info['fiber2'],
                        date)
-    c.execute('SELECT filepath FROM caldata WHERE is_bad=? AND type=? AND instrument=?'
-              'AND site=? AND fiber0=? AND fiber1=? AND fiber2=?'
-              'ORDER BY ABS( strftime("%s", dateobs) - strftime("%s", ?) ) ASC',
+    c.execute('SELECT filepath FROM caldata WHERE is_bad=0 AND type=? AND instrument=?'
+              'AND site_name=? AND fiber0=? AND fiber1=? AND fiber2=?'
+              'ORDER BY ABS( strftime("%s", observation_date) - strftime("%s", ?) ) ASC',
                search_criteria)
     results = c.fetchall()
     conn.close()
@@ -62,9 +70,11 @@ def query_db_for_nearest(db_path, data, type_to_find, time_format='%Y-%m-%dT%H:%
 
 
 def query_db_for_match(cursor, db_info):
-    search_criteria = tuple(db_info[i] for i in [0, 1, 3, 4, 5, 6, 7])
-    cursor.execute('SELECT id FROM caldata WHERE type=? AND dateobs=?'
-                   'AND instrument=? AND site=? AND fiber0=? AND fiber1=? AND fiber2=?',
+    search_criteria = tuple(db_info[key] for key in ['type', 'observation_date',
+                                                     'instrument', 'site_name',
+                                                     'fiber0', 'fiber1', 'fiber2'])
+    cursor.execute('SELECT id FROM caldata WHERE type=? AND observation_date=?'
+                   'AND instrument=? AND site_name=? AND fiber0=? AND fiber1=? AND fiber2=?',
                     search_criteria)
     results = cursor.fetchall()
     if len(results) == 0:
