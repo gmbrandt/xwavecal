@@ -11,6 +11,7 @@ import numpy as np
 
 from echelle.stages import Stage
 from echelle.utils.fits_utils import parse_region_keyword
+import sep
 import logging as logger
 
 
@@ -47,4 +48,14 @@ class Trimmer(Stage):
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         image.data = image.data[data_section]
         image.data = np.ascontiguousarray(image.data)
+        return image
+
+
+class BackgroundSubtract(Stage):
+    def __init__(self, runtime_context):
+        super(BackgroundSubtract, self).__init__(runtime_context)
+
+    def do_stage(self, image):
+        logger.info('Background subtracting the 2d frame')
+        image.data = image.data - sep.Background(image.data).back()
         return image

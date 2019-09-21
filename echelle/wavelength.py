@@ -300,7 +300,7 @@ class IdentifyArcEmissionLines(WavelengthStage):
         spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         measured_lines = identify_lines(spectrum=single_fiber_spectrum,
-                                        stderr=100,
+                                        stderr=200,
                                         min_snr=self.min_peak_snr,
                                         order_key='ref_id')
 

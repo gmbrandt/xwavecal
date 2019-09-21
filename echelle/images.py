@@ -51,15 +51,16 @@ class DataProduct(object):
 
 class Image(DataProduct):
     # TODO THIS IS NRES SPECIFIC because of fiber_states_from_header
-    def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None):
-        super(Image, self).__init__(filepath=filepath, data=data, header=header, translator=translator)
+    def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
+                 data_name=None):
+        super(Image, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
         if data_tables is None:
             data_tables = {}
 
         self.data_tables = data_tables
         self.data = data
         self.filepath = filepath
-        self.trace = None
+        self.trace = trace
         self.rectified_2d_spectrum = None
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
         self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self.header)
@@ -67,8 +68,13 @@ class Image(DataProduct):
         self.wavelength_solution = {}
 
     def write(self, fpack=False):
+        if self.data_name is None:
+            hdus = [fits.PrimaryHDU(data=self.data, header=fits.Header(self.header))]
+        else:
+            hdus = [fits.PrimaryHDU(), fits.ImageHDU(data=self.data, header=fits.Header(self.header), name=self.data_name)]
+
         table_hdus = [fits.BinTableHDU(table, name=name) for name, table in self.data_tables.items()]
-        hdu_list = fits.HDUList([fits.PrimaryHDU(data=self.data, header=fits.Header(self.header)), *table_hdus])
+        hdu_list = fits.HDUList([*hdus, *table_hdus])
         self._update_filepath(fpack)
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath, fpack=fpack,
                            overwrite=True, output_verify='fix+warn')

@@ -40,7 +40,7 @@ def test_get_num_lit_wavecal_fibers():
 class TestDataProduct:
     def test_load_and_write(self):
         name = 'trace'
-        image = DataProduct(data={'id': [1], 'centers': [np.arange(3)]}, data_name=name)
+        image = DataProduct(data={'id': [1], 'centers': [np.arange(3)]}, data_name='trace')
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
             image.filepath = path
@@ -76,3 +76,26 @@ class TestDataProduct:
         assert image.get_header_val('read_noise') == 10
         image.set_header_val('gain', 5)
         assert image.get_header_val('gain') == 5
+
+
+class TestImage:
+    def test_load_and_write(self):
+        image = Image(data=np.ones((10, 10)), header={'bla': 1, 'OBJECTS': 'none&none&none'})
+        with tempfile.TemporaryDirectory() as tmp_directory_name:
+            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+            image.filepath = path
+            image.write(fpack=False)
+            image = Image.load(path=path, extension_name=0)
+            assert np.allclose(image.data, 1)
+            assert image.header['bla'] == 1
+
+    def test_load_and_write_with_name(self):
+        name = 'a_name'
+        image = Image(data=np.ones((10, 10)), data_name='a_name', header={'bla': 1, 'OBJECTS': 'none&none&none'})
+        with tempfile.TemporaryDirectory() as tmp_directory_name:
+            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+            image.filepath = path
+            image.write(fpack=False)
+            image = Image.load(path=path, extension_name=name)
+            assert np.allclose(image.data, 1)
+            assert image.header['bla'] == 1

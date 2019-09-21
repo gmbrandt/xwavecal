@@ -49,6 +49,7 @@ class BoxExtract(Extract):
         super(Extract, self).__init__(runtime_context=runtime_context)
         self.extraction_half_window = runtime_context.box_extraction_half_window
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
+        self.table_name = runtime_context.box_spectrum_name
 
     def extract(self, rectified_2d_spectrum):
         extracted_spectrum_per_order = {'id': [], 'flux': [], 'pixel': []}
@@ -63,8 +64,7 @@ class BoxExtract(Extract):
         logger.info('Box extracting spectrum', )
         rectified_2d_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
         spectrum = self.extract(rectified_2d_spectrum)
-        table_name = self.runtime_context.box_spectrum_name
-        image.data_tables[table_name] = Table(spectrum)
+        image.data_tables[self.table_name] = Table(spectrum)
         return image
 
     def _trim_rectified_2d_spectrum(self, rectified_2d_spectrum):
@@ -92,6 +92,14 @@ class BoxExtract(Extract):
             for data_type in list(rectified_2d_spectrum[order_id].keys()):
                 trimmed_rectified_spectrum[order_id][data_type] = rectified_2d_spectrum[order_id][data_type][trim:-trim]
         return trimmed_rectified_spectrum
+
+
+class BoxExtractBlazeCorrectedSpectrum(BoxExtract):
+    def __init__(self, runtime_context):
+        super(Extract, self).__init__(runtime_context=runtime_context)
+        self.extraction_half_window = runtime_context.box_extraction_half_window
+        self.max_extraction_half_window = runtime_context.max_extraction_half_window
+        self.table_name = runtime_context.blaze_corrected_box_spectrum_name
 
 
 class RectifyTwodSpectrum(Stage):

@@ -31,13 +31,12 @@ class TraceMaker(Stage):
     def do_stage(self, image):
         # need to set obstype to TRACE and set master filename.
         logger.info('fitting traces order by order', )
-        bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
         fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                 min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                 min_snr=self.min_snr)
         trace = Trace(data=None, filepath=copy(image.filepath), header=deepcopy(image.header), translator=image.translator,
                       num_centers_per_trace=image.data.shape[1], table_name=self.trace_table_name)
-        trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
+        trace = fitter.fit_traces(trace=trace, image_data=image.data,
                                   poly_fit_order=self.order_of_poly_fit,
                                   second_order_coefficient_guess=self.second_order_coefficient_guess,
                                   image_noise_estimate=image.get_header_val('read_noise'))
@@ -45,7 +44,7 @@ class TraceMaker(Stage):
         trace.fiber0_lit, trace.fiber1_lit, trace.fiber2_lit = image.fiber0_lit, image.fiber1_lit, image.fiber2_lit
         logger.info('Created master trace')
         image.trace = trace
-        return [image, trace]
+        return image, trace
 
 
 class LoadTrace(ApplyCalibration):

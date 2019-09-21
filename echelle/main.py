@@ -48,7 +48,7 @@ def reduce_data(data_paths=None, args=None, config=None):
         auxiliary_products = []
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
-            if isinstance(data, list):
+            if isinstance(data, list) or isinstance(data, tuple):
                 auxiliary_products.extend(data[1:])
                 data = data[0]
 
