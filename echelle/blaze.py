@@ -51,7 +51,7 @@ class BlazeMaker(Stage):
         logger.info('Making blaze file.')
         blaze = Image(data=deepcopy(image.data), translator=image.translator,
                       trace=image.trace, header=deepcopy(image.header), data_name=self.runtime_context.blaze_name)
-        blaze.data = normalize_orders(blaze.data, blaze.trace, minval=10 * blaze.get_header_val('read_noise'),
+        blaze.data = normalize_orders(blaze.data, blaze.trace, minval=300 * blaze.get_header_val('read_noise'),
                                       half_window=self.runtime_context.max_extraction_half_window)
         blaze.set_header_val('type', self.calibration_type.lower())
         return image, blaze
