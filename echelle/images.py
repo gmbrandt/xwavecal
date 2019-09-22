@@ -37,6 +37,7 @@ class DataProduct(object):
         hdu = fits.BinTableHDU(self.data, name=self.data_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
         self._update_filepath(fpack)
+        logger.info('Writing file to {filepath}'.format(filepath=self.filepath))
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath, fpack=fpack,
                            overwrite=True, output_verify='fix+warn')
 
