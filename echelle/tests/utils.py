@@ -27,6 +27,7 @@ class FakeImage(object):
         self.site = 'lsc'
         self.instrument = 'nres01'
         self.camera = None
+        self.ivar = None
         self.ccdsum = ccdsum
         self.epoch = epoch
         self.overscan_size = overscan_size

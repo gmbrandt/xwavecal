@@ -22,4 +22,5 @@ def normalize_orders(image_data, trace, minval=1, half_window=10, n=100):
         normalization_factor[roi][near_trace] = median_of_n_brightest
     image_data[image_data < minval] = minval
     image_data = image_data / normalization_factor
+    image_data[image_data > 1] = 1
     return image_data

@@ -33,7 +33,9 @@ class ApplyBlaze(ApplyCalibration):
                          'solution may suffer.')
         else:
             image.data = image.data / blaze.data
-            # TODO divide the standard errors in the frame by the calibration as well.
+            image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
+            import pdb
+            pdb.set_trace()
         return image
 
 
@@ -62,7 +64,7 @@ class BackgroundSubtractSpectrum(Stage):
     def do_stage(self, image):
         #TODO refactor storing information about which spectra exist.
         logger.info('Background subtracting the extracted 1d spectra')
-        for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_box_spectrum_name]:
+        for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
             if image.data_tables.get(key) is not None:
                 spectrum = image.data_tables[key]
                 spectrum['flux'] -= sep.Background(spectrum['flux'].data).back()

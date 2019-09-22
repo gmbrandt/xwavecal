@@ -5,6 +5,8 @@ from echelle.utils.fiber_utils import fiber_states_from_header, wavecal_fibers_f
 from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
 from echelle.utils import fits_utils
 
+import logging as logger
+
 
 class DataProduct(object):
     """
@@ -52,13 +54,13 @@ class DataProduct(object):
 class Image(DataProduct):
     # TODO THIS IS NRES SPECIFIC because of fiber_states_from_header
     def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
-                 data_name=None):
+                 data_name=None, ivar=None):
         super(Image, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
         if data_tables is None:
             data_tables = {}
-
         self.data_tables = data_tables
         self.data = data
+        self.ivar = ivar
         self.filepath = filepath
         self.trace = trace
         self.rectified_2d_spectrum = None
@@ -72,10 +74,13 @@ class Image(DataProduct):
             hdus = [fits.PrimaryHDU(data=self.data, header=fits.Header(self.header))]
         else:
             hdus = [fits.PrimaryHDU(), fits.ImageHDU(data=self.data, header=fits.Header(self.header), name=self.data_name)]
+        if self.ivar is not None:
+            hdus.append(fits.ImageHDU(data=self.ivar, header=None, name='ivar'))
 
         table_hdus = [fits.BinTableHDU(table, name=name) for name, table in self.data_tables.items()]
         hdu_list = fits.HDUList([*hdus, *table_hdus])
         self._update_filepath(fpack)
+        logger.info('Writing file to {filepath}'.format(filepath=self.filepath))
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath, fpack=fpack,
                            overwrite=True, output_verify='fix+warn')
 

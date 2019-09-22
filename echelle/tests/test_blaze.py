@@ -1,6 +1,7 @@
 import mock
 import numpy as np
 from astropy.table import Table
+from copy import deepcopy
 
 from echelle.blaze import ApplyBlaze, BackgroundSubtractSpectrum, BlazeMaker
 from echelle.tests.utils import FakeContext, FakeImage
@@ -14,9 +15,12 @@ class TestApplyBlaze:
     def test_apply_calibration(self, mock_load, mock_get_cal):
         blaze = FakeImage()
         blaze.data = np.random.randint(1, 9, size=(10, 10))
+        image = deepcopy(blaze)
+        image.ivar = 4 * np.ones((10, 10))  # stderr = 1/2
         mock_load.return_value = blaze
-        image = ApplyBlaze(self.CONTEXT).do_stage(blaze)
+        image = ApplyBlaze(self.CONTEXT).do_stage(image)
         assert np.allclose(image.data, 1)
+        assert np.allclose(np.sqrt(image.ivar)**(-1), (1/2) / blaze.data)
 
     @mock.patch('echelle.blaze.ApplyBlaze.get_calibration_filename', return_value='fake')
     @mock.patch('echelle.images.Image.load')

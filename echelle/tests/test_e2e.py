@@ -23,6 +23,6 @@ def test_reduce_data():
         # check that the lampflat, traces and blaze are in the database via query for match
         # check that the correct number of traces exists.
 
-        #data_paths = glob('echelle/tests/data/nres_test_data/*a00*.fits*')
-        #reduce_data(data_paths, args=args, config=config)
+        data_paths = glob('echelle/tests/data/nres_test_data/*a00*.fits*')
+        reduce_data(data_paths, args=args, config=config)
         assert True

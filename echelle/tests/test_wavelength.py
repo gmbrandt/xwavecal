@@ -443,7 +443,7 @@ class TestBlazeCorrectArcEmissionLines:
     def test_fluxes_are_assigned(self):
         image = FakeImage()
         context = FakeContext()
-        image.data_tables = {context.blaze_corrected_box_spectrum_name: Table({'ref_id': [0, 1, 0],
+        image.data_tables = {context.blaze_corrected_spectrum_name: Table({'ref_id': [0, 1, 0],
                                                                      'fiber': [1, 1, 0],
                                                                      'flux': [[0, 10, 2], [0, 20, 2], [0, 15, 2]],
                                                                      'pixel': [[0, 1, 2], [0, 1, 2], [0, 1, 2]]})}

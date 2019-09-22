@@ -189,7 +189,7 @@ class AddWavelengthColumn(WavelengthStage):
     """
     def __init__(self, runtime_context=None):
         super(AddWavelengthColumn, self).__init__(runtime_context=runtime_context)
-        self.spectrum_table_names = [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_box_spectrum_name]
+        self.spectrum_table_names = [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]
 
     def do_stage(self, image):
         if len(self._valid_fibers(image)) > 0:
@@ -322,7 +322,7 @@ class BlazeCorrectArcEmissionLines(WavelengthStage):
         super(BlazeCorrectArcEmissionLines, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        spectrum = image.data_tables.get(self.runtime_context.blaze_corrected_box_spectrum_name)
+        spectrum = image.data_tables.get(self.runtime_context.blaze_corrected_spectrum_name)
         lines = image.wavelength_solution[fiber].measured_lines
         if spectrum is None:
             image.wavelength_solution[fiber].measured_lines['corrected_flux'] = lines['flux']

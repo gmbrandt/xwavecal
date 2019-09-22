@@ -8,22 +8,12 @@ from echelle.utils import extract_utils
 from echelle.stages import Stage
 
 
-class Extract(Stage):
-    def __init__(self, runtime_context):
-        super(Extract, self).__init__(runtime_context=runtime_context)
-
-    @abc.abstractmethod
-    def extract(self, rectified_2d_spectrum):
-        """
-         :param rectified_2d_spectrum: Dictionary
-               Dictionary where the keys are the trace id's from trace.get_id(),
-               where rectified_2d_spectrum[trace_id]['flux'] is a 2d float array (flux for the trace_id order).
-               If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
-               is 21 rows by 4096 columns (for a 4096 pixel wide image). One would sum this 2d
-               spectrum along-columns to get a box extracted spectrum.
-        :return:
-        """
-        pass
+class BoxExtract(Stage):
+    def __init__(self, runtime_context=None):
+        super(BoxExtract, self).__init__(runtime_context=runtime_context)
+        self.extraction_half_window = runtime_context.box_extraction_half_window
+        self.max_extraction_half_window = runtime_context.max_extraction_half_window
+        self.table_name = runtime_context.box_spectrum_name
 
     @staticmethod
     def extract_order(twod_spectrum, weights=None):
@@ -40,30 +30,37 @@ class Extract(Stage):
         else:
             return np.sum(twod_spectrum * weights, axis=0)
 
-    def do_stage(self, image):
-        return image
-
-
-class BoxExtract(Extract):
-    def __init__(self, runtime_context):
-        super(Extract, self).__init__(runtime_context=runtime_context)
-        self.extraction_half_window = runtime_context.box_extraction_half_window
-        self.max_extraction_half_window = runtime_context.max_extraction_half_window
-        self.table_name = runtime_context.box_spectrum_name
-
-    def extract(self, rectified_2d_spectrum):
-        extracted_spectrum_per_order = {'id': [], 'flux': [], 'pixel': []}
+    def extract(self, rectified_2d_spectrum, rectified_ivar):
+        """
+         :param rectified_2d_spectrum: Dictionary
+                Dictionary where the keys are the trace id's from trace.get_id(),
+                where rectified_2d_spectrum[trace_id]['val'] is a 2d float array (flux for the trace_id order).
+                If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
+                is 21 rows by 4096 columns (for a 4096 pixel wide image). One would sum this 2d
+                spectrum along-columns to get a box extracted spectrum.
+         :param rectified_ivar: Dictionary
+                Same as rectified_2d_spectrum but ['val'] is the inverse variance.
+        :return:
+        """
+        extracted_spectrum_per_order = {'id': [], 'flux': [], 'stderr': [], 'pixel': []}
         for order_id in list(rectified_2d_spectrum.keys()):
-            flux = self.extract_order(rectified_2d_spectrum[order_id]['flux'])
+            weights = self._weights(rectified_2d_spectrum[order_id]['val'], rectified_ivar[order_id]['val'])
+            flux = self.extract_order(rectified_2d_spectrum[order_id]['val'], weights)
+            stdvar = self.extract_order(np.power(rectified_ivar[order_id]['val'], -1), safe_pow(weights, 2))
             extracted_spectrum_per_order['flux'].append(flux)
+            extracted_spectrum_per_order['stderr'].append(np.sqrt(stdvar))
             extracted_spectrum_per_order['pixel'].append(np.arange(len(flux)))
             extracted_spectrum_per_order['id'].append(order_id)
         return Table(extracted_spectrum_per_order)
 
+    def _weights(self, order_rect_spectrum, order_rect_ivar):
+        return None
+
     def do_stage(self, image):
-        logger.info('Box extracting spectrum', )
+        logger.info('Extracting spectrum')
         rectified_2d_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
-        spectrum = self.extract(rectified_2d_spectrum)
+        rectified_ivar = self._trim_rectified_2d_spectrum(image.rectified_ivar)
+        spectrum = self.extract(rectified_2d_spectrum, rectified_ivar)
         image.data_tables[self.table_name] = Table(spectrum)
         return image
 
@@ -71,8 +68,8 @@ class BoxExtract(Extract):
         """
         :param rectified_2d_spectrum: Dictionary
                Dictionary where the keys are the trace id's from trace.get_id(),
-               where rectified_2d_spectrum[trace_id]['flux'] is a 2d float array (flux for the trace_id order).
-               If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
+               where rectified_2d_spectrum[trace_id]['val'] is a 2d float array (flux for the trace_id order).
+               If half extraction window was 10, then rectified_2d_spectrum[trace_id]['val']
                is 21 rows by 4096 columns (for a 4096 pixel wide image). One would sum this 2d
                spectrum along-columns to get a box extracted spectrum.
         :return rectified_2d_spectrum: Dictionary
@@ -84,8 +81,8 @@ class BoxExtract(Extract):
         trimmed_rectified_spectrum = copy.deepcopy(rectified_2d_spectrum)
         if self.extraction_half_window >= self.max_extraction_half_window:
             # short circuit
-            logger.warning('Box extraction window was chosen to be >= the max extraction window '
-                           'defined in the config file. Defaulting to the max extraction window.')
+            logger.warning('Extraction window was chosen to be >= the max extraction window defined in settings.py.'
+                           ' Defaulting to the max extraction window.')
             return rectified_2d_spectrum
         trim = self.max_extraction_half_window - self.extraction_half_window
         for order_id in list(rectified_2d_spectrum.keys()):
@@ -94,27 +91,55 @@ class BoxExtract(Extract):
         return trimmed_rectified_spectrum
 
 
-class BoxExtractBlazeCorrectedSpectrum(BoxExtract):
-    def __init__(self, runtime_context):
-        super(Extract, self).__init__(runtime_context=runtime_context)
-        self.extraction_half_window = runtime_context.box_extraction_half_window
+class SNEExtract(BoxExtract):
+    """
+    Extraction with each pixel weighted by its signal to noise.
+    """
+    def __init__(self, runtime_context=None):
+        super(SNEExtract, self).__init__(runtime_context=runtime_context)
+        self.extraction_half_window = runtime_context.sne_extraction_half_window
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
-        self.table_name = runtime_context.blaze_corrected_box_spectrum_name
+        self.table_name = runtime_context.sne_spectrum_name
+
+    def _weights(self, order_rect_spectrum, order_rect_ivar):
+        unnormed_weights = np.abs(order_rect_spectrum) * np.sqrt(order_rect_ivar)
+        return unnormed_weights / self.extract_order(unnormed_weights)
+
+
+class BlazeCorrectedSNEExtract(SNEExtract):
+    """
+    Same as SNEExtract, meant to run after dividing the 2d spectrum by the blaze AND re-rectifying the spectrum.
+    """
+    def __init__(self, runtime_context=None):
+        super(BlazeCorrectedSNEExtract, self).__init__(runtime_context=runtime_context)
+        self.extraction_half_window = runtime_context.sne_extraction_half_window
+        self.max_extraction_half_window = runtime_context.max_extraction_half_window
+        self.table_name = runtime_context.blaze_corrected_spectrum_name
 
 
 class RectifyTwodSpectrum(Stage):
-    def __init__(self, runtime_context):
+    def __init__(self, runtime_context=None):
         super(RectifyTwodSpectrum, self).__init__(runtime_context=runtime_context)
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
 
     def do_stage(self, image):
-        logger.info('Rectifying the 2d spectrum', )
+        logger.info('Rectifying the 2d spectrum')
         if image.trace is None:
-            logger.error('Image has empty trace attribute. Aborting extraction.', )
+            logger.error('Image has empty trace attribute. Aborting extraction.')
             image.is_bad = True
             image.rectified_2d_spectrum = {}
             return image
         rectified_2d_spectrum = extract_utils.rectify_orders(image.data, image.trace,
                                                              half_window=self.max_extraction_half_window)
         image.rectified_2d_spectrum = rectified_2d_spectrum
+        image.ivar = np.full_like(image.data, np.nan, dtype=np.double) if image.ivar is None else image.ivar
+        image.rectified_ivar = extract_utils.rectify_orders(image.ivar, image.trace,
+                                                            half_window=self.max_extraction_half_window,
+                                                            nullify_mapped_values=False)
         return image
+
+
+def safe_pow(arr, power):
+    if arr is None:
+        return arr
+    return np.power(arr, power)
