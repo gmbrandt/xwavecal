@@ -34,8 +34,7 @@ class ApplyBlaze(ApplyCalibration):
         else:
             image.data = image.data / blaze.data
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
-            import pdb
-            pdb.set_trace()
+            # TODO proper error propagation. The above does not hold for pixels dominated by read noise.
         return image
 
 

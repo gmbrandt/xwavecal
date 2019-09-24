@@ -25,7 +25,7 @@ class RuntimeContext(object):
 
 
 def reduce_data(data_paths=None, args=None, config=None):
-    logger.basicConfig(level=logger.DEBUG)
+    logger.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logger.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     if args is None:
         args = parse_args()
     if config is None:
@@ -63,7 +63,7 @@ def reduce_data(data_paths=None, args=None, config=None):
 
 
 def run():
-    logger.basicConfig(level=logger.DEBUG)
+    logger.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logger.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     # parse command line arguments and the configuration file.
     args = parse_args()
     config = ConfigParser()
