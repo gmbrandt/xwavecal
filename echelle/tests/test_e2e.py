@@ -14,7 +14,7 @@ def test_reduce_data():
     #  once per session. Then we can make independent tests for lampflat and arc creation.
     with tempfile.TemporaryDirectory() as temp_directory:
         args = type('test_args', (), {'input_dir': 'echelle/tests/data/nres_test_data/',
-                                      'output_dir': temp_directory, 'fpack': True})
+                                      'output_dir': temp_directory, 'fpack': False})
         config = ConfigParser()
         config.read('echelle/tests/data/test_config.ini')
         config.set('reduction', 'database_path', '"' + os.path.join(temp_directory, 'test.db') + '"')
