@@ -3,10 +3,9 @@ main.py: Main driver script for the minimal pipeline included with this package.
 
 Author: G. Mirek Brandt
 
-Note: This is built closely according to the structure of Banzai (https://github.com/lcogt/banzai) by Curtis McCully and
-Las Cumbres Observatory.
-
+Note: reduce_data() and run() are console entry points.
 """
+
 import logging as logger
 from configparser import ConfigParser
 from datetime import datetime
@@ -99,6 +98,7 @@ def make_output_path(output_dir, data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
     """
     :param data: Image
     :return: string
+             The path to write the file to.
     """
     id = str(data.get_header_val('unique_id')).zfill(4)
     dayobs = datetime.strptime(data.get_header_val('observation_date'), time_fmt).strftime('%Y%m%d')

@@ -300,7 +300,7 @@ class IdentifyArcEmissionLines(WavelengthStage):
         spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         measured_lines = identify_lines(spectrum=single_fiber_spectrum,
-                                        stderr=200,
+                                        stderr=single_fiber_spectrum['stderr'],
                                         min_snr=self.min_peak_snr,
                                         order_key='ref_id')
 
@@ -340,7 +340,7 @@ class BlazeCorrectArcEmissionLines(WavelengthStage):
 class IdentifyArcEmissionLinesLowSN(IdentifyArcEmissionLines):
     def __init__(self, runtime_context=None):
         super(IdentifyArcEmissionLinesLowSN, self).__init__(runtime_context=runtime_context)
-        self.min_peak_snr = 3
+        self.min_peak_snr = 10
 
 
 class FindGlobalScale(WavelengthStage):

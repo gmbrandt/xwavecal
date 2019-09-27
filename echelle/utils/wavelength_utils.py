@@ -60,11 +60,10 @@ def identify_lines(spectrum, stderr, min_snr=5, min_ptp=5, order_key='ref_id'):
              locations pixel, order and their peak flux.
     """
     lines = {'order': [], 'pixel': [], 'flux': []}
-    min_peak_height = stderr * min_snr * np.ones_like(spectrum['flux'])
+    min_peak_height = (np.ones((len(spectrum), 1)) * min_snr) * stderr
     for row in range(len(spectrum)):
         peak_coordinates, peak_indices = find_peaks(spectrum['flux'][row], spectrum['pixel'][row],
-                                                    height=min_peak_height[row],
-                                                    distance=min_ptp,
+                                                    height=min_peak_height[row], distance=min_ptp,
                                                     prominence=0.5 * np.abs(spectrum['flux'][row]))
         if len(peak_indices) > 0:
             lines['flux'].extend(list(spectrum['flux'][row][peak_indices]))
