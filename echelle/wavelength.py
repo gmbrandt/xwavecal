@@ -219,7 +219,7 @@ class LoadReferenceLineList(ApplyCalibration):
         return image
 
     def get_calibration_filename(self, image):
-        return 'echelle/data/ThAr_atlas_ESO.txt'
+        return self.runtime_context.line_list_path
 
 
 class FitOverlaps(WavelengthStage):
