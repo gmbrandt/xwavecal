@@ -17,6 +17,7 @@ def test_format_db_info():
                 db_info['observation_date'] == datetime.strptime(data.get_header_val('observation_date'), fmt),
                 db_info['date_created'] - datetime.now() <= timedelta(seconds=20),
                 db_info['instrument'] == data.get_header_val('instrument'),
+                db_info['instrument2'] == data.get_header_val('instrument2'),
                 db_info['site_name'] == data.get_header_val('site_name'),
                 fib0 == data.fiber0_lit, fib1 == data.fiber1_lit, fib2 == data.fiber2_lit,
                 db_info['is_bad'] == 0, db_info['filepath'] == data.filepath])
