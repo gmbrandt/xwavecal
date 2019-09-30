@@ -32,8 +32,9 @@ class ApplyBlaze(ApplyCalibration):
             logger.error('Shape of blaze data and image data do not agree. Aborting blaze correction. Wavelength'
                          'solution may suffer.')
         else:
-            image.data = image.data / blaze.data
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
+            image.ivar[blaze.data > 500] = 0
+            image.data = image.data / blaze.data
             # TODO proper error propagation. The above does not hold for pixels dominated by read noise.
         return image
 
@@ -50,7 +51,7 @@ class BlazeMaker(Stage):
         logger.info('Making blaze file.')
         blaze = Image(data=deepcopy(image.data), translator=image.translator,
                       trace=image.trace, header=deepcopy(image.header), data_name=self.runtime_context.blaze_name)
-        blaze.data = normalize_orders(blaze.data, blaze.trace, minval=10 * blaze.get_header_val('read_noise'),
+        blaze.data = normalize_orders(blaze.data, blaze.trace, minval=150 * blaze.get_header_val('read_noise'),
                                       half_window=self.runtime_context.max_extraction_half_window)
         blaze.set_header_val('type', self.calibration_type.lower())
         return image, blaze
