@@ -217,6 +217,7 @@ class LoadReferenceLineList(ApplyCalibration):
         for fiber in [fiber for fiber in lit_wavecal_fibers(image) if
                       image.wavelength_solution[fiber] is not None]:
             image.wavelength_solution[fiber].reference_lines = line_list
+        image.set_header_val('IDLIST', (reference_list_path, 'ID of the reference line list'))
         return image
 
     def get_calibration_filename(self, image):

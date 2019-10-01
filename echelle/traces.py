@@ -61,6 +61,6 @@ class LoadTrace(ApplyCalibration):
     def apply_master_calibration(self, image, master_calibration_path):
         image.trace = Trace.load(master_calibration_path, extension_name=self.runtime_context.trace_table_name)
         master_trace_filename = os.path.basename(master_calibration_path)
-        image.set_header_val('L1IDTRAC', (master_trace_filename, 'ID of trace centers file'))
-        logger.info('Loading trace centers',   extra={'L1IDTRAC': image.get_header_val('L1IDTRAC')})
+        image.set_header_val('IDTRACE', (master_trace_filename, 'ID of trace centers file'))
+        logger.info('Loading trace centers',   extra={'IDTRACE': image.get_header_val('IDTRACE')})
         return image

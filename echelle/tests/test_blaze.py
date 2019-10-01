@@ -36,14 +36,13 @@ class TestBlazeMaker:
     CONTEXT = FakeContext()
     @mock.patch('echelle.blaze.normalize_orders')
     def test_do_stage(self, mock_normalize):
-        mock_normalize.return_value = np.zeros((3, 3))
+        mock_normalize.return_value = 2 * np.ones((3, 3), dtype=float)
         image = FakeImage()
         image.data = np.random.randint(1, 9, size=(3, 3))
         image, blaze = BlazeMaker(self.CONTEXT).do_stage(image)
-        assert not np.allclose(image.data, blaze.data)
+        assert np.allclose(image.data / 2, blaze.data)
         assert image.get_header_val('type') == 'lampflat'
         assert blaze.get_header_val('type') == BlazeMaker(self.CONTEXT).calibration_type.lower()
-        assert np.allclose(blaze.data, 0)
 
 
 def test_normalize_orders():
@@ -51,8 +50,9 @@ def test_normalize_orders():
     data[4:7] *= 3
     data[1:3] *= 0.5
     trace = type('Trace', (), {'data': {'centers': [5 * np.ones((100))]}})
-    data = normalize_orders(data, trace, minval=0.6, half_window=4, n=10)
+    normalization_factor = normalize_orders(data, trace, half_window=4, n=10)
+    data /= normalization_factor
     assert np.allclose(data[4:7], 1)
-    assert np.allclose(data[1:3], 0.6/3)
+    assert np.allclose(data[1:3], 0.5/3)
     # check that we do not divide values which are not near the trace and which are not < minval
     assert np.allclose([data[-1], data[0]], 1)

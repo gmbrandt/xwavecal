@@ -33,9 +33,9 @@ class ApplyBlaze(ApplyCalibration):
                          'solution may suffer.')
         else:
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
-            image.ivar[blaze.data > 500] = 0
-            image.data = image.data / blaze.data
             # TODO proper error propagation. The above does not hold for pixels dominated by read noise.
+            image.data = image.data / blaze.data
+            image.set_header_val('IDBLAZE', (master_calibration_path, 'ID of blaze file used'))
         return image
 
 
@@ -51,7 +51,8 @@ class BlazeMaker(Stage):
         logger.info('Making blaze file.')
         blaze = Image(data=deepcopy(image.data), translator=image.translator,
                       trace=image.trace, header=deepcopy(image.header), data_name=self.runtime_context.blaze_name)
-        blaze.data = normalize_orders(blaze.data, blaze.trace, minval=150 * blaze.get_header_val('read_noise'),
-                                      half_window=self.runtime_context.max_extraction_half_window)
+        blaze.data = blaze.data / normalize_orders(blaze.data, blaze.trace, half_window=self.runtime_context.max_extraction_half_window)
+        if image.ivar is not None:
+            blaze.data[image.data * np.sqrt(image.ivar) < self.runtime_context.min_blaze_sn] = 1
         blaze.set_header_val('type', self.calibration_type.lower())
         return image, blaze
