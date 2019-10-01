@@ -150,6 +150,9 @@ a calibration file are
     im.info()
 
 TODO ...
+The wavelength model and wavelength coefficients are saved in the fits header
+for each spectrum extension that has wavelengths. The model and coefficients have
+keywords MODEL and MCOEFFS, respectively, in the header.
 
 Configuring a new instrument
 ============================
