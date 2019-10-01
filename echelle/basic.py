@@ -58,4 +58,5 @@ class BackgroundSubtract(Stage):
     def do_stage(self, image):
         logger.info('Background subtracting the 2d frame')
         image.data = image.data - sep.Background(image.data).back()
+        # todo errors based on background subtraction.
         return image

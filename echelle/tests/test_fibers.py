@@ -5,8 +5,8 @@ from astropy.table import Table
 
 from echelle.utils.fiber_utils import fiber_states_from_header, fibers_state_to_filename, \
                                           lit_fibers, lit_wavecal_fibers
-from echelle.fibers import IdentifyFibers
-from echelle.images import Image
+from echelle.fibers import IdentifyFibers, MakeFiberTemplate
+from echelle.images import Image, DataProduct
 
 from echelle.tests.utils import FakeImage, FakeContext
 
@@ -82,7 +82,7 @@ class TestIdentifyFibers:
         assert np.allclose(ref_ids, [49, 49, 50, 50, 51])
 
     def test_calibration_type(self):
-        assert IdentifyFibers(FakeContext()).calibration_type == 'TRACE'
+        assert IdentifyFibers(FakeContext()).calibration_type == 'FIBERS'
 
     @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value=None)
     @mock.patch('echelle.fibers.IdentifyFibers.on_missing_master_calibration')
@@ -96,7 +96,7 @@ class TestIdentifyFibers:
         mock_apply_cal.assert_called_with('image', '/path/')
 
     @pytest.mark.integration
-    @mock.patch('echelle.fibers.np.genfromtxt')
+    @mock.patch('echelle.images.fits.open')
     def test_apply_master_calibration(self, mock_load):
         image = FakeImage()
         context = FakeContext()
@@ -105,17 +105,31 @@ class TestIdentifyFibers:
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
         image.set_header_val('read_noise', 0)
         spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30))})
-        mock_load.return_value = spec['flux'].data[1].reshape(-1, 1)
+        mock_load.return_value = {'fibers': DataProduct(data=spec[1])}
         image.data_tables = {context.box_spectrum_name: spec}
         image = IdentifyFibers(context).apply_master_calibration(image, '')
         spec = image.data_tables[context.box_spectrum_name]
         assert np.allclose(spec['ref_id'], [0, 1, 1])
         assert np.allclose(spec['fiber'], [2, 1, 2])
-    
 
-@mock.patch('numpy.genfromtxt', return_value=np.array([np.ones(6), np.ones(6)]).T)
-def test_construct_single_fiber_template(mock_template):
-    template = IdentifyFibers.construct_single_fiber_template(None, 2)
+
+class TestMakeFiberTemplate:
+    def test_do_stage(self):
+        context = FakeContext()
+        context.template_trace_id = 2
+        image = FakeImage()
+        spec = Table({'id': [0, 1, 2, 3, 4], 'flux': 100 * np.random.random((5, 30))})
+        image.data_tables = {context.box_spectrum_name: spec}
+        image, template = MakeFiberTemplate(context).do_stage(image)
+        assert template.get_header_val('type') == MakeFiberTemplate(context).calibration_type.lower()
+        assert image.get_header_val('type') != MakeFiberTemplate(context).calibration_type.lower()
+        assert np.allclose(spec[[0, 2, 4]]['flux'], template.data['flux'])
+
+
+@mock.patch('echelle.images.fits.open')
+def test_construct_single_fiber_template(mock_load):
+    mock_load.return_value = {'fibers': DataProduct(data=Table({'flux': np.array([np.ones(5), np.ones(5)])}))}
+    template = IdentifyFibers.construct_single_fiber_template(None, 'fibers', 2)
     assert np.allclose(template, np.array([np.ones(5), np.zeros(5), np.ones(5)]))
 
 

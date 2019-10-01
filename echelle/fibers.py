@@ -1,11 +1,35 @@
 import numpy as np
+from copy import deepcopy
 
 from echelle.utils.misc_utils import normalize_by_brightest, n_largest_elements
 from echelle.utils.correlate import correlate2d
 from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
-from echelle.stages import ApplyCalibration
+from echelle.stages import ApplyCalibration, Stage
+from echelle.images import DataProduct
 
 import logging as logger
+
+
+class MakeFiberTemplate(Stage):
+    def __init__(self, runtime_context=None):
+        super(MakeFiberTemplate, self).__init__(runtime_context=runtime_context)
+
+    @property
+    def calibration_type(self):
+        return 'FIBERS'
+
+    def do_stage(self, image):
+        order = self.runtime_context.template_trace_id
+        logger.info('Generating a template with center order {0}'.format(order))
+        spec = image.data_tables[self.runtime_context.box_spectrum_name]
+        num_fibers = len(lit_fibers(image))
+        orders = [order - num_fibers, order, order + num_fibers]
+        template_region = np.logical_or.reduce(tuple(spec['id'] == i for i in orders))
+        template = DataProduct(data=spec[template_region], header=deepcopy(image.header),
+                               data_name=self.calibration_type.lower(), translator=image.translator)
+        template.set_header_val('type', self.calibration_type.lower())
+        template.fiber0_lit, template.fiber1_lit, template.fiber2_lit = image.fiber0_lit, image.fiber1_lit, image.fiber2_lit
+        return image, template
 
 
 class IdentifyFibers(ApplyCalibration):
@@ -14,7 +38,7 @@ class IdentifyFibers(ApplyCalibration):
 
     @property
     def calibration_type(self):
-        return 'TRACE'
+        return 'FIBERS'
 
     def apply_master_calibration(self, image, template_path):
         """
@@ -40,6 +64,7 @@ class IdentifyFibers(ApplyCalibration):
             spectrum_to_search = normalize_by_brightest(signal_to_noise)
 
             template = self.construct_single_fiber_template(template_path,
+                                                            self.calibration_type.lower(),
                                                             num_lit_fibers=image.num_lit_fibers())
             matched_ids = self.identify_matching_orders(spectrum_to_search, template,
                                                         num_arc_lamp_fibers=image.num_wavecal_fibers())
@@ -54,10 +79,6 @@ class IdentifyFibers(ApplyCalibration):
         else:
             logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image
-
-    def get_calibration_filename(self, image):
-        template_path = 'echelle/data/nres_arc_template.dat'
-        return template_path
 
     @staticmethod
     def build_fiber_column(matched_ids, image, spectrum):
@@ -81,10 +102,9 @@ class IdentifyFibers(ApplyCalibration):
         return ref_ids
 
     @staticmethod
-    def construct_single_fiber_template(template_path, num_lit_fibers=2):
-        template_data = np.genfromtxt(template_path)
-        trace_ids = template_data[0]
-        single_fiber = template_data[1:].T
+    def construct_single_fiber_template(template_path, ext_name, num_lit_fibers=2):
+        template = DataProduct.load(template_path, extension_name=ext_name)
+        single_fiber = template.data['flux'].data
         template = np.zeros((num_lit_fibers * single_fiber.shape[0] - 1, single_fiber.shape[1]))
         template[::num_lit_fibers] = single_fiber
         return template

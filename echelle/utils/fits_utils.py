@@ -15,7 +15,7 @@ class Translator(dict):
         return self.header_keys.get(key, key)
 
 
-def writeto(hdu_list, filepath, fpack=False, overwrite=True, output_verify='fix+warn', quant=64):
+def writeto(hdu_list, filepath, fpack=False, overwrite=True, output_verify='fix+warn', quant=int(1E6)):
     if not fpack:
         hdu_list.writeto(filepath.split('.fz')[0], overwrite=overwrite, output_verify=output_verify)
     else:

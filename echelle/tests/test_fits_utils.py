@@ -26,7 +26,7 @@ class TestWriteTo:
     @mock.patch('tempfile.TemporaryDirectory', new=TmpDir)
     def test_writeto_fpack(self, mock_write, mock_sys, mock_move):
         hdu_list = HDUList([PrimaryHDU()])
-        writeto(hdu_list, 'path', fpack=True, overwrite=True, output_verify='verify')
+        writeto(hdu_list, 'path', fpack=True, overwrite=True, output_verify='verify', quant=64)
         mock_write.assert_called_with('t3mp/path', overwrite=True, output_verify='verify')
         mock_sys.assert_called_with('fpack -q 64 t3mp/path')
         mock_move.assert_called_with('t3mp/path.fz', 'path.fz')

@@ -176,11 +176,12 @@ class Initialize(WavelengthStage):
     def on_no_valid_fibers(image):
         for fiber in lit_wavecal_fibers(image):
             image.wavelength_solution[fiber] = None
-        logger.error('Image has a length 0 spectrum. Aborting wavelength calibration')
+        logger.error('Image spectrum missing ref_id or fiber column. Aborting wavelength calibration')
 
     def _valid_fibers(self, image):
-        #TODO check for blaze corrected box spectrum, or rather have it use it only if it exists.
-        return lit_wavecal_fibers(image) if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) > 0 else []
+        spectrum_ok = all([key in image.data_tables[self.runtime_context.box_spectrum_name].colnames
+                           for key in ['ref_id', 'fiber']])
+        return lit_wavecal_fibers(image) if spectrum_ok else []
 
 
 class AddWavelengthColumn(WavelengthStage):

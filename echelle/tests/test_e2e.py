@@ -1,15 +1,16 @@
 from configparser import ConfigParser
 import tempfile
 import os
+import mock
 from glob import glob
 import pytest
 
 from echelle.main import reduce_data
-import logging as logger
-
 
 @pytest.mark.e2e
-def test_reduce_data():
+@mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename',
+            return_value='echelle/tests/data/nres_test_data/cpt_nres03_20190405_0014_fibers_011.fits')
+def test_reduce_data(mock_arc_template):
     # TODO this test should be replaced with a proper pytest fixture which makes the tempfile
     #  once per session. Then we can make independent tests for lampflat and arc creation.
     with tempfile.TemporaryDirectory() as temp_directory:

@@ -64,7 +64,9 @@ from lampflats which have the nearest observation date.
 
 If you want to fpack (.fz) the output files. You must first install :code:`libcfitsio`.
 E.g. via :code:`sudo apt install libcfitsio-bin` on linux.
-Then run the echelle reduction command with the added flag: :code:`--fpack`
+Then run the echelle reduction command with the added flag: :code:`--fpack`. The files
+are fpacked with a quantization of 10^6 by default. This gives an error of roughly 10^(-7) on a frame
+consisting of gaussian noise only.
 
 Reducing select files
 ---------------------
