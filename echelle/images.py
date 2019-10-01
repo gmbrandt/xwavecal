@@ -78,7 +78,8 @@ class Image(DataProduct):
         if self.ivar is not None:
             hdus.append(fits.ImageHDU(data=self.ivar, header=None, name='ivar'))
 
-        table_hdus = [fits.BinTableHDU(table, name=name) for name, table in self.data_tables.items()]
+        table_hdus = [fits.BinTableHDU(table, name=name, header=table.meta.get('header'))
+                      for name, table in self.data_tables.items()]
         hdu_list = fits.HDUList([*hdus, *table_hdus])
         self._update_filepath(fpack)
         logger.info('Writing file to {filepath}'.format(filepath=self.filepath))

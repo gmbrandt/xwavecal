@@ -3,7 +3,7 @@ import numpy as np
 from astropy.table import Table
 from copy import deepcopy
 
-from echelle.blaze import ApplyBlaze, BackgroundSubtractSpectrum, BlazeMaker
+from echelle.blaze import ApplyBlaze, BlazeMaker
 from echelle.tests.utils import FakeContext, FakeImage
 from echelle.utils.blaze_utils import normalize_orders
 
@@ -44,15 +44,6 @@ class TestBlazeMaker:
         assert image.get_header_val('type') == 'lampflat'
         assert blaze.get_header_val('type') == BlazeMaker(self.CONTEXT).calibration_type.lower()
         assert np.allclose(blaze.data, 0)
-
-
-class TestBackgroundSubtractSpectrum:
-    def test_do_stage(self):
-        stage = BackgroundSubtractSpectrum(FakeContext())
-        image = FakeImage()
-        image.data_tables = {'SPECBOX': Table({'fiber': [1, 1], 'flux': np.ones((2, 10))})}
-        image = stage.do_stage(image)
-        assert np.allclose(image.data_tables['SPECBOX']['flux'].data, np.zeros((2, 10)))
 
 
 def test_normalize_orders():

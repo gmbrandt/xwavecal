@@ -57,6 +57,24 @@ class BackgroundSubtract(Stage):
 
     def do_stage(self, image):
         logger.info('Background subtracting the 2d frame')
-        image.data = image.data - sep.Background(image.data).back()
-        # todo errors based on background subtraction.
+        background = sep.Background(image.data).back()
+        image.data = image.data - background
+        image.ivar = None if image.ivar is None else (image.ivar ** (-1) + np.abs(background)) ** (-1)
+        del background
+        return image
+
+
+class BackgroundSubtractSpectrum(Stage):
+    def __init__(self, runtime_context=None):
+        super(BackgroundSubtractSpectrum, self).__init__(runtime_context=runtime_context)
+
+    def do_stage(self, image):
+        logger.info('Background subtracting the extracted 1d spectra')
+        for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
+            if image.data_tables.get(key) is not None:
+                spectrum = image.data_tables[key]
+                background = sep.Background(spectrum['flux'].data).back()
+                spectrum['flux'] -= background
+                spectrum['stderr'] = np.sqrt(spectrum['stderr']**2 + np.abs(background))
+                image.data_tables[key] = spectrum
         return image

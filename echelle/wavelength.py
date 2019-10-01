@@ -552,6 +552,7 @@ class ApplyToSpectrum(WavelengthStage):
         pixel_coordinates, order_coordinates = pixel_order_as_array(spectrum[fiber_mask])
         spectrum['wavelength'][fiber_mask] = wcs.wavelength(pixel=pixel_coordinates,
                                                             order=order_coordinates)
+        spectrum.meta['header'] = {'MODEL': str(wcs.model), 'MCOEFFS': str(list(wcs.model_coefficients))}
         image.data_tables[self.runtime_context.box_spectrum_name] = spectrum
         return image
 
