@@ -153,7 +153,7 @@ TODO ...
 The wavelength model and wavelength coefficients are saved in the fits header
 for each spectrum extension that has wavelengths. The model and coefficients have
 keywords MODEL and MCOEFFS, respectively, in the header.
-ID keywords: IDTRACE, IDBLAZE, IDLIST, IDFIBTMP
+ID keywords: IDTRACE, IDBLAZE, IDLIST, IDTEMPL
 
 Configuring a new instrument
 ============================

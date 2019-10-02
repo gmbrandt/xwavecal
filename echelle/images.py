@@ -65,6 +65,7 @@ class Image(DataProduct):
         self.filepath = filepath
         self.trace = trace
         self.rectified_2d_spectrum = None
+        self.rectified_ivar = None
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
         self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self.header)
 

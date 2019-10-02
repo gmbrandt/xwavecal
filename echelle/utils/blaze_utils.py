@@ -15,7 +15,7 @@ def normalize_orders(image_data, trace, half_window=10, n=100):
     """
     maxy = np.max(image_data.shape[0])
     x, y = np.meshgrid(np.arange(image_data.shape[1]), np.arange(image_data.shape[0]))
-    normalization_factor = np.ones_like(image_data).astype(float)
+    normalization_factor = np.ones_like(image_data).astype(float) * np.inf
     for single_order in trace.data['centers']:
         roi = slice(int(max(0, np.min(single_order) - half_window)),
                     int(min(np.max(single_order) + half_window, maxy)))

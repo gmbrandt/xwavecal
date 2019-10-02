@@ -46,6 +46,7 @@ class BoxExtract(Stage):
         for order_id in list(rectified_2d_spectrum.keys()):
             weights = self._weights(rectified_2d_spectrum[order_id]['val'], rectified_ivar[order_id]['val'])
             flux = self.extract_order(rectified_2d_spectrum[order_id]['val'], weights)
+            #TODO if ivar is zero anywhere, it will return inf std. Maybe it should return nan instead.
             stdvar = self.extract_order(np.power(rectified_ivar[order_id]['val'], -1), safe_pow(weights, 2))
             extracted_spectrum_per_order['flux'].append(flux)
             extracted_spectrum_per_order['stderr'].append(np.sqrt(stdvar))
@@ -91,27 +92,28 @@ class BoxExtract(Stage):
         return trimmed_rectified_spectrum
 
 
-class SNEExtract(BoxExtract):
+class IVarExtract(BoxExtract):
     """
-    Extraction with each pixel weighted by its signal to noise.
+    Extraction with each pixel weighted by its inverse variance.
     """
     def __init__(self, runtime_context=None):
-        super(SNEExtract, self).__init__(runtime_context=runtime_context)
+        super(IVarExtract, self).__init__(runtime_context=runtime_context)
         self.extraction_half_window = runtime_context.sne_extraction_half_window
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
         self.table_name = runtime_context.sne_spectrum_name
 
     def _weights(self, order_rect_spectrum, order_rect_ivar):
-        unnormed_weights = np.abs(order_rect_spectrum) * np.sqrt(order_rect_ivar)
-        return unnormed_weights / self.extract_order(unnormed_weights)
+        normalization = self.extract_order(order_rect_ivar)
+        return np.divide(order_rect_ivar, normalization, out=np.zeros_like(order_rect_ivar),
+                         where=~np.isclose(normalization, 0))
 
 
-class BlazeCorrectedSNEExtract(SNEExtract):
+class BlazeCorrectedExtract(IVarExtract):
     """
-    Same as SNEExtract, meant to run after dividing the 2d spectrum by the blaze AND re-rectifying the spectrum.
+    Same as IVarExtract, meant to run after dividing the 2d spectrum by the blaze AND re-rectifying the spectrum.
     """
     def __init__(self, runtime_context=None):
-        super(BlazeCorrectedSNEExtract, self).__init__(runtime_context=runtime_context)
+        super(BlazeCorrectedExtract, self).__init__(runtime_context=runtime_context)
         self.extraction_half_window = runtime_context.sne_extraction_half_window
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
         self.table_name = runtime_context.blaze_corrected_spectrum_name

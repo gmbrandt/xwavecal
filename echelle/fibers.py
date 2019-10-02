@@ -72,7 +72,7 @@ class IdentifyFibers(ApplyCalibration):
             fiber_ids = self.build_fiber_column(matched_ids, image, spectrum)
             ref_ids = self.build_ref_id_column(matched_ids, image, spectrum, self.runtime_context.ref_id)
             # TODO refactor storing information about which spectra exist.
-            image.set_header_val('IDFIBTMP', (template_path, 'ID of the fiber template.'))
+            image.set_header_val('IDTEMPL', (template_path, 'ID of the fiber template.'))
             for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
                 if image.data_tables.get(key) is not None:
                     image.data_tables[key].add_column(fiber_ids, name='fiber')

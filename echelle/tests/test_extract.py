@@ -5,7 +5,7 @@ from echelle.tests.test_traces import FakeTraceImage
 from echelle.tests.utils import fill_image_with_traces, FakeContext
 from echelle.utils.trace_utils import Trace
 from echelle.utils import extract_utils
-from echelle.extract import BoxExtract, RectifyTwodSpectrum, SNEExtract, safe_pow
+from echelle.extract import BoxExtract, RectifyTwodSpectrum, IVarExtract, safe_pow
 
 
 class TestRectify:
@@ -138,11 +138,12 @@ class TestBoxExtract:
             assert np.median(spectrum) > 1E4
 
 
-class TestStoNExtract:
+class TestIVarExtract:
     CONTEXT = FakeContext()
+
     def test_weights_are_normalized(self):
-        w = SNEExtract(self.CONTEXT)._weights(np.random.random((10, 20)) * 100,
-                                              np.random.random((10, 20)))
+        w = IVarExtract(self.CONTEXT)._weights(np.random.random((10, 20)) * 100,
+                                               np.random.random((10, 20)))
         assert np.allclose(w.shape, (10, 20))
         assert np.allclose(np.sum(w, axis=0), 1)
 
