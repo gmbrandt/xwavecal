@@ -14,6 +14,7 @@ class TestApplyBlaze:
     @mock.patch('echelle.images.Image.load')
     def test_apply_calibration(self, mock_load, mock_get_cal):
         blaze = FakeImage()
+        self.CONTEXT.min_blaze_sn = np.inf
         blaze.data = np.random.randint(1, 9, size=(10, 10))
         image = deepcopy(blaze)
         image.ivar = 4 * np.ones((10, 10))  # stderr = 1/2
@@ -54,5 +55,5 @@ def test_normalize_orders():
     data /= normalization_factor
     assert np.allclose(data[4:7], 1)
     assert np.allclose(data[1:3], 0.5/3)
-    # check that we do not divide values which are not near the trace and which are not < minval
-    assert np.allclose([data[-1], data[0]], 1)
+    # check that we set values which are not near the trace and which are not < minval to 0
+    assert np.allclose([data[-1], data[0]], 0)

@@ -33,7 +33,7 @@ class ApplyBlaze(ApplyCalibration):
         else:
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
             # TODO full error propagation. The above does not hold for low (< 5) signal-to-noise pixels.
-            image.data = np.divide(image.data, blaze.data, out=image.data, where=~np.isclose(blaze.data, 0))
+            image.data = np.divide(image.data, blaze.data, out=image.data.astype(float), where=~np.isclose(blaze.data, 0))
             image.set_header_val('IDBLAZE', (master_calibration_path, 'ID of blaze file used'))
         return image
 

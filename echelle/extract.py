@@ -46,8 +46,10 @@ class BoxExtract(Stage):
         for order_id in list(rectified_2d_spectrum.keys()):
             weights = self._weights(rectified_2d_spectrum[order_id]['val'], rectified_ivar[order_id]['val'])
             flux = self.extract_order(rectified_2d_spectrum[order_id]['val'], weights)
-            #TODO if ivar is zero anywhere, it will return inf std. Maybe it should return nan instead.
-            stdvar = self.extract_order(np.power(rectified_ivar[order_id]['val'], -1), safe_pow(weights, 2))
+            stdvar = self.extract_order(np.power(rectified_ivar[order_id]['val'], -1,
+                                                 where=~np.isclose(rectified_ivar[order_id]['val'], 0),
+                                                 out=np.zeros_like(rectified_ivar[order_id]['val'])),
+                                        safe_pow(weights, 2))
             extracted_spectrum_per_order['flux'].append(flux)
             extracted_spectrum_per_order['stderr'].append(np.sqrt(stdvar))
             extracted_spectrum_per_order['pixel'].append(np.arange(len(flux)))

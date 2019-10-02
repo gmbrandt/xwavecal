@@ -142,10 +142,14 @@ class TestIVarExtract:
     CONTEXT = FakeContext()
 
     def test_weights_are_normalized(self):
-        w = IVarExtract(self.CONTEXT)._weights(np.random.random((10, 20)) * 100,
-                                               np.random.random((10, 20)))
+        w = IVarExtract(self.CONTEXT)._weights(None, np.random.random((10, 20)))
         assert np.allclose(w.shape, (10, 20))
         assert np.allclose(np.sum(w, axis=0), 1)
+
+    def test_weights_handle_div_by_zero(self):
+        w = IVarExtract(self.CONTEXT)._weights(None, np.zeros((10, 20)))
+        assert np.allclose(w.shape, (10, 20))
+        assert np.allclose(w, 0)
 
 
 def test_safe_pow():

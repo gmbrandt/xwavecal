@@ -342,7 +342,7 @@ class BlazeCorrectArcEmissionLines(WavelengthStage):
 class IdentifyArcEmissionLinesLowSN(IdentifyArcEmissionLines):
     def __init__(self, runtime_context=None):
         super(IdentifyArcEmissionLinesLowSN, self).__init__(runtime_context=runtime_context)
-        self.min_peak_snr = 10
+        self.min_peak_snr = self.runtime_context.overlap_min_peak_snr
 
 
 class FindGlobalScale(WavelengthStage):

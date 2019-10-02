@@ -14,16 +14,15 @@ class OverlapFitter:
         """
         coeffs = self._fit_overlap(b_lines, r_lines, b_lines_flux, r_lines_flux,
                                    linear_scale_range, pixel_tol=2, flux_tol=0.2, deg=deg)
+        # TODO Separate refine function.
         red_peaks = match_peaks(b_lines, r_lines, coeffs, pixel_tol=1)
-        if peaks_only:
-            # TODO remove this and find a way to inspect overlaps with only the peaks
-            return {'pixel': red_peaks, 'matched_pixel': coordinate_transform(red_peaks, coeffs), 'peaks': len(red_peaks)}
-        else:
-            return {'pixel': np.arange(1000), 'matched_pixel': coordinate_transform(np.arange(1000), coeffs), 'peaks': len(red_peaks)}
+        return {'pixel': red_peaks, 'matched_pixel': coordinate_transform(red_peaks, coeffs), 'peaks': len(red_peaks)}
 
-    def _fit_overlap(self, b_lines, r_lines, b_lines_flux, r_lines_flux, linear_scale_range, pixel_tol=2,
+    def _fit_overlap(self, b_lines, r_lines_f, b_lines_flux, r_lines_flux_f, linear_scale_range, pixel_tol=2,
                      flux_tol=0.2, deg=2):
         best_coeffs = np.array([0, 1, 0])
+
+        r_lines, r_lines_flux = np.copy(r_lines_f), np.copy(r_lines_flux_f)
 
         #r_lines = r_lines[np.argsort(r_lines_flux)[::-1]][:min(15, len(r_lines))]
         #r_lines_flux = np.sort(r_lines_flux)[::-1][:min(15, len(r_lines))]
@@ -57,13 +56,13 @@ class OverlapFitter:
                     match_count.append(np.max(num_matched_peaks))
                     all_coeffs.append(coeffs[np.argmax(num_matched_peaks)])
         if len(match_count) > 0:
+            # refine coeffs using all the matching peaks from the overlap.
             best_coeffs = all_coeffs[np.argmax(match_count)]
-
-            peaks = poly.polyval(r_lines, best_coeffs.flatten())
+            peaks = poly.polyval(r_lines_f, best_coeffs.flatten())
             blue_peaks = nearest_blue(peaks)
             nearby = 5 * pixel_tol
             if np.count_nonzero(np.isclose(blue_peaks, peaks, atol=nearby)) >= deg+1:
-                best_coeffs = poly.polyfit(r_lines[np.isclose(blue_peaks, peaks, atol=nearby)],
+                best_coeffs = poly.polyfit(r_lines_f[np.isclose(blue_peaks, peaks, atol=nearby)],
                                            blue_peaks[np.isclose(blue_peaks, peaks, atol=nearby)], deg)
         return best_coeffs.flatten()
 
