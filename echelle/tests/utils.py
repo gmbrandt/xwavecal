@@ -39,7 +39,7 @@ class FakeImage(object):
                        'rdnoise': 11, 'type': 'lampflat',
                        'observation_date': '2019-04-10T12:56:44.466',
                        'instrument': 'nres03', 'site_name': 'test', 'unique_id': 77,
-                       'OBJECTS': 'none&tung&tung', 'instrument2': 'fa13'}
+                       'fiber_state': 'none&tung&tung', 'instrument2': 'fa13'}
         self.filepath = 'None'
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
@@ -53,7 +53,7 @@ class FakeImage(object):
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = 0, 1, 1
         self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = 0, 1, 1
         self.wavelength_solution = {}
-        self.translator=None
+        self.translator = None
 
     def get_header_val(self, key):
         return self.header[key]

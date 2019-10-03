@@ -160,11 +160,20 @@ Configuring a new instrument
 TODO
 - tracing, how to measure the different params required for the config.ini file.
 
+The reference line list
+-----------------------
+We include the original ThAr (Thorium-Argon) atlas from the European Southern Observatory (ESO). This was retrieved
+from http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html in late
+2019. This line list was designed for spectrographs with a resolving power (R) of 100,000, and thus
+it may not be suited for your instrument if it has a lower or larger R. Moreover, the wavelengths are air wavelengths.
+It is up to you to download a line list suitable for your instrument (if the ThAr atlas is not suitable)
+and correct the line list for the index of refraction of air if necessary.
+
 Contributions
 =============
-Contributions to the code are encouraged. The master branch is protected
-so the workflow for contributing is first to open a branch, and then make a pull request.
-One approving review from an administrator is required.
+We encourage and welcome contributions to :code:`echelle`. The master branch is protected
+so the workflow for contributing is first to open a branch and then make a pull request.
+One approving review from an administrator is required before the branch can be merged.
 
 License
 =======

@@ -26,7 +26,8 @@ class ApplyBlaze(ApplyCalibration):
 
     def apply_master_calibration(self, image, master_calibration_path):
         logger.info('Dividing by blaze.')
-        blaze = Image.load(master_calibration_path, extension_name=self.runtime_context.blaze_name)
+        blaze = Image.load(master_calibration_path, extension_name=self.runtime_context.blaze_name,
+                           translator=image.translator)
         if not np.allclose(image.data.shape, blaze.data.shape):
             logger.error('Shape of blaze data and image data do not agree. Aborting blaze correction. Wavelength'
                          'solution may suffer.')

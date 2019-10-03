@@ -41,7 +41,6 @@ def estimate_global_scale(detector_range, n, m0):
     :param n: the number of distinct diffraction orders on the detector, e.g. 67
     :param m0: the principle order number, e.g. 52
     :return: The global scale constant for the wavelength solution, in units of Angstrom.
-    See equation 10 of Brandt&Brandt 2019
     """
     return detector_range * (1/m0 - 1/(m0 + n))**(-1)
 

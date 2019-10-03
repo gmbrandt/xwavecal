@@ -4,7 +4,7 @@ import pytest
 from astropy.table import Table
 
 from echelle.utils.fiber_utils import fiber_states_from_header, fibers_state_to_filename, \
-                                          lit_fibers, lit_wavecal_fibers
+                                          lit_fibers, lit_wavecal_fibers, wavecal_fibers_from_header
 from echelle.fibers import IdentifyFibers, MakeFiberTemplate
 from echelle.images import Image, DataProduct
 
@@ -12,18 +12,18 @@ from echelle.tests.utils import FakeImage, FakeContext
 
 
 def test_creation_from_header():
-    header = {'OBJECTS': 'targ&ThAr&none'}
-    assert (1, 1, 0) == fiber_states_from_header(header)
+    assert (1, 1, 0) == fiber_states_from_header('targ&ThAr&none')
+    assert (0, 1, 1) == fiber_states_from_header('none&ThAr&targ')
+    assert (0, 1, 0) == fiber_states_from_header('none&ThAr&none')
 
-    header = {'OBJECTS': 'none&ThAr&targ'}
-    assert (0, 1, 1) == fiber_states_from_header(header)
 
-    header = {'OBJECTS': 'none&ThAr&none'}
-    assert (0, 1, 0) == fiber_states_from_header(header)
+def test_wavecal_fibers_from_header():
+    assert (0, 1, 0) == wavecal_fibers_from_header('targ&ThAr&none', 'thar')
+    assert (0, 1, 1) == wavecal_fibers_from_header('none&ThAr&ThAr', 'thar')
 
 
 def test_fiber_state_to_filename():
-    image = Image(header={'OBJECTS': 'tung&tung&none'})
+    image = Image(header={'fiber_state': 'tung&tung&none'})
     assert fibers_state_to_filename(image) == '110'
 
 

@@ -22,6 +22,8 @@ class OverscanSubtractor(Stage):
     def do_stage(self, image):
         logger.info('Subtracting by median overscan')
         image.data = np.ascontiguousarray(image.data.astype(float))
+        import pdb
+        pdb.set_trace()
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         overscan_section = parse_region_keyword(image.get_header_val('overscan_section'))
         image.data[data_section] -= np.median(image.data[overscan_section])
@@ -34,7 +36,7 @@ class GainNormalizer(Stage):
 
     def do_stage(self, image):
         logger.info('Multiplying by gain')
-        image.data *= image.get_header_val('gain')
+        image.data = image.data.astype(float) * image.get_header_val('gain')
         image.set_header_val('gain', 1.0)
         return image
 
@@ -57,6 +59,7 @@ class BackgroundSubtract(Stage):
 
     def do_stage(self, image):
         logger.info('Background subtracting the 2d frame')
+        image.data = image.data.copy(order='C')
         background = sep.Background(image.data).back()
         image.data = image.data - background
         image.ivar = None if image.ivar is None else (image.ivar ** (-1) + np.abs(background)) ** (-1)

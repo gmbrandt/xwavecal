@@ -22,11 +22,16 @@ class DataProduct(object):
         self.data_name = data_name
         self.translator = translator
 
+    def _get_header_vals(self, keys):
+        keys = [keys] if isinstance(keys, str) else keys
+        out = tuple(self.header[key] for key in keys)
+        return out if len(out) > 1 else out[0]
+
     def get_header_val(self, key):
         if self.translator is not None:
-            key = self.translator[key]
-            return self.translator.type_keys.get(self.header[key], self.header[key])
-        return self.header[key]
+            keys = self.translator[key]
+            return self.translator.type_keys.get(self._get_header_vals(keys), self._get_header_vals(keys))
+        return self._get_header_vals(key)
 
     def set_header_val(self, key, value):
         if self.translator is not None:
@@ -53,7 +58,6 @@ class DataProduct(object):
 
 
 class Image(DataProduct):
-    # TODO THIS IS NRES SPECIFIC because of fiber_states_from_header
     def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
                  data_name=None, ivar=None):
         super(Image, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
@@ -66,8 +70,8 @@ class Image(DataProduct):
         self.trace = trace
         self.rectified_2d_spectrum = None
         self.rectified_ivar = None
-        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
-        self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self.header)
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.get_header_val('fiber_state'))
+        self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self.get_header_val('fiber_state'))
 
         self.wavelength_solution = {}
 
@@ -92,3 +96,18 @@ class Image(DataProduct):
 
     def num_wavecal_fibers(self):
         return len(lit_wavecal_fibers(self))
+
+
+class HARPSImage(Image):
+    # TODO make primary_extension and extra_header extensions or somethign in the config.
+    #  this is a temporary class just to get HARPS working.
+    def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
+                 data_name=None, ivar=None):
+        super(HARPSImage, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
+
+    @classmethod
+    def load(cls, path, extension_name, translator=None):
+        hdu_list = fits.open(path)
+        header = hdu_list[extension_name].header
+        header.extend(hdu_list[0].header)
+        return cls(data=hdu_list[extension_name].data, header=header, filepath=path, translator=translator)
