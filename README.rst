@@ -121,6 +121,7 @@ Assume the output trace file is named :code:`X_trace.fits.fz`. You can access th
 You could do the following to plot the trace centers atop the raw data.
 
 .. code-block:: python
+
     import matplotlib.pyplot as plt
 
     trace = Table(fits.open('X_trace.fits.fz')['TRACE'].data)
@@ -136,14 +137,15 @@ The output will look like:
 Blaze
 -----
 
-Arc (wavecal) data products
------------------
+Wavecal (wavelength calibration) data products
+----------------------------------------------
 Here we address how see the extracted spectra and other products from a wavecal lamp file,
 including the spectrum's wavelength solution, and
 the fluxes and associated standard 1-sigma uncertainties. The data products associated with
 a calibration file are
 
 .. code-block:: python
+
     import matplotlib.pyplot as plt
 
     im = fits.open('wavecal.fits.fz')
@@ -176,8 +178,7 @@ In the section [data] of the config file, specify in header_keys which header ke
 in the fits file correspond to which observables (e.g. read_noise for harps is RON).
 
 In the type_keys, specify which outputs of the :code:`type` header key correspond to
-a lampflat or a wavecal. E.g. for nres, wavecal frames have the value
- :code:`DOUBLE` under the header key :code:`OBSTYPE`. Therefore in type_keys, I would
+a lampflat or a wavecal. E.g. for nres, wavecal frames have the value :code:`DOUBLE` under the header key :code:`OBSTYPE`. Therefore in type_keys, I would
 have an entry :code:`{'DOUBLE': 'wavecal'}`, and in header_keys, I would have an entry
 :code:`{'type': 'OBSTYPE'}`. One can insert tuples into header_keys. I.e. if you need information
 from more than one field. E.g. for HARPS, I made my unique identifier (mjd-obs, chip id) because
@@ -188,32 +189,39 @@ Orientating the frames
 In section [stages] are all the reduction stages. For the finished HARPS config file,
 you will notice some of the first stages are Rot90 and FlipHoriz, which rotate the frame
 90 degrees counter-clockwise and flip it about the vertical axis. We do this so that the dispersion
-of the frame agrees with nres (the nres_config.ini file does not have these flips accordingly).
+of the frame agrees with the NRES (the nres_config.ini file does not have these flips accordingly).
 Prior to tracing, but after overscan trimming, every frame must be orientated so that:
-The wavelength of any given diffraction order increases from left to right in pixel, and:
-The diffraction orders become overall bluer as one heads up the detector (bottom to top).
+The wavelength of any given diffraction order increases from left to right in pixel (x=0 to x=Nx), and:
+The diffraction orders become overall bluer as one heads up the detector (bottom to top, y=0 to y=Ny).
 
 Making the template prior to first reduction
 --------------------------------------------
-In section [reduction], :code:`template_trace_id`
-gives the trace id (:code:`id` in the trace.fits files created) for the diffraction order
-that :code:`echelle` will use to make a template from on the first arc frame you reduce. For HARPS,
-I set :code:`template_trace_id`=10 arbitrarily. I recommend you don't select diffraction orders
-that are known to be problematic (e.g. are near the edge).
+In section [reduction], :code:`template_trace_id` gives the trace id (:code:`id` in the trace.fits files created)
+for the diffraction order
+that :code:`echelle` will use to make a template from on the first wavecal frame you reduce. For HARPS,
+I set :code:`template_trace_id = 10` arbitrarily. I recommend you don't select diffraction orders
+that are known to be problematic (e.g. are near the edge). Specify the paths in the config.ini file
+so that they are where you want them. Namely, you need to specify the line list path and the .db database path.
 
-Next, reduce a lampflat and wavecal via :code:`echelle_reduce_dir`, or with  :code:`echelle_reduce`. You will notice
-that :code:`echelle` will abort the wavelength solution on the first arc you input. That is because no
-template exists in the database. However, you just created one. This template is just the 1d spectrum of the
+Next, reduce a lampflat and wavecal via :code:`echelle_reduce_dir`, or with  :code:`echelle_reduce`. The lampflat
+reduction will make a trace file, a blaze file, and a processed lampflat file. On the first wavecal you input, you will notice that :code:`echelle` will abort the wavelength solution o. That is because no
+template exists in the database. However, you just created one. For all wavecal files which resemble
+those you just processed, for all of time (provided you don't delete the database or the fibers.fits file)
+you will never need to make another template. This template is just the 1d spectrum of the
 order specified by :code:`template_trace_id`. Echelle looks for an order with a matching spectrum, and labels
-it with the reference id (:code:`ref_id`) given in [reduction] of the config.ini. Re-run the reduction
-and the frame will be wavelength calibrated (although incorrectly because you have not changed the required settings in
-the config.ini file!).
+it with the reference id (:code:`ref_id`) given in [reduction] of the config.ini. This template, along with
+any processed files (e.g. the trace files etc) will be saved in the database .db file at the path
+specified in the config.ini file. All processed calibration files are saved under the table :code:`caldata`.
+
+First reduction
+---------------
+With the template in the .db, re-run the reduction and any wavecal frames will be wavelength calibrated (although incorrectly
+because you have not changed the required settings in the config.ini file!).
 
 Configuring settings to wavelength calibrate your instrument
 ------------------------------------------------------------
 
- Each raw
-HARPS frame has two chips (chip 1 is bluer and chip 2 is redder). The config file
+Each raw HARPS frame has two chips (chip 1 is bluer and chip 2 is redder). The config file
 for the two chips are identical except for two items: the number of diffraction orders on
 the detector and the principle order number. We cover those first.
 
