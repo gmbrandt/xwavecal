@@ -1,5 +1,6 @@
 import abc
 import logging as logger
+import os
 
 from echelle.database import query_db_for_nearest
 
@@ -24,6 +25,9 @@ class ApplyCalibration(Stage):
     def do_stage(self, image):
         master_calibration_path = self.get_calibration_filename(image)
         if master_calibration_path is None:
+            self.on_missing_master_calibration(image)
+            return image
+        elif not os.path.exists(master_calibration_path):
             self.on_missing_master_calibration(image)
             return image
         return self.apply_master_calibration(image, master_calibration_path)

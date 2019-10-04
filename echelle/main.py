@@ -108,4 +108,10 @@ def make_output_path(output_dir, data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
                                                                          type=data.get_header_val('type'),
                                                                          f0=data.fiber0_lit, f1=data.fiber1_lit,
                                                                          f2=data.fiber2_lit)
+    filename = _sanitize(filename)
     return os.path.join(output_dir, filename)
+
+
+def _sanitize(filename):
+    filename = filename.replace('(', '_').replace(')', '_').replace(' ', '').replace(',', '_')
+    return filename.replace('___', '_').replace('__', '_')

@@ -132,6 +132,7 @@ class RectifyTwodSpectrum(Stage):
             logger.error('Image has empty trace attribute. Aborting extraction.')
             image.is_bad = True
             image.rectified_2d_spectrum = {}
+            image.rectified_ivar = {}
             return image
         rectified_2d_spectrum = extract_utils.rectify_orders(image.data, image.trace,
                                                              half_window=self.max_extraction_half_window)

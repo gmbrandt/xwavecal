@@ -89,9 +89,10 @@ class TestIdentifyFibers:
     def test_do_stage_aborts_on_missing_cal(self, mock_warn, mock_cal):
         assert 'image' == IdentifyFibers(FakeContext()).do_stage(image='image')
 
+    @mock.patch('os.path.exists', return_value=True)
     @mock.patch('echelle.fibers.IdentifyFibers.apply_master_calibration')
     @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value='/path/')
-    def test_do_stage(self, fake_cal, mock_apply_cal):
+    def test_do_stage(self, fake_cal, mock_apply_cal, mock_os):
         IdentifyFibers(FakeContext()).do_stage(image='image')
         mock_apply_cal.assert_called_with('image', '/path/')
 

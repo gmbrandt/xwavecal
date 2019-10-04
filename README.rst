@@ -47,8 +47,8 @@ the config file to process properly.
 
 Reducing a directory of data
 ----------------------------
-To reduce a batch of data containing lampflats and arcs, (using the test data supplied with this
-repo) we would run (if in the root directory of this repo):
+To reduce a batch of example data containing lampflats and wavelength calibrations (hereafter wavecal),
+we would run (if in the root directory of this repo):
 
 .. code-block:: bash
 
@@ -59,7 +59,7 @@ This will output the reduced data files and intermediate data products (e.g. Tra
 ~/Downloads. A .db file will be created in the place specified in :code:`nres_config.ini`. If you
 re-reduce the same data, the entries in the .db will be updated appropriately.
 
-When reducing arc lamps, :code:`echelle` will automatically select the trace files created
+When reducing wavecals, :code:`echelle` will automatically select the trace files created
 from lampflats which have the nearest observation date.
 
 If you want to fpack (.fz) the output files. You must first install :code:`libcfitsio`.
@@ -81,7 +81,7 @@ To reduce files by specifying paths, specify the data paths separated by spaces:
 
 For clarity, w00 is a lampflat and a00 is a ThAr exposure. Again, :code:`echelle` will automatically reduce lampflats and
 generate trace files first.
-Note that if the lampflat specified is further from the arc in observation date than another lampflat
+Note that if the lampflat specified is further from the wavecal in observation date than another lampflat
 you already reduced which is in the database, :code:`echelle` will find the closest lampflat
 in the data base and use that instead. You would want to specify a different (blank) database in order
 to force using a lampflat which is very far away. Again, files can be compressed with fpack (after installing
@@ -146,7 +146,7 @@ a calibration file are
 .. code-block:: python
     import matplotlib.pyplot as plt
 
-    im = fits.open('arc.fits.fz')
+    im = fits.open('wavecal.fits.fz')
     im.info()
 
 TODO ...
@@ -155,10 +155,74 @@ for each spectrum extension that has wavelengths. The model and coefficients hav
 keywords MODEL and MCOEFFS, respectively, in the header.
 ID keywords: IDTRACE, IDBLAZE, IDLIST, IDTEMPL
 
+What is :code:`ref_id`
+
 Configuring a new instrument
 ============================
-TODO
-- tracing, how to measure the different params required for the config.ini file.
+In this section I cover how to reduce data from a new instrument. If overscan subtraction and overscan
+trimming is not required, all that is needed (ideally) is a new config.ini file. I show this
+procedure by example on HARPS. The final config file we will make is See :code:`echelle/data/HARPS_chipX_config.ini`.
+where X is either 1 or 2.
+
+Indicating header keywords
+--------------------------
+We need to tell :code:`echelle` where the read_noise, etc... lies in the fits headers
+of the input raw data files.
+
+We first copy one of the example config.ini files inside of :code:`echelle/data/`. Next
+we uncomment out the stage :code:`MakeFiberTemplate` in the section [stages].
+
+In the section [data] of the config file, specify in header_keys which header keys
+in the fits file correspond to which observables (e.g. read_noise for harps is RON).
+
+In the type_keys, specify which outputs of the :code:`type` header key correspond to
+a lampflat or a wavecal. E.g. for nres, wavecal frames have the value
+ :code:`DOUBLE` under the header key :code:`OBSTYPE`. Therefore in type_keys, I would
+have an entry :code:`{'DOUBLE': 'wavecal'}`, and in header_keys, I would have an entry
+:code:`{'type': 'OBSTYPE'}`. One can insert tuples into header_keys. I.e. if you need information
+from more than one field. E.g. for HARPS, I made my unique identifier (mjd-obs, chip id) because
+each raw harps frame has both the blue and the red parts of the spectra as different chips.
+
+Orientating the frames
+----------------------
+In section [stages] are all the reduction stages. For the finished HARPS config file,
+you will notice some of the first stages are Rot90 and FlipHoriz, which rotate the frame
+90 degrees counter-clockwise and flip it about the vertical axis. We do this so that the dispersion
+of the frame agrees with nres (the nres_config.ini file does not have these flips accordingly).
+Prior to tracing, but after overscan trimming, every frame must be orientated so that:
+The wavelength of any given diffraction order increases from left to right in pixel, and:
+The diffraction orders become overall bluer as one heads up the detector (bottom to top).
+
+Making the template prior to first reduction
+--------------------------------------------
+In section [reduction], :code:`template_trace_id`
+gives the trace id (:code:`id` in the trace.fits files created) for the diffraction order
+that :code:`echelle` will use to make a template from on the first arc frame you reduce. For HARPS,
+I set :code:`template_trace_id`=10 arbitrarily. I recommend you don't select diffraction orders
+that are known to be problematic (e.g. are near the edge).
+
+Next, reduce a lampflat and wavecal via :code:`echelle_reduce_dir`, or with  :code:`echelle_reduce`. You will notice
+that :code:`echelle` will abort the wavelength solution on the first arc you input. That is because no
+template exists in the database. However, you just created one. This template is just the 1d spectrum of the
+order specified by :code:`template_trace_id`. Echelle looks for an order with a matching spectrum, and labels
+it with the reference id (:code:`ref_id`) given in [reduction] of the config.ini. Re-run the reduction
+and the frame will be wavelength calibrated (although incorrectly because you have not changed the required settings in
+the config.ini file!).
+
+Configuring settings to wavelength calibrate your instrument
+------------------------------------------------------------
+
+ Each raw
+HARPS frame has two chips (chip 1 is bluer and chip 2 is redder). The config file
+for the two chips are identical except for two items: the number of diffraction orders on
+the detector and the principle order number. We cover those first.
+
+The principle order number is the true diffraction order index of the diffraction order
+with reference id 0 (:code:`ref_id`) in the extracted sectrum. If you know it for your instrument,
+great. If not: go to [stages] inside of the config.ini file and uncomment the stage
+:code:`IdentifyPrincipleOrderNumber`.
+
+
 
 The reference line list
 -----------------------

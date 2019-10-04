@@ -22,8 +22,6 @@ class OverscanSubtractor(Stage):
     def do_stage(self, image):
         logger.info('Subtracting by median overscan')
         image.data = np.ascontiguousarray(image.data.astype(float))
-        import pdb
-        pdb.set_trace()
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         overscan_section = parse_region_keyword(image.get_header_val('overscan_section'))
         image.data[data_section] -= np.median(image.data[overscan_section])
@@ -76,8 +74,9 @@ class BackgroundSubtractSpectrum(Stage):
         for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
             if image.data_tables.get(key) is not None:
                 spectrum = image.data_tables[key]
-                background = sep.Background(spectrum['flux'].data).back()
-                spectrum['flux'] -= background
-                spectrum['stderr'] = np.sqrt(spectrum['stderr']**2 + np.abs(background))
-                image.data_tables[key] = spectrum
+                if len(spectrum) > 0:
+                    background = sep.Background(spectrum['flux'].data).back()
+                    spectrum['flux'] -= background
+                    spectrum['stderr'] = np.sqrt(spectrum['stderr']**2 + np.abs(background))
+                    image.data_tables[key] = spectrum
         return image

@@ -3,7 +3,7 @@ import os
 from configparser import ConfigParser
 import mock
 
-from echelle.main import select_data, run, reduce_data, organize_config
+from echelle.main import select_data, run, reduce_data, organize_config, make_output_path
 from echelle.tests.utils import FakeImage
 
 
@@ -58,7 +58,7 @@ def test_run(mock_args):
 @mock.patch('echelle.main.add_data_to_db', return_value=None)
 @mock.patch('echelle.main.format_db_info', return_value=None)
 @mock.patch('echelle.main.parse_args')
-def test_reduce_data_does_not_error(mock_args, mock_format, mock_add, mock_order):
+def test_reduce_data_does_not_err(mock_args, mock_format, mock_add, mock_order):
     config = ConfigParser()
     config.read('echelle/tests/data/test_config.ini')
     config.set('stages', 'lampflat', '[]')
@@ -70,3 +70,12 @@ def test_reduce_data_does_not_error(mock_args, mock_format, mock_add, mock_order
                                                'frame_type': 'any', 'fpack': False})
         reduce_data(config=config)
     assert True
+
+
+def test_make_output_path():
+    data = FakeImage()
+    path = make_output_path('outdir', data)
+    data.set_header_val('site_name', '(test, )')
+    path2 = make_output_path('outdir', data)
+    assert path == 'outdir/test_nres03_20190410_0077_lampflat_011.fits'
+    assert path2 == 'outdir/_test_nres03_20190410_0077_lampflat_011.fits'
