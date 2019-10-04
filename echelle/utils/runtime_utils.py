@@ -55,9 +55,9 @@ def select_data_of_type(data_paths, data_class, primary_ext, header_keys, type_k
     return np.array(data_paths)[np.where([correct(path) for path in data_paths])]
 
 
-def import_class(full_class_string):
+def import_obj(full_class_string):
     """
-    dynamically import a class from a string
+    dynamically import a class or function from a string
     """
 
     class_data = full_class_string.split(".")

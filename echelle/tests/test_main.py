@@ -1,9 +1,8 @@
 import tempfile
-import os
 from configparser import ConfigParser
 import mock
 
-from echelle.main import select_data, run, reduce_data, organize_config, make_output_path
+from echelle.main import select_data, run, reduce_data, organize_config, make_output_path, import_obj
 from echelle.tests.utils import FakeImage
 
 
@@ -79,3 +78,8 @@ def test_make_output_path():
     path2 = make_output_path('outdir', data)
     assert path == 'outdir/test_nres03_20190410_0077_lampflat_011.fits'
     assert path2 == 'outdir/_test_nres03_20190410_0077_lampflat_011.fits'
+
+
+def test_import_from_string():
+    numpyones = import_obj('numpy.ones')
+    assert numpyones((5, 5)).shape == (5, 5)

@@ -9,11 +9,10 @@ from echelle.utils.trace_utils import SingleTraceFitter
 
 
 class FakeContext(object):
+    # parses the test_config.ini (which is just the nres_config.ini, but a protected copy for tests only).
     def __init__(self):
         config = ConfigParser()
         config.read('echelle/tests/data/test_config.ini')
-        # TODO change to an example ini located in tests.
-        #  or make this class empty and have it required to edit the ncessary attributes in each test.
         dictionary = {key: literal_eval(item) for key, item in config.items('reduction')}
         for attribute, value in dictionary.items():
             setattr(self, attribute, value)

@@ -539,6 +539,31 @@ class SolutionRefineFinal(WavelengthStage):
         return lines
 
 
+class SolutionRefineOnce(SolutionRefineFinal):
+    """
+    Single iteration of refining the wavelength solution. Useful if more lines have been added
+    to the line list after final refine.
+    """
+    def __init__(self, runtime_context=None):
+        super(SolutionRefineOnce, self).__init__(runtime_context=runtime_context)
+
+    def do_stage_fiber(self, image, fiber):
+        image.wavelength_solution[fiber], rsd = refine_wcs(image.wavelength_solution[fiber],
+                                                           image.wavelength_solution[fiber].measured_lines,
+                                                           image.wavelength_solution[fiber].reference_lines,
+                                                           self._converged, self._clip, max_iter=20,
+                                                           kwargs={'sigma': 4,
+                                                                   'stdfunc': median_absolute_deviation})
+
+        mad, std = median_absolute_deviation(rsd), np.std(rsd)
+        logger.info('median absolute deviation is {0} and the standard deviation is {1}'.format(mad, std),
+                     extra={'fiber': str(fiber)})
+        logger.info('{0} lines within 4.5 median absolute deviations and {1} lines within 4.5 standard deviations'
+                    ''.format(np.count_nonzero(np.isclose(rsd, 0, atol=4.5*mad)),
+                              np.count_nonzero(np.isclose(rsd, 0, atol=4.5*std))))
+        return image
+
+
 class ApplyToSpectrum(WavelengthStage):
     """
     Stage 8/8 for the wavelength solution

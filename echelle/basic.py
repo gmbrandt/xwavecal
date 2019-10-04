@@ -8,11 +8,11 @@ Author:
 """
 
 import numpy as np
-
-from echelle.stages import Stage
-from echelle.utils.fits_utils import parse_region_keyword
 import sep
 import logging as logger
+
+from echelle.stages import Stage
+from echelle.utils.runtime_utils import import_obj
 
 
 class OverscanSubtractor(Stage):
@@ -20,10 +20,14 @@ class OverscanSubtractor(Stage):
         super(OverscanSubtractor, self).__init__(runtime_context)
 
     def do_stage(self, image):
+        parse_region_keyword = import_obj(self.runtime_context.parse_region_keyword)
+
         logger.info('Subtracting by median overscan')
         image.data = np.ascontiguousarray(image.data.astype(float))
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         overscan_section = parse_region_keyword(image.get_header_val('overscan_section'))
+
+        logger.info('data section is {0} and overscan section is {1}'.format(data_section, overscan_section))
         image.data[data_section] -= np.median(image.data[overscan_section])
         return image
 
@@ -44,8 +48,10 @@ class Trimmer(Stage):
         super(Trimmer, self).__init__(runtime_context)
 
     def do_stage(self, image):
-        logger.info('Trimming image to {0}'.format(image.get_header_val('data_section')))
+        parse_region_keyword = import_obj(self.runtime_context.parse_region_keyword)
+
         data_section = parse_region_keyword(image.get_header_val('data_section'))
+        logger.info('Trimming image to {0}'.format(data_section))
         image.data = image.data[data_section]
         image.data = np.ascontiguousarray(image.data)
         return image

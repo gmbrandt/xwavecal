@@ -58,6 +58,9 @@ class DataProduct(object):
 
 
 class Image(DataProduct):
+    """
+    Class for two-dimensional data frames.
+    """
     def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
                  data_name=None, ivar=None):
         super(Image, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
@@ -98,12 +101,17 @@ class Image(DataProduct):
         return len(lit_wavecal_fibers(self))
 
 
-class HARPSImage(Image):
-    # TODO make primary_extension and extra_header extensions or somethign in the config.
-    #  this is a temporary class just to get HARPS working.
+class SplitHeaderImage(Image):
+    """
+    Functionally the same as echelle.images.Image , except this assumes that the [0] extension
+    of the raw data .fits file has information in the header integral to reduction. The [0].header is
+    appended onto the primary_extension (e.g. [1], specified in the config.ini) header for the image.
+    Example: This class is suitable for HARPS data.
+    """
     def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
                  data_name=None, ivar=None):
-        super(HARPSImage, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
+        super(SplitHeaderImage, self).__init__(filepath=filepath, data=data, header=header, translator=translator,
+                                         data_name=data_name, data_tables=data_tables, trace=trace, ivar=ivar)
 
     @classmethod
     def load(cls, path, extension_name, translator=None):

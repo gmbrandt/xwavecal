@@ -12,7 +12,7 @@ from datetime import datetime
 from ast import literal_eval
 import os
 
-from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_class, safe_eval
+from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_obj, safe_eval
 from echelle.utils.fits_utils import Translator
 from echelle.database import format_db_info, add_data_to_db
 
@@ -35,7 +35,7 @@ def reduce_data(data_paths=None, args=None, config=None):
 
     runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
     translator = Translator(header_keys, type_keys)
-    DataClass = import_class(data_class)
+    DataClass = import_obj(data_class)
     data_paths = order_data(data_paths, DataClass, extension, header_keys, type_keys)
 
     for data_path in data_paths:
@@ -43,7 +43,7 @@ def reduce_data(data_paths=None, args=None, config=None):
                     ''.format(path=data_path, data_class=data_class, extension=extension))
 
         data = DataClass.load(data_path, extension, translator)
-        stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
+        stages_todo = [import_obj(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
         auxiliary_products = []
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
@@ -70,7 +70,7 @@ def run():
 
     # get the data paths of the data to reduce.
     runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
-    DataClass = import_class(data_class)
+    DataClass = import_obj(data_class)
     data_paths = select_data(args.input_dir, args.frame_type, literal_eval(config.get('data', 'files_contain')),
                              DataClass, extension, header_keys, type_keys)
 
@@ -97,7 +97,7 @@ def select_data(input_dir, frame_type, files_contain, data_class, extension, hea
 def make_output_path(output_dir, data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
     """
     :param data: Image
-    :return: string
+    :return: path: string
              The path to write the file to.
     """
     id = str(data.get_header_val('unique_id')).zfill(4)
