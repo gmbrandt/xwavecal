@@ -30,7 +30,6 @@ class TraceMaker(Stage):
         return 'TRACE'
 
     def do_stage(self, image):
-        # need to set obstype to TRACE and set master filename.
         logger.info('fitting traces order by order', )
         fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                 min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
