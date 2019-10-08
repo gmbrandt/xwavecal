@@ -11,14 +11,14 @@ import logging.config
 from configparser import ConfigParser
 from datetime import datetime
 from ast import literal_eval
+import pkg_resources
 import os
 
 from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_obj, safe_eval
 from echelle.utils.fits_utils import Translator
 from echelle.database import format_db_info, add_data_to_db
 
-# TODO have os.env set the location of the logging.ini file.
-logging.config.fileConfig('.logging.ini')
+logging.config.fileConfig(pkg_resources.resource_filename('echelle', 'data/.logging.ini'))
 logger = logging.getLogger(__name__)
 
 
