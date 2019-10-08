@@ -7,7 +7,8 @@ from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
 from echelle.stages import ApplyCalibration, Stage
 from echelle.images import DataProduct
 
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class MakeFiberTemplate(Stage):

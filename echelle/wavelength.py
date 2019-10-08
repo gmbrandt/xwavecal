@@ -14,7 +14,8 @@ from echelle.utils.overlap_utils import flag_bad_overlaps, fit_overlaps, blank_o
 from echelle.utils.misc_utils import brute_local_min, find_nearest, minmax
 from echelle.utils.fiber_utils import lit_wavecal_fibers
 
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class WavelengthSolution(object):

@@ -5,7 +5,8 @@ from echelle.utils.fiber_utils import fiber_states_from_header, wavecal_fibers_f
 from echelle.utils.fiber_utils import lit_wavecal_fibers, lit_fibers
 from echelle.utils import fits_utils
 
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class DataProduct(object):

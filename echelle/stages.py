@@ -1,8 +1,10 @@
 import abc
-import logging as logger
 import os
 
 from echelle.database import query_db_for_nearest
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Stage(object):

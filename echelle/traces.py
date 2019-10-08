@@ -4,13 +4,14 @@ traces.py: Driver scripts for finding echelle orders across a CCD.
 Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
-import sep
 import os
-import logging as logger
 from copy import deepcopy, copy
 
 from echelle.utils.trace_utils import Trace, AllTraceFitter
 from echelle.stages import Stage, ApplyCalibration
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TraceMaker(Stage):

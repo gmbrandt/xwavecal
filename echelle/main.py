@@ -6,7 +6,8 @@ Author: G. Mirek Brandt
 Note: reduce_data() and run() are console entry points.
 """
 
-import logging as logger
+import logging
+import logging.config
 from configparser import ConfigParser
 from datetime import datetime
 from ast import literal_eval
@@ -16,6 +17,10 @@ from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, 
 from echelle.utils.fits_utils import Translator
 from echelle.database import format_db_info, add_data_to_db
 
+# TODO have os.env set the location of the logging.ini file.
+logging.config.fileConfig('.logging.ini')
+logger = logging.getLogger(__name__)
+
 
 class RuntimeContext(object):
     def __init__(self, dictionary):
@@ -24,7 +29,6 @@ class RuntimeContext(object):
 
 
 def reduce_data(data_paths=None, args=None, config=None):
-    logger.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logger.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     if args is None:
         args = parse_args()
     if config is None:
@@ -62,7 +66,6 @@ def reduce_data(data_paths=None, args=None, config=None):
 
 
 def run():
-    logger.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logger.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     # parse command line arguments and the configuration file.
     args = parse_args()
     config = ConfigParser()

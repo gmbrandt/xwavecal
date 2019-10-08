@@ -11,7 +11,8 @@ from echelle.tests.utils import array_with_peaks, FakeImage, noisify_image, Fake
 from echelle.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from echelle.tests.utils import fill_image_with_traces
 
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class FakeTraceImage(FakeImage):

@@ -1,8 +1,9 @@
 import sqlite3
 import os
-
-import logging as logger
 from datetime import datetime
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def add_data_to_db(db_path, db_info):

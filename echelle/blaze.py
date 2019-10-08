@@ -5,7 +5,8 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import numpy as np
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 from copy import deepcopy
 
 from echelle.stages import Stage, ApplyCalibration

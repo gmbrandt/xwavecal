@@ -1,11 +1,12 @@
 import numpy as np
-import abc
-import logging as logger
 import copy
 from astropy.table import Table
 
 from echelle.utils import extract_utils
 from echelle.stages import Stage
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class BoxExtract(Stage):

@@ -14,7 +14,8 @@ from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from echelle.images import DataProduct
 
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Trace(DataProduct):

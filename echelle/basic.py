@@ -9,10 +9,12 @@ Author:
 
 import numpy as np
 import sep
-import logging as logger
 
 from echelle.stages import Stage
 from echelle.utils.runtime_utils import import_obj
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class OverscanSubtractor(Stage):
