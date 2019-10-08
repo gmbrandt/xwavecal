@@ -106,11 +106,11 @@ def make_output_path(output_dir, data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
     id = str(data.get_header_val('unique_id')).zfill(4)
     dayobs = datetime.strptime(data.get_header_val('observation_date'), time_fmt).strftime('%Y%m%d')
     filename = '{site}_{inst}_{dayobs}_{id}_{type}_{f0}{f1}{f2}.fits'.format(inst=data.get_header_val('instrument'),
-                                                                         site=data.get_header_val('site_name'),
-                                                                         dayobs=dayobs, id=id,
-                                                                         type=data.get_header_val('type'),
-                                                                         f0=data.fiber0_lit, f1=data.fiber1_lit,
-                                                                         f2=data.fiber2_lit)
+                                                                             site=data.get_header_val('site_name'),
+                                                                             dayobs=dayobs, id=id,
+                                                                             type=data.get_header_val('type'),
+                                                                             f0=data.fiber0_lit, f1=data.fiber1_lit,
+                                                                             f2=data.fiber2_lit)
     filename = _sanitize(filename)
     return os.path.join(output_dir, filename)
 
