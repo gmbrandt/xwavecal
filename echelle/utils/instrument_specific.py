@@ -19,3 +19,27 @@ def parse_nres_region_keyword(key, index_from_one=True):
     if index_from_one:
         boundaries[0][0], boundaries[1][0] = boundaries[0][0] - 1, boundaries[1][0] - 1
     return tuple(slice(*boundary) for boundary in boundaries)
+
+
+def parse_harps_region_keyword(key):
+    # WARN this function assumes all HARPS frames have overscans in x only (and zero overscan in y).
+    """
+    :param key: tuple of the form (rx, ry, osx, osy, psx, psy, Nx, Ny)
+    where each entry is an integer.
+    osx and osy are the x and y extent of the overscan.
+    psx and psy are the x and y extent of the prescan.
+    Nx, Ny are the full size of the image (i.e. NAXIS1 and NAXIS2)
+    rx and ry are the region input (e.g. for the overscan region, rx, ry will be equal to osx, osy).
+    :return: tuple
+             (slice(y1,y2,None), slice(x1,x2,None))
+
+             the rows (y1:y2) and columns (x1:x2) corresponding to the input region Nx, Ny.
+             Note x2!= Nx because of how HARPS frames store the overscan information.
+    """
+    nx, ny, osx, osy, psx, psy, Nx, Ny = key
+    if np.isclose(nx, Nx, atol=300):
+        # we are processing the data region
+        return slice(psy, psy + ny), slice(psx, psx + nx)
+    else:
+        # we are processing the overscan region (because we do not subtract by the prescan anywhere in this pipeline.
+        return slice(0, Ny), slice(Nx - osx, Nx)

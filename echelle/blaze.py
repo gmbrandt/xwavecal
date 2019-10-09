@@ -1,5 +1,5 @@
 """
-blaze.py: Driver script for making blaze calibration files for echelle spectrographs.
+blaze.py: Module for making blaze calibration files for echelle spectrographs.
 
 Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)

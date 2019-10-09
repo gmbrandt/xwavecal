@@ -1,5 +1,5 @@
 """
-Module for basic reduction procedures such as overscan subtraction,
+Module for basic reduction steps like overscan subtraction,
 overscan trimming and gain normalization.
 
 Author:
@@ -29,7 +29,7 @@ class OverscanSubtractor(Stage):
         data_section = parse_region_keyword(image.get_header_val('data_section'))
         overscan_section = parse_region_keyword(image.get_header_val('overscan_section'))
 
-        logger.info('data section is {0} and overscan section is {1}'.format(data_section, overscan_section))
+        logger.info('data section (Y, X) is {0} and overscan section (Y, X) is {1}'.format(data_section, overscan_section))
         image.data[data_section] -= np.median(image.data[overscan_section])
         return image
 
@@ -53,7 +53,7 @@ class Trimmer(Stage):
         parse_region_keyword = import_obj(self.runtime_context.parse_region_keyword)
 
         data_section = parse_region_keyword(image.get_header_val('data_section'))
-        logger.info('Trimming image to {0}'.format(data_section))
+        logger.info('Trimming image to (Y, X) {0}'.format(data_section))
         image.data = image.data[data_section]
         image.data = np.ascontiguousarray(image.data)
         return image

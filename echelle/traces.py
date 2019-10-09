@@ -1,5 +1,5 @@
 """
-traces.py: Driver scripts for finding echelle orders across a CCD.
+traces.py: Module for finding echelle orders across a CCD.
 
 Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
