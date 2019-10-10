@@ -26,10 +26,10 @@ def parse_harps_region_keyword(key):
     """
     :param key: tuple of the form (rx, ry, osx, osy, psx, psy, Nx, Ny)
     where each entry is an integer.
-    osx and osy are the x and y extent of the overscan.
-    psx and psy are the x and y extent of the prescan.
+    osx and osy are the number of overscan pixels in x and y (not the extent, the number of pixels)
+    osx and osy are the number of prescan pixels in x and y
     Nx, Ny are the full size of the image (i.e. NAXIS1 and NAXIS2)
-    rx and ry are the region input (e.g. for the overscan region, rx, ry will be equal to osx, osy).
+    rx and ry are the number of region pixels in x and y. E.g. for the overscan region, rx, ry will equal osx, osy.
     :return: tuple
              (slice(y1,y2,None), slice(x1,x2,None))
 

@@ -112,6 +112,15 @@ class TestTrace:
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
 
+    def test_remove_duplicates(self):
+        centers = np.array([1, 2, 3, 4])
+        data = {'id': [0, 1, 2, 3],
+                'centers': [centers, centers+1, centers+10, centers+15]}
+        trace = Trace(data=data)
+        trace.remove_duplicates(thresh=3)
+        assert np.allclose(trace.data['id'], [0, 1, 2])
+        assert np.allclose(trace.data['centers'].data, [centers+1, centers+10, centers+15])
+
 
 class TestAllTraceFitter:
     @mock.patch('echelle.utils.trace_utils.SingleTraceFitter.update_initial_guess_to_run_through_pt')
@@ -132,9 +141,9 @@ class TestAllTraceFitter:
     @mock.patch('echelle.utils.trace_utils.SingleTraceFitter.__init__', return_value=None)
     def test_fit_traces(self, fitter, identify, step):
         step.return_value = Trace(data={'id': [0, 2, 1], 'centers': np.array([np.arange(3),
-                                                                            np.arange(2,5),
-                                                                            np.arange(1,4)])})
-        trace = AllTraceFitter().fit_traces(None, None, None, None, None)
+                                                                              np.arange(2, 5),
+                                                                              np.arange(1, 4)])})
+        trace = AllTraceFitter(min_peak_to_peak_spacing=0).fit_traces(None, None, None, None, None)
         for i in range(trace.num_traces_found()):
             assert np.allclose(trace.get_centers(i), np.arange(3)+i)
             assert np.isclose(trace.get_id(i), i)
