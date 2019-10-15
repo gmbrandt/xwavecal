@@ -76,8 +76,8 @@ class IdentifyFibers(ApplyCalibration):
             image.set_header_val('IDTEMPL', (template_path, 'ID of the fiber template.'))
             for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
                 if image.data_tables.get(key) is not None:
-                    image.data_tables[key].add_column(fiber_ids, name='fiber')
-                    image.data_tables[key].add_column(ref_ids, name='ref_id')
+                    image.data_tables[key]['fiber'] = fiber_ids
+                    image.data_tables[key]['ref_id'] = ref_ids
         else:
             logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image

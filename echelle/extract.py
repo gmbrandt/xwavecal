@@ -43,7 +43,8 @@ class BoxExtract(Stage):
                 Same as rectified_2d_spectrum but ['val'] is the inverse variance.
         :return:
         """
-        extracted_spectrum_per_order = {'id': [], 'flux': [], 'stderr': [], 'pixel': []}
+        extracted_spectrum_per_order = {'id': [], 'flux': [], 'stderr': [], 'pixel': [],
+                                        'fiber': [], 'ref_id': [], 'wavelength': []}
         for order_id in list(rectified_2d_spectrum.keys()):
             weights = self._weights(rectified_2d_spectrum[order_id]['val'], rectified_ivar[order_id]['val'])
             flux = self.extract_order(rectified_2d_spectrum[order_id]['val'], weights)
@@ -55,6 +56,10 @@ class BoxExtract(Stage):
             extracted_spectrum_per_order['stderr'].append(np.sqrt(stdvar))
             extracted_spectrum_per_order['pixel'].append(np.arange(len(flux)))
             extracted_spectrum_per_order['id'].append(order_id)
+
+            extracted_spectrum_per_order['wavelength'].append(np.ones_like(flux, dtype=float) * np.nan)
+            extracted_spectrum_per_order['ref_id'].append(np.nan)
+            extracted_spectrum_per_order['fiber'].append(np.nan)
         return Table(extracted_spectrum_per_order)
 
     def _weights(self, order_rect_spectrum, order_rect_ivar):

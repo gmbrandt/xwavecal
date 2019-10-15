@@ -48,21 +48,15 @@ def reduce_data(data_paths=None, args=None, config=None):
 
         data = DataClass.load(data_path, extension, translator)
         stages_todo = [import_obj(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
-        auxiliary_products = []
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
             if isinstance(data, list) or isinstance(data, tuple):
-                auxiliary_products.extend(data[1:])
+                auxiliary_products = data[1:]
                 data = data[0]
+                for product in auxiliary_products:
+                    write_out(product, runtime_context, args)
 
-        to_write = [data] + auxiliary_products
-
-        for data in to_write:
-            data.filepath = make_output_path(args.output_dir, data, runtime_context.time_format)
-            data.write(fpack=args.fpack)
-            logger.info('Adding file to processed image database at {path}'.format(path=runtime_context.database_path))
-            db_info = format_db_info(data, runtime_context.time_format)
-            add_data_to_db(runtime_context.database_path, db_info)
+        write_out(data, runtime_context, args)
 
 
 def run():
@@ -79,6 +73,16 @@ def run():
 
     logger.info('Found {0} files of {1} type'.format(len(data_paths), args.frame_type))
     reduce_data(data_paths, args, config)
+
+
+def write_out(data, runtime_context, args, use_db=True):
+    data.filepath = make_output_path(args.output_dir, data, runtime_context.time_format)
+    data.write(fpack=args.fpack)
+    if use_db:
+        logger.info('Adding file to processed image database at'
+                    ' {path}'.format(path=runtime_context.database_path))
+        db_info = format_db_info(data, runtime_context.time_format)
+        add_data_to_db(runtime_context.database_path, db_info)
 
 
 def organize_config(config):

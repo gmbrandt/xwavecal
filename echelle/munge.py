@@ -12,6 +12,9 @@ from echelle.stages import Stage
 
 
 class Rot90(Stage):
+    """
+    rotate image.data counter-clockwise by 90 degrees.
+    """
     def __init__(self, runtime_context):
         super(Rot90, self).__init__(runtime_context)
 
@@ -39,4 +42,3 @@ class FlipVert(Stage):
         image.data = np.flip(image.data, axis=0)
         image.ivar = None if image.ivar is None else np.flip(image.ivar, axis=0)
         return image
-

@@ -105,7 +105,8 @@ class TestIdentifyFibers:
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
         image.set_header_val('read_noise', 0)
-        spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30))})
+        spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30)),
+                      'fiber': [0, 0, 0], 'ref_id': [0, 0, 0]})
         mock_load.return_value = {'fibers': DataProduct(data=spec[1])}
         image.data_tables = {context.box_spectrum_name: spec}
         image = IdentifyFibers(context).apply_master_calibration(image, '')

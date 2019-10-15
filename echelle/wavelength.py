@@ -187,26 +187,9 @@ class Initialize(WavelengthStage):
         return lit_wavecal_fibers(image) if spectrum_ok else []
 
 
-class AddWavelengthColumn(WavelengthStage):
-    """
-    Stage 2/9 for the wavelength solution. Adds a wavelength column onto each spectrum.
-    """
-    def __init__(self, runtime_context=None):
-        super(AddWavelengthColumn, self).__init__(runtime_context=runtime_context)
-        self.spectrum_table_names = [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]
-
-    def do_stage(self, image):
-        if len(self._valid_fibers(image)) > 0:
-            for name in self.spectrum_table_names:
-                logger.info('Appending a blank wavelengths column onto {0} data table'.format(name))
-                image.data_tables[name].add_column(Column(np.zeros_like(image.data_tables[name]['flux'], dtype=np.float64),
-                                                          unit='angstrom'), name='wavelength')
-        return image
-
-
 class LoadReferenceLineList(ApplyCalibration):
     """
-    Stage 3/9 for the wavelength solution
+    Stage 2/8 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(LoadReferenceLineList, self).__init__(runtime_context=runtime_context)
@@ -229,7 +212,7 @@ class LoadReferenceLineList(ApplyCalibration):
 
 class FitOverlaps(WavelengthStage):
     """
-    Stage 4/9 for the wavelength solution
+    Stage 3/8 for the wavelength solution
     This should run on a blaze corrected calibration spectrum.
     """
     def __init__(self, runtime_context=None):
@@ -273,7 +256,7 @@ class FitOverlaps(WavelengthStage):
 
 class SolveFromOverlaps(WavelengthStage):
     """
-    Stage 5/9. Solves for the coefficients of the wavelength solution from the overlaps.
+    Stage 4/8. Solves for the coefficients of the wavelength solution from the overlaps.
     """
     def __init__(self, runtime_context=None):
         super(SolveFromOverlaps, self).__init__(runtime_context=runtime_context)
@@ -296,7 +279,7 @@ class SolveFromOverlaps(WavelengthStage):
 
 class IdentifyArcEmissionLines(WavelengthStage):
     """
-    Stage 6/9 for the wavelength solution
+    Stage 5/8 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(IdentifyArcEmissionLines, self).__init__(runtime_context=runtime_context)
@@ -351,7 +334,7 @@ class IdentifyArcEmissionLinesLowSN(IdentifyArcEmissionLines):
 
 class FindGlobalScale(WavelengthStage):
     """
-    Stage 7/9 for the wavelength solution
+    Stage 6/8 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(FindGlobalScale, self).__init__(runtime_context=runtime_context)
@@ -397,7 +380,7 @@ class FindGlobalScale(WavelengthStage):
 
 class SolutionRefineInitial(WavelengthStage):
     """
-    Stage 8/9 for the wavelength solution
+    Stage 7/8 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(SolutionRefineInitial, self).__init__(runtime_context=runtime_context)
@@ -482,7 +465,7 @@ def refine_wcs(wcs, measured_lines, reference_lines, converged, clip_fun, kwargs
 
 class SolutionRefineFinal(WavelengthStage):
     """
-    Stage 9/9 for the wavelength solution
+    Stage 8/8 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(SolutionRefineFinal, self).__init__(runtime_context=runtime_context)

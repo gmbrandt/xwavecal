@@ -29,11 +29,11 @@ def test_select_data():
 def test_organize_config():
     config = ConfigParser()
     config.read('echelle/tests/data/test_config.ini')
-    runtime_context, data_class, extension, header_keys, type_translator = organize_config(config)
+    runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
     assert data_class == 'echelle.images.Image'
     assert extension == 1
-    assert type_translator['LAMPFLAT'] == 'lampflat'
-    assert type_translator['DOUBLE'] == 'wavecal'
+    assert type_keys['LAMPFLAT'] == 'lampflat'
+    assert type_keys['DOUBLE'] == 'wavecal'
     assert header_keys['read_noise'] == 'RDNOISE'
     assert type(runtime_context.final_wavelength_model) is dict
     assert type(runtime_context.ref_id) is int

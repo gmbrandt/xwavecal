@@ -3,5 +3,7 @@ omit =
     */python?.?/*
     */site-packages/nose/*
     *__init__*
+    *.ini
+    *.txt
 exclude_lines =
     pragma: no cover
