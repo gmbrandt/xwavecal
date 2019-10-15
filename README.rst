@@ -13,6 +13,9 @@ a limited data reduction pipeline which does: overscan subtraction and trimming,
 normalization, tracing, extraction and wavelength calibration. All output products are
 saved in a user-set sqlite3 database.
 
+At best, using ``echelle`` only requires editing a config.ini file for your data.
+I cover how to do that in this readme.
+
 Installation
 ============
 :code:`echelle` is installed via pip by running
@@ -23,19 +26,23 @@ Installation
 
 While in the root directory of this repository.
 
-Reducing Data
-=============
+Wavelength Calibrating Spectrum
+===============================
+This section covers how to wavelength calibrate data which already have a spectrum, and a blaze
+corrected spectrum. Using ``echelle`` with spectra is preferred.
+
+If you have raw data only, I recommend extracting it on your own and then using ``echelle``
+in the preferred way mentioned above. However, if that is difficult and you want to try the experimental data
+reduction pipeline included with :code:`echelle`, see section "Reducing Data".
+
 Information about the input data products are to
 be set by users via a :code:`config.ini` file. See the files
-:code:`echelle/tests/data/test_config.ini` or :code:`echelle/data/nres_config.ini`
-for the configuration to reduce NRES data. I now cover how to reduce data, using the
+:code:`echelle/tests/data/test_config.ini` or :code:`echelle/example_config/nres_config.ini`
+for the configuration to reduce NRES data. I now cover how to wavelength calibrate data, using the
 Network of Robotic Echelle Spectrographs (NRES) from Las Cumbres Observatory
-as an example.
-
-Lampflats must always be reduced before wavelength calibration frames (e.g. Thorium-Argon (ThAr) exposures).
-This is because lampflats are used to determine where the light falls, which is in turn
-used to extract data. This ordering handled for you if you supply at least one lampflat in the
-data to reduce.
+as an example. Configuring this wavelength solution to work for your instrument only involves (except
+for rare instances) making a new config.ini file. In this example, I will cover how to set
+every option in the "nres_config_wcs_only.ini" file.
 
 Pointing to the database
 ------------------------
@@ -44,6 +51,68 @@ change :code:`database_path` under the :code:`reduction` section to the path whe
 want to the database to exist. The parent folder for the database must already exist. E.g. for myself,
 this is :code:`"/home/gmbrandt/Downloads/pipeline.db"` . The surrounding :code:`" "` quotes must be there for
 the config file to process properly.
+
+The database will keep track of all your processed files. All processed calibration files are saved under the
+table :code:`caldata` in the .db file specified.
+
+
+Data settings
+---------------
+Here we tell :code:`echelle` via the config file where various information lies in the header of
+your data.
+
+In section [data] we will need to edit:
+
+- ``primary_data_extension``
+- ``files_contain``
+- ``header_keys``
+- ``type_keys``
+
+data_class is also editable, but most likely will not need to be changed. data_class is the
+Python object used to load in your data. The default ``echelle.images.Image`` should be fine for your data.
+
+``primary_data_extension``
+
+In [reduction], we will need to change ``time_format``. This is the time format of the observation date from
+the fits header. This must be a string contained in double quotes ``" "`` and understood by
+``datetime.datetime.strftime``. Then replace single ``%`` with ``%%`` (to fix a quirk of using a config file).
+
+Wavelength calibration settings
+-------------------------------
+To wavelength calibrate your data, the following settings in config.ini may need to be changed:
+
+- ``line_list_path``
+- ``data_base_path``
+- ``main_spectrum_name``
+- ``blaze_corrected_spectrum_name``
+- ``ref_id``
+- ``template_trace_id ``
+- ``overlap_min_peak_snr ``
+- ``max_red_overlap ``
+- ``max_blue_overlap ``
+- ``global_scale_range ``
+- ``min_peak_snr ``
+- ``approx_detector_range_angstroms ``
+- ``approx_num_orders ``
+- ``principle_order_number``
+- ``m0_range ``
+- ``flux_tol``
+
+
+
+There are several other parameters you will most likely not need to change.
+
+The ``principle_order_number`` (which we call ``m0``) is the true diffraction order index of the diffraction order
+with reference id 0 (:code:`ref_id`) in the extracted sectrum. If you know it for your instrument,
+great. If not: go to [stages] inside of the config.ini file and uncomment the stage
+:code:`IdentifyPrincipleOrderNumber`. Then set ``m0_range`` to a suitably wide range
+which encompasses your guess for where ``m0`` likely lies. If you have no idea, set ``m0_range = (5, 200)``.
+Most echelle spectrographs have ``m0`` between 10 and 100.
+
+``flux_tol`` is the tolerance (float between 0 and 1) to which two emission
+peaks must agree to be considered a true match in the overlap algorithm.
+Thus, if your blaze correction is poor (or non-existent) you should change ``flux_tol`` to 0.5.
+
 
 Reducing a directory of data
 ----------------------------
@@ -86,6 +155,86 @@ you already reduced which is in the database, :code:`echelle` will find the clos
 in the data base and use that instead. You would want to specify a different (blank) database in order
 to force using a lampflat which is very far away. Again, files can be compressed with fpack (after installing
 :code:`libcfitsio`) by adding :code:`--fpack` to the command line call.
+
+
+Reducing Raw Data (experimental)
+================================
+
+One can use :code:`echelle` to fully reduce their data by adding stages to the [stages] section, and
+by adding options to the [reduction] section of the config.ini file. The pipeline is
+automatic, however you have to change roughly twice the number of options in the config.ini file and so
+errors are more likely to occur. Example configuration files for IRD (Subaru), HARPS, and NRES spectrographs
+are in the ``echelle/example_config/``. Those configuration files are meant to be examples only: they were made
+on a limited set of IRD and HARPS data. The pipeline may not function well on all data from those instruments
+using my example configuration files. The value of each configuration parameter will in those example files will
+change often as I tweak the files.
+
+
+Configuring a new instrument
+----------------------------
+
+
+Indicating header keywords
+--------------------------
+We need to tell :code:`echelle` where the read_noise, etc... lies in the fits headers
+of the input raw data files.
+
+We first copy one of the example config.ini files inside of :code:`echelle/data/`. Next
+we uncomment out the stage :code:`MakeFiberTemplate` in the section [stages].
+
+In the section [data] of the config file, specify in header_keys which header keys
+in the fits file correspond to which observables (e.g. read_noise for harps is RON).
+
+In the type_keys, specify which outputs of the :code:`type` header key correspond to
+a lampflat or a wavecal. E.g. for nres, wavecal frames have the value :code:`DOUBLE` under the header key :code:`OBSTYPE`. Therefore in type_keys, I would
+have an entry :code:`{'DOUBLE': 'wavecal'}`, and in header_keys, I would have an entry
+:code:`{'type': 'OBSTYPE'}`. One can insert tuples into header_keys. I.e. if you need information
+from more than one field. E.g. for HARPS, I made my unique identifier (mjd-obs, chip id) because
+each raw harps frame has both the blue and the red parts of the spectra as different chips.
+
+Orientating the frames
+----------------------
+In section [stages] are all the reduction stages. For the finished HARPS config file,
+you will notice some of the first stages are Rot90 and FlipHoriz, which rotate the frame
+90 degrees counter-clockwise and flip it about the vertical axis. We do this so that the dispersion
+of the frame agrees with the NRES (the nres_config.ini file does not have these flips accordingly).
+Prior to tracing, but after overscan trimming, every frame must be orientated so that:
+The wavelength of any given diffraction order increases from left to right in pixel (x=0 to x=Nx), and:
+The diffraction orders become overall bluer as one heads up the detector (bottom to top, y=0 to y=Ny).
+
+Making the template prior to first reduction
+--------------------------------------------
+In section [reduction], :code:`template_trace_id` gives the trace id (:code:`id` in the trace.fits files created)
+for the diffraction order
+that :code:`echelle` will use to make a template from on the first wavecal frame you reduce. For HARPS,
+I set :code:`template_trace_id = 10` arbitrarily. I recommend you don't select diffraction orders
+that are known to be problematic (e.g. are near the edge). Specify the paths in the config.ini file
+so that they are where you want them. Namely, you need to specify the line list path and the .db database path.
+
+Next, reduce a lampflat and wavecal via :code:`echelle_reduce_dir`, or with  :code:`echelle_reduce`. The lampflat
+reduction will make a trace file, a blaze file, and a processed lampflat file.
+
+Reducing any wavecal will produce a template. The template is a . For all wavecal files which resemble
+those you just processed, for all of time (provided you don't delete the database or the fibers.fits file)
+you will never need to make another template. This template is just the 1d spectrum of the
+order specified by :code:`template_trace_id`. Echelle looks for an order with a matching spectrum, and labels
+it with the reference id (:code:`ref_id`) given in [reduction] of the config.ini. This template, along with
+any processed files (e.g. the trace files etc) will be saved in the database .db file at the path
+specified in the config.ini file.
+
+Reduction
+=========
+
+Lampflats must always be reduced before wavelength calibration frames (e.g. Thorium-Argon (ThAr) exposures).
+This is because lampflats are used to determine where the light falls, which is in turn
+used to extract data. This ordering is handled for you if you supply at least one lampflat in the
+data to reduce.
+
+Lampflats
+---------
+
+Wavelength calibration files
+----------------------------
 
 Notes on reduction
 ------------------
@@ -158,78 +307,6 @@ keywords MODEL and MCOEFFS, respectively, in the header.
 ID keywords: IDTRACE, IDBLAZE, IDLIST, IDTEMPL
 
 What is :code:`ref_id`
-
-Configuring a new instrument
-============================
-In this section I cover how to reduce data from a new instrument. If overscan subtraction and overscan
-trimming is not required, all that is needed (ideally) is a new config.ini file. I show this
-procedure by example on HARPS. The final config file we will make is See :code:`echelle/data/HARPS_chipX_config.ini`.
-where X is either 1 or 2.
-
-Indicating header keywords
---------------------------
-We need to tell :code:`echelle` where the read_noise, etc... lies in the fits headers
-of the input raw data files.
-
-We first copy one of the example config.ini files inside of :code:`echelle/data/`. Next
-we uncomment out the stage :code:`MakeFiberTemplate` in the section [stages].
-
-In the section [data] of the config file, specify in header_keys which header keys
-in the fits file correspond to which observables (e.g. read_noise for harps is RON).
-
-In the type_keys, specify which outputs of the :code:`type` header key correspond to
-a lampflat or a wavecal. E.g. for nres, wavecal frames have the value :code:`DOUBLE` under the header key :code:`OBSTYPE`. Therefore in type_keys, I would
-have an entry :code:`{'DOUBLE': 'wavecal'}`, and in header_keys, I would have an entry
-:code:`{'type': 'OBSTYPE'}`. One can insert tuples into header_keys. I.e. if you need information
-from more than one field. E.g. for HARPS, I made my unique identifier (mjd-obs, chip id) because
-each raw harps frame has both the blue and the red parts of the spectra as different chips.
-
-Orientating the frames
-----------------------
-In section [stages] are all the reduction stages. For the finished HARPS config file,
-you will notice some of the first stages are Rot90 and FlipHoriz, which rotate the frame
-90 degrees counter-clockwise and flip it about the vertical axis. We do this so that the dispersion
-of the frame agrees with the NRES (the nres_config.ini file does not have these flips accordingly).
-Prior to tracing, but after overscan trimming, every frame must be orientated so that:
-The wavelength of any given diffraction order increases from left to right in pixel (x=0 to x=Nx), and:
-The diffraction orders become overall bluer as one heads up the detector (bottom to top, y=0 to y=Ny).
-
-Making the template prior to first reduction
---------------------------------------------
-In section [reduction], :code:`template_trace_id` gives the trace id (:code:`id` in the trace.fits files created)
-for the diffraction order
-that :code:`echelle` will use to make a template from on the first wavecal frame you reduce. For HARPS,
-I set :code:`template_trace_id = 10` arbitrarily. I recommend you don't select diffraction orders
-that are known to be problematic (e.g. are near the edge). Specify the paths in the config.ini file
-so that they are where you want them. Namely, you need to specify the line list path and the .db database path.
-
-Next, reduce a lampflat and wavecal via :code:`echelle_reduce_dir`, or with  :code:`echelle_reduce`. The lampflat
-reduction will make a trace file, a blaze file, and a processed lampflat file. On the first wavecal you input, you will notice that :code:`echelle` will abort the wavelength solution o. That is because no
-template exists in the database. However, you just created one. For all wavecal files which resemble
-those you just processed, for all of time (provided you don't delete the database or the fibers.fits file)
-you will never need to make another template. This template is just the 1d spectrum of the
-order specified by :code:`template_trace_id`. Echelle looks for an order with a matching spectrum, and labels
-it with the reference id (:code:`ref_id`) given in [reduction] of the config.ini. This template, along with
-any processed files (e.g. the trace files etc) will be saved in the database .db file at the path
-specified in the config.ini file. All processed calibration files are saved under the table :code:`caldata`.
-
-First reduction
----------------
-With the template in the .db, re-run the reduction and any wavecal frames will be wavelength calibrated (although incorrectly
-because you have not changed the required settings in the config.ini file!).
-
-Configuring settings to wavelength calibrate your instrument
-------------------------------------------------------------
-
-Each raw HARPS frame has two chips (chip 1 is bluer and chip 2 is redder). The config file
-for the two chips are identical except for two items: the number of diffraction orders on
-the detector and the principle order number. We cover those first.
-
-The principle order number is the true diffraction order index of the diffraction order
-with reference id 0 (:code:`ref_id`) in the extracted sectrum. If you know it for your instrument,
-great. If not: go to [stages] inside of the config.ini file and uncomment the stage
-:code:`IdentifyPrincipleOrderNumber`.
-
 
 
 The reference line list
