@@ -1,6 +1,5 @@
 import mock
 import numpy as np
-from scipy import interpolate
 from astropy.table import Table
 
 import echelle.utils.overlap_utils as overlapu
@@ -28,7 +27,7 @@ class TestOverlapFitter:
     def test_peaks_save(self, mock_fit):
         r_lines = np.random.randint(0, 100, 20)
         b_lines = overlapu.coordinate_transform(r_lines, [100, 1.4, 2E-5])
-        overlap = OverlapFitter().fit(b_lines, r_lines, None, None, None, peaks_only=True)
+        overlap = OverlapFitter().fit(b_lines, r_lines, None, None, None)
         assert np.allclose(overlap['matched_pixel'], b_lines)
         assert np.allclose(overlap['pixel'], r_lines)
         assert np.isclose(overlap['peaks'], 20)

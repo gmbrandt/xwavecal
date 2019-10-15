@@ -7,13 +7,13 @@ import itertools
 
 
 class OverlapFitter:
-    def fit(self, b_lines, r_lines, b_lines_flux, r_lines_flux, linear_scale_range, peaks_only=True, deg=2):
+    def fit(self, b_lines, r_lines, b_lines_flux, r_lines_flux, linear_scale_range, flux_tol=0.2, deg=2):
         """
         :return: (x, xp), a tuple of 1d ndarrays of equal length. For a given index i, x[i] maps to xp[i] in wavelength.
                  I.e. x and xp are the set of overlapping pixels in wavelength space for this pair of diffraction orders.
         """
         coeffs = self._fit_overlap(b_lines, r_lines, b_lines_flux, r_lines_flux,
-                                   linear_scale_range, pixel_tol=2, flux_tol=0.2, deg=deg)
+                                   linear_scale_range, pixel_tol=2, flux_tol=flux_tol, deg=deg)
         # TODO Separate refine function.
         red_peaks = match_peaks(b_lines, r_lines, coeffs, pixel_tol=1)
         return {'pixel': red_peaks, 'matched_pixel': coordinate_transform(red_peaks, coeffs), 'peaks': len(red_peaks)}
@@ -120,7 +120,8 @@ def _select_lines(lines, spec, ridx, bidx, max_overlap_red, max_overlap_blue):
            lines['corrected_flux'][r_select], lines['corrected_flux'][b_select]
 
 
-def fit_overlaps(spec, lines, max_overlap_red=1000, max_overlap_blue=2000, linear_scale_range=(0.5, 2), fiber=np.nan, deg=2):
+def fit_overlaps(spec, lines, max_overlap_red=1000, max_overlap_blue=2000, linear_scale_range=(0.5, 2),
+                 fiber=np.nan, deg=2, flux_tol=0.2):
     """
     :param spec: astropy.table.Table : sf_spec['flux'][i] should be a 1d ndarray with flux for the
                     diffraction order labelled sf_spec['ref_id'][i].
@@ -130,6 +131,9 @@ def fit_overlaps(spec, lines, max_overlap_red=1000, max_overlap_blue=2000, linea
     :param max_overlap_blue: int. the pixel size of the red edge of the bluer order to consider for overlap
     :param linear_scale_range: ordered tuple. The range of linear coefficients to consider for the mapping between
     the red order and the blue order.
+    :param flux_tol: float.
+                     float between (0, 1]. For two lines to be considered a matched peak, their fluxes must
+                     agree to within flux_tol.
     :return: A table of overlaps.
 
     WARNING: sf_spec[i] must be redder than sf_spec[i+1] if __ is True.
@@ -149,7 +153,8 @@ def fit_overlaps(spec, lines, max_overlap_red=1000, max_overlap_blue=2000, linea
         if len(r_lines) < deg + 1 or len(b_lines) < deg + 1:
             # skip to next if there are not enough lines to constrain the fit.
             continue
-        overlap = fitter.fit(b_lines, r_lines, b_line_flux, r_line_flux, linear_scale_range, deg=deg)
+        overlap = fitter.fit(b_lines, r_lines, b_line_flux, r_line_flux, linear_scale_range,
+                             deg=deg, flux_tol=flux_tol)
         pad = max_overlap_red - len(overlap['pixel'])
         overlaps.add_row({'ref_id': spec['ref_id'][ridx], 'matched_ref_id': spec['ref_id'][bidx],
                           'pixel': np.pad(overlap['pixel'].astype(float), ((0, pad)),

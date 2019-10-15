@@ -121,6 +121,8 @@ class WavelengthSolution(object):
 
     @staticmethod
     def _map_to_wavelength(A, c, coefficients):
+        if coefficients is None:
+            return np.ones_like(c.flatten(), dtype=float) * np.nan
         return np.dot(A, coefficients).flatten() + (-1) * c.flatten()
 
 
@@ -155,7 +157,7 @@ class WavelengthStage(Stage):
 
 class Initialize(WavelengthStage):
     """
-    Stage 1/8 for the wavelength solution
+    Stage 1/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(Initialize, self).__init__(runtime_context=runtime_context)
@@ -187,7 +189,7 @@ class Initialize(WavelengthStage):
 
 class AddWavelengthColumn(WavelengthStage):
     """
-
+    Stage 2/9 for the wavelength solution. Adds a wavelength column onto each spectrum.
     """
     def __init__(self, runtime_context=None):
         super(AddWavelengthColumn, self).__init__(runtime_context=runtime_context)
@@ -204,7 +206,7 @@ class AddWavelengthColumn(WavelengthStage):
 
 class LoadReferenceLineList(ApplyCalibration):
     """
-    Stage 2/8 for the wavelength solution
+    Stage 3/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(LoadReferenceLineList, self).__init__(runtime_context=runtime_context)
@@ -227,7 +229,7 @@ class LoadReferenceLineList(ApplyCalibration):
 
 class FitOverlaps(WavelengthStage):
     """
-    Stage 4/8 for the wavelength solution
+    Stage 4/9 for the wavelength solution
     This should run on a blaze corrected calibration spectrum.
     """
     def __init__(self, runtime_context=None):
@@ -252,7 +254,8 @@ class FitOverlaps(WavelengthStage):
                                 max_overlap_red=self.runtime_context.max_red_overlap,
                                 max_overlap_blue=self.runtime_context.max_blue_overlap,
                                 linear_scale_range=self.runtime_context.overlap_linear_scale_range,
-                                fiber=fiber)
+                                fiber=fiber,
+                                flux_tol=getattr(self.runtime_context, 'flux_tol', 0.2))
         overlaps = flag_bad_overlaps(overlaps)
         logger.info('{0} overlaps verified. fiber={1}'.format(np.count_nonzero(overlaps['good']), str(fiber)))
         overlaps = flag_outlier_overlaps(overlaps)
@@ -269,6 +272,9 @@ class FitOverlaps(WavelengthStage):
 
 
 class SolveFromOverlaps(WavelengthStage):
+    """
+    Stage 5/9. Solves for the coefficients of the wavelength solution from the overlaps.
+    """
     def __init__(self, runtime_context=None):
         super(SolveFromOverlaps, self).__init__(runtime_context=runtime_context)
 
@@ -290,7 +296,7 @@ class SolveFromOverlaps(WavelengthStage):
 
 class IdentifyArcEmissionLines(WavelengthStage):
     """
-    Stage 3/8 for the wavelength solution
+    Stage 6/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(IdentifyArcEmissionLines, self).__init__(runtime_context=runtime_context)
@@ -345,7 +351,7 @@ class IdentifyArcEmissionLinesLowSN(IdentifyArcEmissionLines):
 
 class FindGlobalScale(WavelengthStage):
     """
-    Stage 5/8 for the wavelength solution
+    Stage 7/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(FindGlobalScale, self).__init__(runtime_context=runtime_context)
@@ -391,7 +397,7 @@ class FindGlobalScale(WavelengthStage):
 
 class SolutionRefineInitial(WavelengthStage):
     """
-    Stage 6/8 for the wavelength solution
+    Stage 8/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(SolutionRefineInitial, self).__init__(runtime_context=runtime_context)
@@ -476,7 +482,7 @@ def refine_wcs(wcs, measured_lines, reference_lines, converged, clip_fun, kwargs
 
 class SolutionRefineFinal(WavelengthStage):
     """
-    Stage 7/8 for the wavelength solution
+    Stage 9/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(SolutionRefineFinal, self).__init__(runtime_context=runtime_context)
@@ -563,7 +569,7 @@ class SolutionRefineOnce(SolutionRefineFinal):
 
 class ApplyToSpectrum(WavelengthStage):
     """
-    Stage 8/8 for the wavelength solution
+    Stage 8/9 for the wavelength solution
     """
     def __init__(self, runtime_context=None):
         super(ApplyToSpectrum, self).__init__(runtime_context=runtime_context)

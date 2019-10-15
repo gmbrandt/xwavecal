@@ -120,6 +120,11 @@ class TestWavelengthSolution:
         wcs.apply_scale(2)
         assert (wcs.model_coefficients, np.arange(5) * 2)
 
+    def test_wavelength_is_nan_for_no_coefficients(self):
+        wcs = Utils.simple_wcs()
+        wcs.model_coefficients = None
+        assert np.all(np.isnan(wcs.wavelength(np.arange(5), np.arange(5))))
+
 
 class TestModel:
     def test_add_term(self):
