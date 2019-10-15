@@ -589,6 +589,8 @@ class TabulateArcEmissionLines(WavelengthStage):
         super(TabulateArcEmissionLines, self).__init__(runtime_context=runtime_context)
 
     def do_stage(self, image):
+        # TODO if wavelength solution fails, then the emission lines are not saved. Make it so that they are
+        #  always saved
         valid_fibers = self._valid_fibers(image)
         if len(valid_fibers) > 0:
             lines = self._format_lines(image, valid_fibers)

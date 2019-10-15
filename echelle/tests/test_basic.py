@@ -2,6 +2,7 @@ import numpy as np
 from astropy.table import Table
 
 from echelle.tests.utils import FakeContext, FakeImage
+from echelle.utils.basic_utils import median_subtract_channels_y
 from echelle import basic
 
 
@@ -42,3 +43,20 @@ class TestBackgroundSubtract1dSpectrum:
                                                'stderr': np.ones((2, 10))})}
         image = stage.do_stage(image)
         assert np.allclose(image.data_tables['SPECBOX']['flux'].data, np.zeros((2, 10)))
+
+
+class TestMedianSubtractReadoutsAlongY:
+    def test_do_stage(self):
+        image = FakeImage()
+        image.data = np.ones((4, 4))
+        image.header['num_rd_channels'] = 1
+        image = basic.MedianSubtractReadoutsAlongY(None).do_stage(image)
+        assert np.allclose(image.data, 0)
+
+
+class TestUtils:
+    def test_median_subtract_channels(self):
+        a = (np.arange(3) * np.ones((3, 3))).T
+        assert np.allclose(median_subtract_channels_y(a, 3), 0)
+        a = (np.array([1, 1, 1, 2, 2, 2]) * np.ones((6, 6))).T
+        assert np.allclose(median_subtract_channels_y(a, 2), 0)

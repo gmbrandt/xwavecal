@@ -12,6 +12,7 @@ import sep
 
 from echelle.stages import Stage
 from echelle.utils.runtime_utils import import_obj
+from echelle.utils.basic_utils import median_subtract_channels_y
 
 import logging
 logger = logging.getLogger(__name__)
@@ -56,6 +57,17 @@ class Trimmer(Stage):
         logger.info('Trimming image to (Y, X) {0}'.format(data_section))
         image.data = image.data[data_section]
         image.data = np.ascontiguousarray(image.data)
+        return image
+
+
+class MedianSubtractReadoutsAlongY(Stage):
+    def __init__(self, runtime_context):
+        super(MedianSubtractReadoutsAlongY, self).__init__(runtime_context)
+
+    def do_stage(self, image):
+        logger.info('Subtracting the median from each readout channel')
+        num = image.get_header_val('num_rd_channels')
+        image.data = median_subtract_channels_y(image.data, num)
         return image
 
 
