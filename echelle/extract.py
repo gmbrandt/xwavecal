@@ -108,7 +108,7 @@ class IVarExtract(BoxExtract):
         super(IVarExtract, self).__init__(runtime_context=runtime_context)
         self.extraction_half_window = runtime_context.sne_extraction_half_window
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
-        self.table_name = runtime_context.sne_spectrum_name
+        self.table_name = runtime_context.ivar_spectrum_name
 
     def _weights(self, order_rect_spectrum, order_rect_ivar):
         normalization = self.extract_order(order_rect_ivar)

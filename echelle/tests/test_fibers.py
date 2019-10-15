@@ -108,9 +108,9 @@ class TestIdentifyFibers:
         spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30)),
                       'fiber': [0, 0, 0], 'ref_id': [0, 0, 0]})
         mock_load.return_value = {'fibers': DataProduct(data=spec[1])}
-        image.data_tables = {context.box_spectrum_name: spec}
+        image.data_tables = {context.main_spectrum_name: spec}
         image = IdentifyFibers(context).apply_master_calibration(image, '')
-        spec = image.data_tables[context.box_spectrum_name]
+        spec = image.data_tables[context.main_spectrum_name]
         assert np.allclose(spec['ref_id'], [0, 1, 1])
         assert np.allclose(spec['fiber'], [2, 1, 2])
 
@@ -121,7 +121,7 @@ class TestMakeFiberTemplate:
         context.template_trace_id = 2
         image = FakeImage()
         spec = Table({'id': [0, 1, 2, 3, 4], 'flux': 100 * np.random.random((5, 30))})
-        image.data_tables = {context.box_spectrum_name: spec}
+        image.data_tables = {context.main_spectrum_name: spec}
         image, template = MakeFiberTemplate(context).do_stage(image)
         assert template.get_header_val('type') == MakeFiberTemplate(context).calibration_type.lower()
         assert image.get_header_val('type') != MakeFiberTemplate(context).calibration_type.lower()

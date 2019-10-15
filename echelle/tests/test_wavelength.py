@@ -181,7 +181,7 @@ class TestFitOverlaps:
                        'pixel': [[-1, 0, 1], [-1, 0, 1]]})
         mock_overlaps.return_value = Table({'fiber': [1, 0], 'ref_id': [0, 1], 'matched_ref_id': [1, 2],
                                             'good': [True, True], 'peaks': [10, 10]})
-        image.data_tables = {context.box_spectrum_name: spectrum}
+        image.data_tables = {context.main_spectrum_name: spectrum}
         wcs = WavelengthSolution(min_order=0, max_order=num, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
         wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
@@ -195,7 +195,7 @@ class TestFitOverlaps:
         context = FakeContext()
         image.data_tables = {context.overlap_table_name: Table({'ref_id': [0], 'fiber': [0], 'matched_ref_id': [1],
                                                                       'good': [False], 'peaks': [10]})}
-        image.data_tables[context.box_spectrum_name] = Table({'fiber': [0, 1]})
+        image.data_tables[context.main_spectrum_name] = Table({'fiber': [0, 1]})
         wcs = WavelengthSolution(min_order=0, max_order=10, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
         wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
@@ -207,7 +207,7 @@ class TestFitOverlaps:
     def test_do_stage_sets_wcs_to_none(self, fake_overlaps):
         image = FakeImage()
         context = FakeContext()
-        image.data_tables = {context.box_spectrum_name: Table({'ref_id': [0, 1],
+        image.data_tables = {context.main_spectrum_name: Table({'ref_id': [0, 1],
                                                                      'fiber': [0, 1],
                                                                      'flux': [[0, 1, 2], [0, 1, 2]],
                                                                      'pixel': [[-1, 0, 1], [-1, 0, 1]]}),
@@ -254,7 +254,7 @@ class TestIdentifyArcEmissionLines:
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(min_pixel=0, max_pixel=20, min_order=-5,
                                                            max_order=5)}
-        image.data_tables = {FakeContext().box_spectrum_name: Table({'fiber': np.array([0, 1]),
+        image.data_tables = {FakeContext().main_spectrum_name: Table({'fiber': np.array([0, 1]),
                                                                      'stderr': [0, 0]})}
         image = IdentifyArcEmissionLines(FakeContext()).do_stage_fiber(image, fiber=1)
         measured_lines = image.wavelength_solution[1].measured_lines
@@ -431,7 +431,7 @@ class TestApplyToSpectrum:
     def test_do_stage(self):
         image = FakeImage()
         context = FakeContext()
-        image.data_tables = {context.box_spectrum_name: Table({'ref_id': [0, 1],
+        image.data_tables = {context.main_spectrum_name: Table({'ref_id': [0, 1],
                                                                      'fiber': [1, 2],
                                                                      'flux': [[0, 1, 2], [0, 1, 2]],
                                                                      'pixel': [[-1, 0, 1], [-1, 0, 1]],
@@ -439,7 +439,7 @@ class TestApplyToSpectrum:
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
         image.wavelength_solution = {0: None, 1: Utils.simple_wcs(), 2: Utils.simple_wcs()}
         image = ApplyToSpectrum(context).do_stage(image)
-        spectrum = image.data_tables[context.box_spectrum_name]
+        spectrum = image.data_tables[context.main_spectrum_name]
         assert not np.allclose(spectrum['wavelength'], 0)
         assert len(spectrum.colnames) == 5
 
@@ -573,7 +573,7 @@ class TestOnSyntheticData:
         spectrum = Table({'ref_id': np.arange(num_orders), 'fiber': np.ones(num_orders),
                           'flux': np.zeros((num_orders, 4096)),
                           'pixel': np.arange(4096) * np.ones((num_orders, 4096))})
-        image.data_tables[context.box_spectrum_name] = spectrum
+        image.data_tables[context.main_spectrum_name] = spectrum
         image.fiber2_lit, image.fiber2_wavecal = 0, 0
         image.wavelength_solution = {1: WavelengthSolution(model={1: [0, 1, 2], 2: [0, 1, 2]},
                                                            min_order=0, max_order=num_orders - 1,

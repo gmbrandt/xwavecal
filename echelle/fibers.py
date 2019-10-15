@@ -22,7 +22,7 @@ class MakeFiberTemplate(Stage):
     def do_stage(self, image):
         order = self.runtime_context.template_trace_id
         logger.info('Generating a template with center order {0}'.format(order))
-        spec = image.data_tables[self.runtime_context.box_spectrum_name]
+        spec = image.data_tables[self.runtime_context.main_spectrum_name]
         num_fibers = len(lit_fibers(image))
         orders = [order - num_fibers, order, order + num_fibers]
         template_region = np.logical_or.reduce(tuple(spec['id'] == i for i in orders))
@@ -54,11 +54,11 @@ class IdentifyFibers(ApplyCalibration):
 
         NOTE: This stage relies on the fact that only 2 fibers are lit at one time.
         """
-        if len(image.data_tables[self.runtime_context.box_spectrum_name]['flux']) == 0:
+        if len(image.data_tables[self.runtime_context.main_spectrum_name]['flux']) == 0:
             logger.error('Image has length 0 spectrum. Skipping fiber identification')
         elif image.num_wavecal_fibers() >= 1:
             logger.info('Identifying fibers via cross correlation.')
-            spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
+            spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
 
             read_noise = image.get_header_val('read_noise')
             signal_to_noise = spectrum['flux'] / (np.sqrt(np.abs(spectrum['flux']) + read_noise ** 2))
@@ -74,7 +74,7 @@ class IdentifyFibers(ApplyCalibration):
             ref_ids = self.build_ref_id_column(matched_ids, image, spectrum, self.runtime_context.ref_id)
             # TODO refactor storing information about which spectra exist.
             image.set_header_val('IDTEMPL', (template_path, 'ID of the fiber template.'))
-            for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
+            for key in [self.runtime_context.main_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
                 if image.data_tables.get(key) is not None:
                     image.data_tables[key]['fiber'] = fiber_ids
                     image.data_tables[key]['ref_id'] = ref_ids

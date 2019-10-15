@@ -91,7 +91,7 @@ class BackgroundSubtractSpectrum(Stage):
 
     def do_stage(self, image):
         logger.info('Background subtracting the extracted 1d spectra')
-        for key in [self.runtime_context.box_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
+        for key in [self.runtime_context.main_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
             if image.data_tables.get(key) is not None:
                 spectrum = image.data_tables[key]
                 if len(spectrum) > 0:

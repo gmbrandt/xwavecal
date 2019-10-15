@@ -165,7 +165,7 @@ class Initialize(WavelengthStage):
     def do_stage_fiber(self, image, fiber):
         logger.info('Appending blank WavelengthSolution object to image for this fiber. '
                     'fiber={0}'.format(str(fiber)))
-        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
+        spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         image.wavelength_solution[fiber] = WavelengthSolution(model=self.runtime_context.initial_wavelength_model,
                                                               m0=self.runtime_context.principle_order_number,
@@ -182,7 +182,7 @@ class Initialize(WavelengthStage):
         logger.error('Image spectrum missing ref_id or fiber column. Aborting wavelength calibration')
 
     def _valid_fibers(self, image):
-        spectrum_ok = all([key in image.data_tables[self.runtime_context.box_spectrum_name].colnames
+        spectrum_ok = all([key in image.data_tables[self.runtime_context.main_spectrum_name].colnames
                            for key in ['ref_id', 'fiber']])
         return lit_wavecal_fibers(image) if spectrum_ok else []
 
@@ -230,7 +230,7 @@ class FitOverlaps(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         logger.info('Fitting overlaps. fiber={0}'.format(str(fiber)))
-        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
+        spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         overlaps = fit_overlaps(spec=single_fiber_spectrum,
                                 lines=image.wavelength_solution[fiber].measured_lines,
@@ -286,7 +286,7 @@ class IdentifyArcEmissionLines(WavelengthStage):
         self.min_peak_snr = self.runtime_context.min_peak_snr
 
     def do_stage_fiber(self, image, fiber):
-        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
+        spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         measured_lines = identify_lines(spectrum=single_fiber_spectrum,
                                         stderr=single_fiber_spectrum['stderr'],
@@ -558,14 +558,14 @@ class ApplyToSpectrum(WavelengthStage):
         super(ApplyToSpectrum, self).__init__(runtime_context=runtime_context)
 
     def do_stage_fiber(self, image, fiber):
-        spectrum = image.data_tables[self.runtime_context.box_spectrum_name]
+        spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
         fiber_mask = np.where(spectrum['fiber'] == fiber)
         wcs = image.wavelength_solution[fiber]
         pixel_coordinates, order_coordinates = pixel_order_as_array(spectrum[fiber_mask])
         spectrum['wavelength'][fiber_mask] = wcs.wavelength(pixel=pixel_coordinates,
                                                             order=order_coordinates)
         spectrum.meta['header'] = {'MODEL': str(wcs.model), 'MCOEFFS': str(list(wcs.model_coefficients))}
-        image.data_tables[self.runtime_context.box_spectrum_name] = spectrum
+        image.data_tables[self.runtime_context.main_spectrum_name] = spectrum
         return image
 
 
