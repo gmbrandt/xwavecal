@@ -1,24 +1,24 @@
-echelle
-=======
-.. image:: https://coveralls.io/repos/github/gmbrandt/echelle/badge.svg?branch=master
-    :target: https://coveralls.io/github/gmbrandt/echelle?branch=master
+xwavecal
+========
+.. image:: https://coveralls.io/repos/github/gmbrandt/xwavecal/badge.svg?branch=master
+    :target: https://coveralls.io/github/gmbrandt/xwavecal?branch=master
 
-.. image:: https://travis-ci.org/gmbrandt/echelle.svg?branch=master
-    :target: https://travis-ci.org/gmbrandt/echelle
+.. image:: https://travis-ci.org/gmbrandt/xwavecal.svg?branch=master
+    :target: https://travis-ci.org/gmbrandt/xwavecal
 
 
-A library of routines for wavelength calibrating echelle 
+A library of routines for wavelength calibrating xwavecal
 spectrographs for high precision radial velocity work. Included is
 a limited data reduction pipeline which does: overscan subtraction and trimming, gain
 normalization, tracing, extraction and wavelength calibration. All output products are
 saved in a user-set sqlite3 database.
 
-At best, using ``echelle`` only requires editing a config.ini file for your data.
+At best, using ``xwavecal`` only requires editing a config.ini file for your data.
 I cover how to do that in this readme.
 
 Installation
 ============
-:code:`echelle` is installed via pip by running
+``xwavecal`` is installed via pip by running
 
 .. code-block:: bash
 
@@ -28,20 +28,20 @@ While in the root directory of this repository. It can also be installed by runn
 
 .. code-block:: bash
 
-    pip install git+https://github.com/gmbrandt/echelle
+    pip install git+https://github.com/gmbrandt/xwavecal
 
 Wavelength Calibrating Spectrum
 ===============================
 This section covers how to wavelength calibrate data which already have a spectrum, and a blaze
-corrected spectrum. Using ``echelle`` with spectra is preferred.
+corrected spectrum. Using ``xwavecal`` with spectra is preferred.
 
 If you have raw data only and extracting a spectrum is difficult, you may try the experimental data
-reduction pipeline included with :code:`echelle`, see section "Reducing Data". However, I highly recommend extracting
-the spectrum first and running ``echelle`` in the preferred way.
+reduction pipeline included with ``xwavecal``, see section "Reducing Data". However, I highly recommend extracting
+the spectrum first and running ``xwavecal`` in the preferred way.
 
 Information about the input data products are to
 be set by users via a :code:`config.ini` file. See the files
-:code:`echelle/tests/data/test_config.ini` or :code:`echelle/example_config/nres_config.ini`
+:code:`xwavecal/tests/data/test_config.ini` or :code:`xwavecal/example_config/nres_config.ini`
 for the configuration to reduce NRES data. I now cover how to wavelength calibrate data, using the
 Network of Robotic Echelle Spectrographs (NRES) from Las Cumbres Observatory
 as an example. Configuring this wavelength solution to work for your instrument only involves (except
@@ -62,7 +62,7 @@ table :code:`caldata` in the .db file specified.
 
 Data settings
 ---------------
-Here we tell :code:`echelle` via the config file where various information lies in the header of
+Here we tell ``xwavecal`` via the config file where various information lies in the header of
 your data.
 
 In section [data] we will need to edit:
@@ -73,7 +73,7 @@ In section [data] we will need to edit:
 - ``type_keys``
 
 data_class is also editable, but most likely will not need to be changed. data_class is the
-Python object used to load in your data. The default ``echelle.images.Image`` should be fine for your data.
+Python object used to load in your data. The default ``xwavecal.images.Image`` should be fine for your data.
 
 ``primary_data_extension``
 
@@ -125,19 +125,19 @@ we would run (if in the root directory of this repo):
 
 .. code-block:: bash
 
-    echelle_reduce_dir --input-dir echelle/tests/data/
-     --output-dir ~/Downloads --config-file echelle/data/nres_config.ini
+    xwavecal_reduce_dir --input-dir xwavecal/tests/data/
+     --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
 
 This will output the reduced data files and intermediate data products (e.g. Trace files) into
 ~/Downloads. A .db file will be created in the place specified in :code:`nres_config.ini`. If you
 re-reduce the same data, the entries in the .db will be updated appropriately.
 
-When reducing wavecals, :code:`echelle` will automatically select the trace files created
+When reducing wavecals, ``xwavecal`` will automatically select the trace files created
 from lampflats which have the nearest observation date.
 
 If you want to fpack (.fz) the output files. You must first install :code:`libcfitsio`.
 E.g. via :code:`sudo apt install libcfitsio-bin` on linux.
-Then run the echelle reduction command with the added flag: :code:`--fpack`. The files
+Then run the xwavecal reduction command with the added flag: :code:`--fpack`. The files
 are fpacked with a quantization of 10^6 by default. This gives an error of roughly 10^(-7) on a frame
 consisting of gaussian noise only.
 
@@ -147,15 +147,15 @@ To reduce files by specifying paths, specify the data paths separated by spaces:
 
 .. code-block:: bash
 
-    echelle_reduce --data-paths
-     echelle/tests/data/nres_test_data/cptnrs03-fa13-20190405-0004-w00.fits.fz
-      echelle/tests/data/nres_test_data/cptnrs03-fa13-20190405-0014-a00.fits.fz
-       --output-dir ~/Downloads --config-file echelle/data/nres_config.ini
+    xwavecal_reduce --data-paths
+     xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0004-w00.fits.fz
+      xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0014-a00.fits.fz
+       --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
 
-For clarity, w00 is a lampflat and a00 is a ThAr exposure. Again, :code:`echelle` will automatically reduce lampflats and
+For clarity, w00 is a lampflat and a00 is a ThAr exposure. Again, ``xwavecal`` will automatically reduce lampflats and
 generate trace files first.
 Note that if the lampflat specified is further from the wavecal in observation date than another lampflat
-you already reduced which is in the database, :code:`echelle` will find the closest lampflat
+you already reduced which is in the database, ``xwavecal`` will find the closest lampflat
 in the data base and use that instead. You would want to specify a different (blank) database in order
 to force using a lampflat which is very far away. Again, files can be compressed with fpack (after installing
 :code:`libcfitsio`) by adding :code:`--fpack` to the command line call.
@@ -164,11 +164,11 @@ to force using a lampflat which is very far away. Again, files can be compressed
 Reducing Raw Data (experimental)
 ================================
 
-One can use :code:`echelle` to fully reduce their data by adding stages to the [stages] section, and
+One can use ``xwavecal`` to fully reduce their data by adding stages to the [stages] section, and
 by adding options to the [reduction] section of the config.ini file. The pipeline is
 automatic, however you have to change roughly twice the number of options in the config.ini file and so
 errors are more likely to occur. Example configuration files for IRD (Subaru), HARPS, and NRES spectrographs
-are in the ``echelle/example_config/``. Those configuration files are meant to be examples only: they were made
+are in the ``xwavecal/example_config/``. Those configuration files are meant to be examples only: they were made
 on a limited set of IRD and HARPS data. The pipeline may not function well on all data from those instruments
 using my example configuration files. The value of each configuration parameter will in those example files will
 change often as I tweak the files.
@@ -180,10 +180,10 @@ Configuring a new instrument
 
 Indicating header keywords
 --------------------------
-We need to tell :code:`echelle` where the read_noise, etc... lies in the fits headers
+We need to tell ``xwavecal`` where the read_noise, etc... lies in the fits headers
 of the input raw data files.
 
-We first copy one of the example config.ini files inside of :code:`echelle/data/`. Next
+We first copy one of the example config.ini files inside of :code:`xwavecal/data/`. Next
 we uncomment out the stage :code:`MakeFiberTemplate` in the section [stages].
 
 In the section [data] of the config file, specify in header_keys which header keys
@@ -210,12 +210,12 @@ Making the template prior to first reduction
 --------------------------------------------
 In section [reduction], :code:`template_trace_id` gives the trace id (:code:`id` in the trace.fits files created)
 for the diffraction order
-that :code:`echelle` will use to make a template from on the first wavecal frame you reduce. For HARPS,
+that ``xwavecal`` will use to make a template from on the first wavecal frame you reduce. For HARPS,
 I set :code:`template_trace_id = 10` arbitrarily. I recommend you don't select diffraction orders
 that are known to be problematic (e.g. are near the edge). Specify the paths in the config.ini file
 so that they are where you want them. Namely, you need to specify the line list path and the .db database path.
 
-Next, reduce a lampflat and wavecal via :code:`echelle_reduce_dir`, or with  :code:`echelle_reduce`. The lampflat
+Next, reduce a lampflat and wavecal via :code:`xwavecal_reduce_dir`, or with  :code:`xwavecal_reduce`. The lampflat
 reduction will make a trace file, a blaze file, and a processed lampflat file.
 
 Reducing any wavecal will produce a template. The template is a . For all wavecal files which resemble
@@ -243,9 +243,9 @@ Wavelength calibration files
 Notes on reduction
 ------------------
 
-The :code:`echelle` database handles instruments independently. You can safely reduce data from
+The ``xwavecal`` database handles instruments independently. You can safely reduce data from
 separate instruments simulataneously, provided the .fits keywords provided in :code:`config.ini` are enough
-to specify each input .fits file to the appropriate instrument. By default, :code:`echelle` uses the instrument
+to specify each input .fits file to the appropriate instrument. By default, ``xwavecal`` uses the instrument
 name (nres03 for instance) and the site name (cpt for instance). One sets in the :code:`config.ini` where
 to find these specifiers in a .fits header and under what keywords.
 
@@ -257,7 +257,7 @@ Traces
 ------
 Traces are the y positions, as a function of x, of the center of flux for a given diffraction order. E.g. the ladder-rungs
 on an echelle spectrograph. If your input lampflats have 67 visible orders, and are 4096 pixels wide, then the output
-trace files that :code:`echelle` generates are tables with 67 rows and 4096 + 1 columns. The additional column contains
+trace files that ``xwavecal`` generates are tables with 67 rows and 4096 + 1 columns. The additional column contains
 the trace id. The column headers are :code:`id` for the trace id, and :code:`centers` for the y positions of the trace.
 
 Trace files by default have :code:`_trace` appended onto the end of the filename (but before the filetype extension).
@@ -324,7 +324,7 @@ and correct the line list for the index of refraction of air if necessary.
 
 Contributions
 =============
-We encourage and welcome contributions to :code:`echelle`. The master branch is protected
+We encourage and welcome contributions to ``xwavecal``. The master branch is protected
 so the workflow for contributing is first to open a branch and then make a pull request.
 One approving review from an administrator is required before the branch can be merged.
 
