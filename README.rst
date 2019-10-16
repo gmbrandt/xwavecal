@@ -6,6 +6,8 @@ xwavecal
 .. image:: https://travis-ci.org/gmbrandt/xwavecal.svg?branch=master
     :target: https://travis-ci.org/gmbrandt/xwavecal
 
+.. image:: https://zenodo.org/badge/207922849.svg
+   :target: https://zenodo.org/badge/latestdoi/207922849
 
 A library of routines for automatically wavelength calibrating echelle
 spectrographs for high precision radial velocity work. ``xwavecal`` is designed to operate on data with
@@ -13,7 +15,7 @@ extracted 1D spectra.
 
 :Author: G. Mirek Brandt
 
-If you use this code, please cite the Zendo DOI: TODO
+If you use this code, please cite the Zendo DOI: https://zenodo.org/record/3494618
 
 Please cite **Brandt, G.M. et al. (2019)** which can be found at: TODO
 
