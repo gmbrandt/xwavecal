@@ -2,7 +2,8 @@ import mock
 from astropy.io.fits import HDUList, PrimaryHDU
 from tempfile import TemporaryDirectory
 
-from echelle.utils.fits_utils import writeto, parse_region_keyword
+from echelle.utils.fits_utils import writeto
+from echelle.utils.instrument_specific import parse_nres_region_keyword, parse_harps_region_keyword
 
 
 class TmpDir(TemporaryDirectory):
@@ -33,4 +34,11 @@ class TestWriteTo:
 
 
 def test_parse_region_keyword():
-    assert (slice(0, 4096), slice(0, 4096)) == parse_region_keyword('[1:4096,1:4096]')
+    assert (slice(0, 4096), slice(0, 4096)) == parse_nres_region_keyword('[1:4096,1:4096]')
+
+
+def test_parse_harps_region_keyword():
+    key = (4096, 4096, 50, 0, 50, 0, 4196, 4096)
+    assert (slice(0, 4096), slice(50, 4146)) == parse_harps_region_keyword(key)
+    key = (50, 0, 50, 0, 50, 0, 4196, 4096)
+    assert (slice(0, 4096), slice(4146, 4196)) == parse_harps_region_keyword(key)

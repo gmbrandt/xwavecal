@@ -8,7 +8,7 @@ from ast import literal_eval
 from echelle.utils.fits_utils import Translator
 
 
-def parse_args():
+def parse_args(args=None):
     parser = argparse.ArgumentParser(description='Reduce an echelle spectrograph frame.')
     parser.add_argument("--output-dir", required=True,
                         help="Directory within which to save the processed data files.")
@@ -26,7 +26,7 @@ def parse_args():
                              "lampflat files are used for tracing, wavecals are wavelength calibration"
                              "frames such as ThAr exposures.",
                         choices=['lampflat', 'wavecal', 'any'], type=str.lower)
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     if args.data_paths is None and args.input_dir is None:
         raise ValueError('both input_dir and data_paths are None. Must specify raw data or a directory of raw data to process.')
     return args
@@ -40,6 +40,7 @@ def get_data_paths(dir_path, files_contain=None):
 def order_data(data_paths, data_class, primary_ext, header_keys, type_keys):
     translator = Translator(header_keys, type_keys)
     is_not_lampflat = lambda path: 0 if data_class.load(path, primary_ext, translator).get_header_val('type') == 'lampflat' else 1
+    data_paths = list(data_paths)
     if len(data_paths) > 0:
         data_paths.sort(key=is_not_lampflat)
     return data_paths
@@ -54,9 +55,9 @@ def select_data_of_type(data_paths, data_class, primary_ext, header_keys, type_k
     return np.array(data_paths)[np.where([correct(path) for path in data_paths])]
 
 
-def import_class(full_class_string):
+def import_obj(full_class_string):
     """
-    dynamically import a class from a string
+    dynamically import a class or function from a string
     """
 
     class_data = full_class_string.split(".")

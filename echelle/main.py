@@ -6,15 +6,20 @@ Author: G. Mirek Brandt
 Note: reduce_data() and run() are console entry points.
 """
 
-import logging as logger
+import logging
+import logging.config
 from configparser import ConfigParser
 from datetime import datetime
 from ast import literal_eval
+import pkg_resources
 import os
 
-from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_class, safe_eval
+from echelle.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_obj, safe_eval
 from echelle.utils.fits_utils import Translator
 from echelle.database import format_db_info, add_data_to_db
+
+logging.config.fileConfig(pkg_resources.resource_filename('echelle', 'data/.logging.ini'))
+logger = logging.getLogger(__name__)
 
 
 class RuntimeContext(object):
@@ -24,7 +29,6 @@ class RuntimeContext(object):
 
 
 def reduce_data(data_paths=None, args=None, config=None):
-    logger.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logger.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     if args is None:
         args = parse_args()
     if config is None:
@@ -35,7 +39,7 @@ def reduce_data(data_paths=None, args=None, config=None):
 
     runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
     translator = Translator(header_keys, type_keys)
-    DataClass = import_class(data_class)
+    DataClass = import_obj(data_class)
     data_paths = order_data(data_paths, DataClass, extension, header_keys, type_keys)
 
     for data_path in data_paths:
@@ -43,26 +47,19 @@ def reduce_data(data_paths=None, args=None, config=None):
                     ''.format(path=data_path, data_class=data_class, extension=extension))
 
         data = DataClass.load(data_path, extension, translator)
-        stages_todo = [import_class(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
-        auxiliary_products = []
+        stages_todo = [import_obj(stage) for stage in literal_eval(config.get('stages', data.get_header_val('type')))]
         for stage in stages_todo:
             data = stage(runtime_context).do_stage(data)
             if isinstance(data, list) or isinstance(data, tuple):
-                auxiliary_products.extend(data[1:])
+                auxiliary_products = data[1:]
                 data = data[0]
+                for product in auxiliary_products:
+                    write_out(product, runtime_context, args)
 
-        to_write = [data] + auxiliary_products
-
-        for data in to_write:
-            data.filepath = make_output_path(args.output_dir, data)
-            data.write(fpack=args.fpack)
-            logger.info('Adding file to processed image database at {path}'.format(path=runtime_context.database_path))
-            db_info = format_db_info(data, runtime_context.time_format)
-            add_data_to_db(runtime_context.database_path, db_info)
+        write_out(data, runtime_context, args)
 
 
 def run():
-    logger.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logger.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     # parse command line arguments and the configuration file.
     args = parse_args()
     config = ConfigParser()
@@ -70,12 +67,22 @@ def run():
 
     # get the data paths of the data to reduce.
     runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
-    DataClass = import_class(data_class)
+    DataClass = import_obj(data_class)
     data_paths = select_data(args.input_dir, args.frame_type, literal_eval(config.get('data', 'files_contain')),
                              DataClass, extension, header_keys, type_keys)
 
     logger.info('Found {0} files of {1} type'.format(len(data_paths), args.frame_type))
     reduce_data(data_paths, args, config)
+
+
+def write_out(data, runtime_context, args, use_db=True):
+    data.filepath = make_output_path(args.output_dir, data, runtime_context.time_format)
+    data.write(fpack=args.fpack)
+    if use_db:
+        logger.info('Adding file to processed image database at'
+                    ' {path}'.format(path=runtime_context.database_path))
+        db_info = format_db_info(data, runtime_context.time_format)
+        add_data_to_db(runtime_context.database_path, db_info)
 
 
 def organize_config(config):
@@ -97,15 +104,21 @@ def select_data(input_dir, frame_type, files_contain, data_class, extension, hea
 def make_output_path(output_dir, data, time_fmt='%Y-%m-%dT%H:%M:%S.%f'):
     """
     :param data: Image
-    :return: string
+    :return: path: string
              The path to write the file to.
     """
     id = str(data.get_header_val('unique_id')).zfill(4)
     dayobs = datetime.strptime(data.get_header_val('observation_date'), time_fmt).strftime('%Y%m%d')
     filename = '{site}_{inst}_{dayobs}_{id}_{type}_{f0}{f1}{f2}.fits'.format(inst=data.get_header_val('instrument'),
-                                                                         site=data.get_header_val('site_name'),
-                                                                         dayobs=dayobs, id=id,
-                                                                         type=data.get_header_val('type'),
-                                                                         f0=data.fiber0_lit, f1=data.fiber1_lit,
-                                                                         f2=data.fiber2_lit)
+                                                                             site=data.get_header_val('site_name'),
+                                                                             dayobs=dayobs, id=id,
+                                                                             type=data.get_header_val('type'),
+                                                                             f0=data.fiber0_lit, f1=data.fiber1_lit,
+                                                                             f2=data.fiber2_lit)
+    filename = _sanitize(filename)
     return os.path.join(output_dir, filename)
+
+
+def _sanitize(filename):
+    filename = filename.replace('(', '_').replace(')', '_').replace(' ', '').replace(',', '_')
+    return filename.replace('___', '_').replace('__', '_')

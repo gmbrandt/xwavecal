@@ -10,9 +10,11 @@ from echelle.utils.blaze_utils import normalize_orders
 
 class TestApplyBlaze:
     CONTEXT = FakeContext()
+
+    @mock.patch('os.path.exists', return_value=True)
     @mock.patch('echelle.blaze.ApplyBlaze.get_calibration_filename', return_value='fake')
     @mock.patch('echelle.images.Image.load')
-    def test_apply_calibration(self, mock_load, mock_get_cal):
+    def test_apply_calibration(self, mock_load, mock_get_cal, mock_os):
         blaze = FakeImage()
         self.CONTEXT.min_blaze_sn = np.inf
         blaze.data = np.random.randint(1, 9, size=(10, 10))
@@ -28,8 +30,10 @@ class TestApplyBlaze:
     def test_apply_calibration_aborts_on_incorrect_shape(self, mock_load, mock_get_cal):
         blaze = FakeImage()
         blaze.data = np.random.randint(1, 9, size=(10, 11))
+        image = FakeImage()
+        image.data = np.ones((10, 10)).astype(float)
         mock_load.return_value = blaze
-        image = ApplyBlaze(self.CONTEXT).do_stage(np.ones((10, 10)).astype(float))
+        image = ApplyBlaze(self.CONTEXT).do_stage(image)
         assert np.allclose(image.data, 1)
 
 

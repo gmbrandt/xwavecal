@@ -14,7 +14,8 @@ from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from echelle.images import DataProduct
 
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Trace(DataProduct):
@@ -57,6 +58,13 @@ class Trace(DataProduct):
         self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
         self.data['id'] = np.arange(self.data['centers'].shape[0])
 
+    def remove_duplicates(self, thresh=3):
+        c = int(self.data['centers'].shape[1] / 2)
+        duplicates = np.arange(len(self.data['centers']) - 1)[np.isclose(self.data['centers'][1:, c],
+                                                                         self.data['centers'][:-1, c], atol=thresh)]
+        self.del_centers(duplicates)
+        self.sort()
+
 
 class AllTraceFitter(object):
     def __init__(self, xmin=2000, xmax=2100, min_peak_to_peak_spacing=10, min_snr=6):
@@ -80,6 +88,7 @@ class AllTraceFitter(object):
         peak_xy_coordinates = self._identify_traces(image_data, image_noise_estimate)
         trace = self._step_through_detector(trace, trace_fitter, peak_xy_coordinates)
         trace.sort()
+        trace.remove_duplicates(thresh=self.min_peak_to_peak_spacing/2)
         return trace
 
     @staticmethod

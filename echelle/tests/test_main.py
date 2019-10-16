@@ -1,9 +1,9 @@
 import tempfile
-import os
 from configparser import ConfigParser
 import mock
+import pytest
 
-from echelle.main import select_data, run, reduce_data, organize_config
+from echelle.main import select_data, run, reduce_data, organize_config, make_output_path, import_obj
 from echelle.tests.utils import FakeImage
 
 
@@ -30,11 +30,11 @@ def test_select_data():
 def test_organize_config():
     config = ConfigParser()
     config.read('echelle/tests/data/test_config.ini')
-    runtime_context, data_class, extension, header_keys, type_translator = organize_config(config)
+    runtime_context, data_class, extension, header_keys, type_keys = organize_config(config)
     assert data_class == 'echelle.images.Image'
     assert extension == 1
-    assert type_translator['LAMPFLAT'] == 'lampflat'
-    assert type_translator['DOUBLE'] == 'wavecal'
+    assert type_keys['LAMPFLAT'] == 'lampflat'
+    assert type_keys['DOUBLE'] == 'wavecal'
     assert header_keys['read_noise'] == 'RDNOISE'
     assert type(runtime_context.final_wavelength_model) is dict
     assert type(runtime_context.ref_id) is int
@@ -58,7 +58,7 @@ def test_run(mock_args):
 @mock.patch('echelle.main.add_data_to_db', return_value=None)
 @mock.patch('echelle.main.format_db_info', return_value=None)
 @mock.patch('echelle.main.parse_args')
-def test_reduce_data_does_not_error(mock_args, mock_format, mock_add, mock_order):
+def test_reduce_data_does_not_err(mock_args, mock_format, mock_add, mock_order):
     config = ConfigParser()
     config.read('echelle/tests/data/test_config.ini')
     config.set('stages', 'lampflat', '[]')
@@ -70,3 +70,28 @@ def test_reduce_data_does_not_error(mock_args, mock_format, mock_add, mock_order
                                                'frame_type': 'any', 'fpack': False})
         reduce_data(config=config)
     assert True
+
+
+@mock.patch('echelle.main.order_data', return_value=[])
+@mock.patch('echelle.main.organize_config', return_value=(None, 'echelle.images.Image', None, {}, {}))
+@mock.patch('configparser.ConfigParser.read')
+@mock.patch('echelle.main.parse_args')
+def test_reduce_data_calls_config(mock_args, mock_config, mock_organize, mock_order):
+    mock_args.return_value = type('', (), {'config_file': 'file', 'data_paths': 'path'})
+    reduce_data()
+    mock_config.assert_called_with('file')
+    assert True
+
+
+def test_make_output_path():
+    data = FakeImage()
+    path = make_output_path('outdir', data)
+    data.set_header_val('site_name', '(test, )')
+    path2 = make_output_path('outdir', data)
+    assert path == 'outdir/test_nres03_20190410_0077_lampflat_011.fits'
+    assert path2 == 'outdir/_test_nres03_20190410_0077_lampflat_011.fits'
+
+
+def test_import_from_string():
+    numpyones = import_obj('numpy.ones')
+    assert numpyones((5, 5)).shape == (5, 5)

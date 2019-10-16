@@ -1,11 +1,12 @@
 import numpy as np
-import abc
-import logging as logger
 import copy
 from astropy.table import Table
 
 from echelle.utils import extract_utils
 from echelle.stages import Stage
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class BoxExtract(Stage):
@@ -42,7 +43,8 @@ class BoxExtract(Stage):
                 Same as rectified_2d_spectrum but ['val'] is the inverse variance.
         :return:
         """
-        extracted_spectrum_per_order = {'id': [], 'flux': [], 'stderr': [], 'pixel': []}
+        extracted_spectrum_per_order = {'id': [], 'flux': [], 'stderr': [], 'pixel': [],
+                                        'fiber': [], 'ref_id': [], 'wavelength': []}
         for order_id in list(rectified_2d_spectrum.keys()):
             weights = self._weights(rectified_2d_spectrum[order_id]['val'], rectified_ivar[order_id]['val'])
             flux = self.extract_order(rectified_2d_spectrum[order_id]['val'], weights)
@@ -54,6 +56,10 @@ class BoxExtract(Stage):
             extracted_spectrum_per_order['stderr'].append(np.sqrt(stdvar))
             extracted_spectrum_per_order['pixel'].append(np.arange(len(flux)))
             extracted_spectrum_per_order['id'].append(order_id)
+
+            extracted_spectrum_per_order['wavelength'].append(np.ones_like(flux, dtype=float) * np.nan)
+            extracted_spectrum_per_order['ref_id'].append(np.nan)
+            extracted_spectrum_per_order['fiber'].append(np.nan)
         return Table(extracted_spectrum_per_order)
 
     def _weights(self, order_rect_spectrum, order_rect_ivar):
@@ -102,7 +108,7 @@ class IVarExtract(BoxExtract):
         super(IVarExtract, self).__init__(runtime_context=runtime_context)
         self.extraction_half_window = runtime_context.sne_extraction_half_window
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
-        self.table_name = runtime_context.sne_spectrum_name
+        self.table_name = runtime_context.ivar_spectrum_name
 
     def _weights(self, order_rect_spectrum, order_rect_ivar):
         normalization = self.extract_order(order_rect_ivar)
@@ -132,6 +138,7 @@ class RectifyTwodSpectrum(Stage):
             logger.error('Image has empty trace attribute. Aborting extraction.')
             image.is_bad = True
             image.rectified_2d_spectrum = {}
+            image.rectified_ivar = {}
             return image
         rectified_2d_spectrum = extract_utils.rectify_orders(image.data, image.trace,
                                                              half_window=self.max_extraction_half_window)

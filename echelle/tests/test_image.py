@@ -13,25 +13,25 @@ from echelle.tests.utils import FakeContext, FakeImage
 
 
 def test_image_class_loads():
-    image = Image(header={'OBJECTS': 'tung&tung&none'})
+    image = Image(header={'fiber_state': 'tung&tung&none'})
     assert image.trace is None
     assert image.rectified_2d_spectrum is None
     assert image.wavelength_solution == {}
 
 
 def test_get_num_lit_fibers():
-    image = Image(header={'OBJECTS': 'tung&tung&none'})
+    image = Image(header={'fiber_state': 'tung&tung&none'})
     assert image.num_lit_fibers() == 2
-    image = Image(header={'OBJECTS': 'none&tung&none'})
+    image = Image(header={'fiber_state': 'none&tung&none'})
     assert image.num_lit_fibers() == 1
 
 
 def test_get_num_lit_wavecal_fibers():
-    image = Image(header={'OBJECTS': 'thar&tung&none'})
+    image = Image(header={'fiber_state': 'thar&tung&none'})
     assert image.num_wavecal_fibers() == 1
     assert image.fiber0_wavecal == 1
     assert image.fiber1_wavecal == 0
-    image = Image(header={'OBJECTS': 'none&thar&thar'})
+    image = Image(header={'fiber_state': 'none&thar&thar'})
     assert image.num_wavecal_fibers() == 2
     assert image.fiber1_wavecal == 1
     assert image.fiber2_wavecal == 1
@@ -65,7 +65,8 @@ class TestDataProduct:
     def test_translator(self):
         header_keys = {'type': 'OBSTYPE',
                        'gain': 'GAIN',
-                       'read_noise': 'RDNOISE'}
+                       'read_noise': 'RDNOISE',
+                       'multi': ('obstype', 'gain')}
         type_keys = {'LAMPFLAT': 'lampflat',
                      'DOUBLE': 'wavecal'}
         translator = Translator(header_keys, type_keys)
@@ -74,13 +75,14 @@ class TestDataProduct:
         assert image.get_header_val('type') == 'wavecal'
         assert image.get_header_val('gain') == 1
         assert image.get_header_val('read_noise') == 10
+        assert image.get_header_val('multi') == ('DOUBLE', 1)
         image.set_header_val('gain', 5)
         assert image.get_header_val('gain') == 5
 
 
 class TestImage:
     def test_load_and_write(self):
-        image = Image(data=np.ones((10, 10)), header={'bla': 1, 'OBJECTS': 'none&none&none'})
+        image = Image(data=np.ones((10, 10)), header={'bla': 1, 'fiber_state': 'none&none&none'})
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
             image.filepath = path
@@ -91,7 +93,7 @@ class TestImage:
 
     def test_load_and_write_with_name(self):
         name = 'a_name'
-        image = Image(data=np.ones((10, 10)), data_name='a_name', header={'bla': 1, 'OBJECTS': 'none&none&none'})
+        image = Image(data=np.ones((10, 10)), data_name='a_name', header={'bla': 1, 'fiber_state': 'none&none&none'})
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
             image.filepath = path

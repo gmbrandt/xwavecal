@@ -1,16 +1,17 @@
 """
-traces.py: Driver scripts for finding echelle orders across a CCD.
+traces.py: Module for finding echelle orders across a CCD.
 
 Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
-import sep
 import os
-import logging as logger
 from copy import deepcopy, copy
 
 from echelle.utils.trace_utils import Trace, AllTraceFitter
 from echelle.stages import Stage, ApplyCalibration
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TraceMaker(Stage):
@@ -29,7 +30,6 @@ class TraceMaker(Stage):
         return 'TRACE'
 
     def do_stage(self, image):
-        # need to set obstype to TRACE and set master filename.
         logger.info('fitting traces order by order', )
         fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                 min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
@@ -62,5 +62,5 @@ class LoadTrace(ApplyCalibration):
         image.trace = Trace.load(master_calibration_path, extension_name=self.runtime_context.trace_table_name)
         master_trace_filename = os.path.basename(master_calibration_path)
         image.set_header_val('IDTRACE', (master_trace_filename, 'ID of trace centers file'))
-        logger.info('Loading trace centers',   extra={'IDTRACE': image.get_header_val('IDTRACE')})
+        logger.info('Loading trace centers from {0}'.format(image.get_header_val('IDTRACE')))
         return image
