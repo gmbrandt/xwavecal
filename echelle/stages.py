@@ -13,7 +13,7 @@ class Stage(object):
 
     @abc.abstractmethod
     def do_stage(self, image):
-        return image
+        return image  # pragma: no cover
 
 
 class ApplyCalibration(Stage):
@@ -22,7 +22,7 @@ class ApplyCalibration(Stage):
 
     @property
     def calibration_type(self):
-        return 'None'
+        return 'None'  # pragma: no cover
 
     def do_stage(self, image):
         master_calibration_path = self.get_calibration_filename(image)
@@ -44,4 +44,4 @@ class ApplyCalibration(Stage):
 
     @abc.abstractmethod
     def apply_master_calibration(self, image, path):
-        return image
+        return image  # pragma: no cover

@@ -22,8 +22,6 @@ def writeto(hdu_list, filepath, fpack=False, overwrite=True, output_verify='fix+
         with tempfile.TemporaryDirectory() as temp_directory:
             hdu_list.writeto(os.path.join(temp_directory, base_filename),
                              overwrite=overwrite, output_verify=output_verify)
-            if os.path.exists(filepath):
-                os.remove(filepath)
             command = 'fpack -q {quantization} {temp_directory}/{basename}'
             os.system(command.format(quantization=int(quant), temp_directory=temp_directory, basename=base_filename))
             base_filename += '.fz'

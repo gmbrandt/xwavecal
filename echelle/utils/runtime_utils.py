@@ -8,7 +8,7 @@ from ast import literal_eval
 from echelle.utils.fits_utils import Translator
 
 
-def parse_args():
+def parse_args(args=None):
     parser = argparse.ArgumentParser(description='Reduce an echelle spectrograph frame.')
     parser.add_argument("--output-dir", required=True,
                         help="Directory within which to save the processed data files.")
@@ -26,7 +26,7 @@ def parse_args():
                              "lampflat files are used for tracing, wavecals are wavelength calibration"
                              "frames such as ThAr exposures.",
                         choices=['lampflat', 'wavecal', 'any'], type=str.lower)
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     if args.data_paths is None and args.input_dir is None:
         raise ValueError('both input_dir and data_paths are None. Must specify raw data or a directory of raw data to process.')
     return args
