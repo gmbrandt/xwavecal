@@ -7,11 +7,15 @@ xwavecal
     :target: https://travis-ci.org/gmbrandt/xwavecal
 
 
-A library of routines for wavelength calibrating xwavecal
-spectrographs for high precision radial velocity work. Included is
-a limited data reduction pipeline which does: overscan subtraction and trimming, gain
-normalization, tracing, extraction and wavelength calibration. All output products are
-saved in a user-set sqlite3 database.
+A library of routines for automatically wavelength calibrating echelle
+spectrographs for high precision radial velocity work. ``xwavecal`` is designed to operate on data with
+extracted 1D spectra.
+
+:Author: G. Mirek Brandt
+
+If you use this code, please cite the Zendo DOI: TODO
+
+Please cite **Brandt, G.M. et al. (2019)** which can be found at: TODO
 
 At best, using ``xwavecal`` only requires editing a config.ini file for your data.
 I cover how to do that in this readme.
