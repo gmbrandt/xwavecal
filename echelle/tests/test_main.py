@@ -1,6 +1,7 @@
 import tempfile
 from configparser import ConfigParser
 import mock
+import pytest
 
 from echelle.main import select_data, run, reduce_data, organize_config, make_output_path, import_obj
 from echelle.tests.utils import FakeImage
@@ -68,6 +69,17 @@ def test_reduce_data_does_not_err(mock_args, mock_format, mock_add, mock_order):
         mock_args.return_value = type('', (), {'data_paths': [tmp], 'output_dir': temp_directory,
                                                'frame_type': 'any', 'fpack': False})
         reduce_data(config=config)
+    assert True
+
+
+@mock.patch('echelle.main.order_data', return_value=[])
+@mock.patch('echelle.main.organize_config', return_value=(None, 'echelle.images.Image', None, {}, {}))
+@mock.patch('configparser.ConfigParser.read')
+@mock.patch('echelle.main.parse_args')
+def test_reduce_data_calls_config(mock_args, mock_config, mock_organize, mock_order):
+    mock_args.return_value = type('', (), {'config_file': 'file', 'data_paths': 'path'})
+    reduce_data()
+    mock_config.assert_called_with('file')
     assert True
 
 

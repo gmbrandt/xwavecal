@@ -10,7 +10,8 @@ from echelle.utils.trace_utils import legendre as legendre_val
 from echelle.utils.overlap_utils import blank_overlap_table
 from echelle.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal
 from echelle.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
-from echelle.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines
+from echelle.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines, Initialize
+from echelle.wavelength import IdentifyPrincipleOrderNumber, SolutionRefineOnce
 from echelle.tests.utils import SpectrumUtils, FakeImage, FakeContext
 
 
@@ -169,6 +170,15 @@ class TestWavelengthStage:
         assert len(WavelengthStage._valid_fibers(image)) == 0
 
 
+class TestInitialize:
+    def test_on_no_valid_fibers(self):
+        image = FakeImage()
+        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
+        image.wavelength_solution = {1: 'not none', 2: 'not none'}
+        Initialize.on_no_valid_fibers(image)
+        assert image.wavelength_solution == {1: None, 2: None}
+
+
 class TestFitOverlaps:
     @mock.patch('echelle.wavelength.fit_overlaps')
     def test_do_stage(self, mock_overlaps):
@@ -265,13 +275,13 @@ class TestIdentifyArcEmissionLines:
 
 class TestFindGlobalScale:
     @mock.patch('echelle.wavelength.WavelengthSolution.update_model')
-    @mock.patch('echelle.wavelength.FindGlobalScale._find_scale', return_value=3)
+    @mock.patch('echelle.wavelength.FindGlobalScale._find_scale', return_value=10)
     @mock.patch('echelle.wavelength.estimate_global_scale', return_value=1)
     def test_do_stage_fiber(self, fake_guess, fake_result, fake_change):
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(model_coefficients=1)}
         image = FindGlobalScale(FakeContext()).do_stage_fiber(image, fiber=1)
-        assert np.isclose(image.wavelength_solution[1].model_coefficients, 3)
+        assert np.isclose(image.wavelength_solution[1].model_coefficients, 10)
 
     def test_estimate_global_scale(self):
         assert np.isclose(wcsu.estimate_global_scale(5000, n=67, m0=52), 461791, atol=2)
@@ -380,8 +390,6 @@ class TestSolutionRefineInitial:
     def test_convergence_criterion(self):
         assert not SolutionRefineInitial._converged_when_max_iter()
 
-    # TODO test clip
-
 
 class TestSolutionRefineFinal:
     @mock.patch('echelle.wavelength.SolutionRefineFinal._refine')
@@ -423,7 +431,20 @@ class TestSolutionRefineFinal:
                 break
         assert converged
 
-    # TODO test clip
+
+class TestSolutionRefineOnce:
+    @mock.patch('echelle.wavelength.refine_wcs')
+    def test_do_stage_fiber(self, fake_refine):
+        image = FakeImage()
+        context = FakeContext()
+        image.wavelength_solution = {1: WavelengthSolution(model={1: [0], 2: [0]})}
+
+        def refine(wcs, *args, **kwargs):
+            wcs.model = {1: [0], 2: [0, 1]}
+            return wcs, 1
+        fake_refine.side_effect = refine
+        image = SolutionRefineOnce(context).do_stage_fiber(image, fiber=1)
+        assert image.wavelength_solution[1].model == {1: [0], 2: [0, 1]}
 
 
 class TestApplyToSpectrum:
@@ -459,6 +480,18 @@ class TestBlazeCorrectArcEmissionLines:
                                                        'corrected_flux': np.array([80, 60])}
         image = BlazeCorrectArcEmissionLines(context).do_stage(image)
         assert np.allclose(image.wavelength_solution[1].measured_lines['corrected_flux'], [10, 20])
+
+    def test_fluxes_are_assigned_on_missing_blaze_correction(self):
+        image = FakeImage()
+        context = FakeContext()
+        image.data_tables = {}
+        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
+        image.wavelength_solution = {1: WavelengthSolution()}
+        image.wavelength_solution[1].measured_lines = {'pixel': np.array([1, 1]), 'order': np.array([0, 1]),
+                                                       'flux': np.array([-9, -8])}
+        image = BlazeCorrectArcEmissionLines(context).do_stage(image)
+        assert np.allclose(image.wavelength_solution[1].measured_lines['corrected_flux'],
+                           image.wavelength_solution[1].measured_lines['flux'])
 
 
 class TestTabulateArcEmissionLines:
@@ -534,10 +567,36 @@ class TestRefineUtils:
     def test_clip_returns_lines_without_residuals(self):
         assert np.allclose([1, 2, 3], wcsu._sigma_clip([], [1, 2, 3]))
 
-    @mock.patch('echelle.utils.wavelength_utils.sigma_clip', return_value=np.ma.masked_array([1, 1, 1], mask=[1, 0, 0]))
-    def test_clip(self, fake_sigma_clip):
-        clipped_lines = wcsu._sigma_clip([1, 1, 1], {'a': np.array([1, 2, 3])})
-        assert np.allclose(clipped_lines['a'], [2, 3])
+    def test_clip(self):
+        clipped_lines = wcsu._sigma_clip([10, 10, *np.ones(30)], {'a': np.arange(32)}, sigma=3, stdfunc=np.std)
+        assert np.allclose(clipped_lines['a'], np.arange(32)[2:])
+
+
+class TestIdentifyPrincipleOrderNumber:
+    CONTEXT = FakeContext()
+
+    @mock.patch('echelle.wavelength.IdentifyPrincipleOrderNumber.merit_per_m0', return_value=([1, .09, 1], np.array([2, 3, 4])))
+    def test_do_stage_fiber(self, mock_merit):
+        image = FakeImage()
+        image.wavelength_solution = {1: Utils.simple_wcs(m0=1000)}
+        image = IdentifyPrincipleOrderNumber(self.CONTEXT).do_stage_fiber(image, 1)
+        assert image.wavelength_solution[1].m0 == 3
+
+    @mock.patch('echelle.wavelength.IdentifyPrincipleOrderNumber.merit_per_m0', return_value=([1, .5, 1], np.array([2, 3, 4])))
+    def test_failure(self, mock_merit):
+        image = FakeImage()
+        image.wavelength_solution = {1: Utils.simple_wcs(m0=1000)}
+        image = IdentifyPrincipleOrderNumber(self.CONTEXT).do_stage_fiber(image, 1)
+        assert image.wavelength_solution[1] is None
+
+    def test_merit_per_m0(self):
+        image = FakeImage()
+        image.wavelength_solution = {1: Utils.simple_wcs(m0=10)}
+        identifier = IdentifyPrincipleOrderNumber(self.CONTEXT)
+        identifier.STAGES_TODO = []
+        merit, m0_vals = identifier.merit_per_m0(image, 1, (5, 11, 5)) # try m0=5 and 10.
+        assert merit[1] < merit[0]
+        assert np.allclose(m0_vals, [5, 10])
 
 
 class TestOnSyntheticData:

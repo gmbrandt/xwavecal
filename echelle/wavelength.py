@@ -194,10 +194,6 @@ class LoadReferenceLineList(ApplyCalibration):
     def __init__(self, runtime_context=None):
         super(LoadReferenceLineList, self).__init__(runtime_context=runtime_context)
 
-    @property
-    def calibration_type(self):
-        return 'WAVELENGTH'
-
     def apply_master_calibration(self, image, reference_list_path):
         line_list = np.sort(np.genfromtxt(reference_list_path, usecols=[1]).flatten())
         for fiber in [fiber for fiber in lit_wavecal_fibers(image) if
@@ -348,7 +344,7 @@ class FindGlobalScale(WavelengthStage):
         image.wavelength_solution[fiber].apply_scale(scale)
         logger.info('The scale guess was {0:.6e} and the search yielded {1:.6e}. fiber={2}'
                     ''.format(scale_guess, scale, str(fiber)))
-        if not np.isclose(scale_guess, scale, rtol=2):
+        if not np.isclose(scale, scale_guess, rtol=2):
             logger.error('Global scale is more than a factor of two away from initial guess, '
                          'an error in the wavelength solution for this fiber is likely. fiber={0}'.format(str(fiber)))
         return image
@@ -618,7 +614,7 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         logger.info('Looking for the principle order number between {0} and {1}.'
-                    ' fiber={3}'.format(*self.runtime_context.m0_range, str(fiber)))
+                    ' fiber={2}'.format(*self.runtime_context.m0_range, str(fiber)))
         logger.disabled = True
         merits, m0_values = self.merit_per_m0(image, fiber, self.runtime_context.m0_range)
         logger.disabled = False

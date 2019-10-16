@@ -28,6 +28,7 @@ def test_fiber_state_to_filename():
 
 
 class TestIdentifyFibers:
+    CONTEXT = FakeContext()
     def test_build_fiber_column_double(self):
         # frames with two arc fibers lit.
         image = FakeImage()
@@ -82,18 +83,33 @@ class TestIdentifyFibers:
         assert np.allclose(ref_ids, [49, 49, 50, 50, 51])
 
     def test_calibration_type(self):
-        assert IdentifyFibers(FakeContext()).calibration_type == 'FIBERS'
+        assert IdentifyFibers(self.CONTEXT).calibration_type == 'FIBERS'
 
     @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value=None)
     @mock.patch('echelle.fibers.IdentifyFibers.on_missing_master_calibration')
     def test_do_stage_aborts_on_missing_cal(self, mock_warn, mock_cal):
-        assert 'image' == IdentifyFibers(FakeContext()).do_stage(image='image')
+        assert 'image' == IdentifyFibers(self.CONTEXT).do_stage(image='image')
+
+    @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value='')
+    @mock.patch('os.path.exists', return_value=True)
+    def test_do_stage_aborts_on_no_wavecal_fibers(self, mock_warn, mock_exists):
+        image = FakeImage()
+        image.data_tables[self.CONTEXT.main_spectrum_name] = {'flux': [1, 2]}
+        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 0, 0
+        assert image == IdentifyFibers(self.CONTEXT).do_stage(image=image)
+
+    @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value='')
+    @mock.patch('os.path.exists', return_value=True)
+    def test_do_stage_aborts_on_length_zero_spectrum(self, mock_warn, mock_exists):
+        image = FakeImage()
+        image.data_tables[self.CONTEXT.main_spectrum_name] = {'flux': []}
+        assert image == IdentifyFibers(FakeContext()).do_stage(image=image)
 
     @mock.patch('os.path.exists', return_value=True)
     @mock.patch('echelle.fibers.IdentifyFibers.apply_master_calibration')
     @mock.patch('echelle.fibers.IdentifyFibers.get_calibration_filename', return_value='/path/')
     def test_do_stage(self, fake_cal, mock_apply_cal, mock_os):
-        IdentifyFibers(FakeContext()).do_stage(image='image')
+        IdentifyFibers().do_stage(image='image')
         mock_apply_cal.assert_called_with('image', '/path/')
 
     @pytest.mark.integration

@@ -30,7 +30,7 @@ class ApplyBlaze(ApplyCalibration):
                            translator=image.translator)
         if not np.allclose(image.data.shape, blaze.data.shape):
             logger.error('Shape of blaze data and image data do not agree. Aborting blaze correction. Wavelength'
-                         'solution may suffer.')
+                         'solution may suffer.')  # pragma: no cover
         else:
             logger.info('Dividing by blaze from file {0}'.format(master_calibration_path))
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)

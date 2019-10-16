@@ -24,16 +24,20 @@ Installation
 
     pip install .
 
-While in the root directory of this repository.
+While in the root directory of this repository. It can also be installed by running
+
+.. code-block:: bash
+
+    pip install git+https://github.com/gmbrandt/echelle
 
 Wavelength Calibrating Spectrum
 ===============================
 This section covers how to wavelength calibrate data which already have a spectrum, and a blaze
 corrected spectrum. Using ``echelle`` with spectra is preferred.
 
-If you have raw data only, I recommend extracting it on your own and then using ``echelle``
-in the preferred way mentioned above. However, if that is difficult and you want to try the experimental data
-reduction pipeline included with :code:`echelle`, see section "Reducing Data".
+If you have raw data only and extracting a spectrum is difficult, you may try the experimental data
+reduction pipeline included with :code:`echelle`, see section "Reducing Data". However, I highly recommend extracting
+the spectrum first and running ``echelle`` in the preferred way.
 
 Information about the input data products are to
 be set by users via a :code:`config.ini` file. See the files
