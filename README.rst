@@ -16,7 +16,8 @@ extracted 1D spectra.
 :Author: Mirek Brandt
 
 If you use this code, please cite **Brandt, G.M. et al. (2019)** which can be found on ArXiv here: XXX
-and cite please cite the Zendo DOI: https://zenodo.org/record/3494618
+
+As well, please cite the Zendo DOI: https://zenodo.org/record/3494618
 
 At best, using ``xwavecal`` only requires editing a config.ini file for your data.
 I cover how to do that in this readme.
