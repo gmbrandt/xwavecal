@@ -15,9 +15,8 @@ extracted 1D spectra.
 
 :Author: Mirek Brandt
 
-If you use this code, please cite the Zendo DOI: https://zenodo.org/record/3494618
-
-Please cite **Brandt, G.M. et al. (2019)** which can be found at: TODO
+If you use this code, please cite **Brandt, G.M. et al. (2019)** which can be found on ArXiv here: XXX
+and cite please cite the Zendo DOI: https://zenodo.org/record/3494618
 
 At best, using ``xwavecal`` only requires editing a config.ini file for your data.
 I cover how to do that in this readme.
@@ -42,22 +41,58 @@ This section covers how to wavelength calibrate data which already have a spectr
 corrected spectrum. Using ``xwavecal`` with spectra is preferred.
 
 If you have raw data only and extracting a spectrum is difficult, you may try the experimental data
-reduction pipeline included with ``xwavecal``, see section "Reducing Data". However, I highly recommend extracting
-the spectrum first and running ``xwavecal`` in the preferred way.
+reduction pipeline included with ``xwavecal``, see section "Configuring for full data reduction".
+However, I highly recommend extracting the spectrum first and running ``xwavecal`` in the preferred way.
 
 Information about the input data products are to
 be set by users via a :code:`config.ini` file. See the files
 :code:`xwavecal/tests/data/test_config.ini` or :code:`xwavecal/example_config/nres_config.ini`
 for the configuration to reduce NRES data. I now cover how to wavelength calibrate data, using the
 Network of Robotic Echelle Spectrographs (NRES) from Las Cumbres Observatory
-as an example. Configuring this wavelength solution to work for your instrument only involves (except
-for rare instances) making a new config.ini file. In this example, I will cover how to set
-every option in the "nres_config_wcs_only.ini" file.
+as an example.
 
-Pointing to the database
-------------------------
-Before reducing, copy the nres_config.ini file to a new location (or edit it in place) and
-change :code:`database_path` under the :code:`reduction` section to the path where you
+To reduce the directory of NRES test data included
+in this repo, you would run from the command line (after modifying a couple paths
+in the config.ini file):
+
+.. code-block:: bash
+
+    xwavecal_reduce_dir --input-dir xwavecal/tests/data/
+     --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
+
+To do the same reduction by specifying paths, you would run:
+
+.. code-block:: bash
+
+    xwavecal_reduce --data-paths
+     xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0004-w00.fits.fz
+      xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0014-a00.fits.fz
+       --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
+
+Configuring this wavelength solution to work for your instrument should only involve
+making a new config.ini file. The rest of this readme is devoted to setting the config
+file for a new instrument where the input data are extracted 1D spectra. I use
+NRES as an example.
+
+Configuring for wavelength calibration
+======================================
+``xwavecal`` is designed in a modular fashion. Each step of the wavelength
+calibration is a stage which can be disabled by removing the associated line
+in the config.ini file. Wavelength calibrating data which already has spectra simply
+means only using the wavelength calibration stages. Using the full experimental pipeline
+means enabling the other data reduction stages (e.g. overscan subtraction etc.).
+
+The completed config.ini file is "nres_config_wcs_only.ini", this contains
+all the options and settings to reduce NRES data which already has a 1D spectrum
+and a 1D blaze corrected spectrum. This repo include raw NRES data, which has to
+be reduced with nres_config.ini (which includes all the overscan subtraction, spectral extraction etc. stages).
+
+We start by telling the config.ini where the database for the reduced data should live.
+
+Pointing to the database and line list
+--------------------------------------
+Before reducing, copy the nres_config_wcs_only.ini file to a new location, rename it for your instrument, and
+change :code:`database_path` under the [reduction] section to the path where you
 want to the database to exist. The parent folder for the database must already exist. E.g. for myself,
 this is :code:`"/home/gmbrandt/Downloads/pipeline.db"` . The surrounding :code:`" "` quotes must be there for
 the config file to process properly.
@@ -65,11 +100,15 @@ the config file to process properly.
 The database will keep track of all your processed files. All processed calibration files are saved under the
 table :code:`caldata` in the .db file specified.
 
+In [reduction] change the ``line_list_path`` as well. If your instrument is optical,
+the ESO ThAr atlas *may* work fine (included with this repo). However you must still
+provide a valid path in the config.ini file.
+
 
 Data settings
 ---------------
 Here we tell ``xwavecal`` via the config file where various information lies in the header of
-your data.
+your input data.
 
 In section [data] we will need to edit:
 
@@ -81,18 +120,108 @@ In section [data] we will need to edit:
 data_class is also editable, but most likely will not need to be changed. data_class is the
 Python object used to load in your data. The default ``xwavecal.images.Image`` should be fine for your data.
 
-``primary_data_extension``
+I describe the four items above with examples of setting them. See the full config file
+``xwavecal/example_config/nres_config_wcs_only.ini`` for an example of setting all the above.
 
-In [reduction], we will need to change ``time_format``. This is the time format of the observation date from
+- ``primary_data_extension`` is the fits extension where all the relevant header data is stored such as
+the observation date, instrument name etc. These are used for writing out the file with an informative name.
+- ``files_contain`` is a list of strings, where each string must be present in the input file types. The default
+is ['.fits'] in which case only files with '.fits' in the name are reduced. For example:
+  * If I had two files: 'IRDA003.fits' and 'IRDB002.fits', and I wanted to only process IRDA and .fits files,
+    I would set ``files_contain = ['.fits', 'IRDA']``
+
+header_keys
+~~~~~~~~~~~
+
+``header_keys`` is a python dictionary. The values of the dictionary are the header keywords
+in your raw data that give things like the read noise, the observation date, etc. The keys
+are the standard keys understood by ``xwavecal``. Some of these keys are
+  * 'type' (the frame type e.g. lampflat)
+  * 'gain' (the gain in e-/ADU)
+  * 'read_noise' (the read noise in e-)
+  * 'fiber_state' (the string which gives which fibers are lit and with what. See more later)
+  * 'observation_date' (observation date, see time_format later.)
+  * 'instrument'
+  * 'instrument2'
+  * 'site_name'
+  * 'unique_id'
+
+``instrument``, ``instrument2``, ``site_name`` are designators which are how the data base would look up
+processed data. E.g. for NRES, I set
+
+.. code-block:: python
+
+               ...
+               'instrument': 'TELESCOP',
+               'instrument2': 'INSTRUME',
+               'site_name': 'SITEID',
+               ...
+
+This means that processed data will be stored in the database with telescope name, instrument name, and the
+ID of our site. These data are stored in NRES frames under the header keys 'TELESCOP', 'INSTRUME' 'SITEID'.
+
+``observation_date`` is the .fits header key which gives the observation date of the frame.
+One must set time_format (see further down in this section) to agree with the format of the .fits value given
+by the ``observation_date`` key.
+
+For ``fiber_state``, the NRES and HARPS store this in a single string in 'OBJECTS' and 'ESO DPR TYPE', respectively.
+For NRES the value of the header looks like ``thar&thar&none`` for a frame with Thorium-Argon (ThAr) lit on fibers 0,1 and
+fiber 2 unlit. For HARPS, the same configuration (but no third fiber since it does not exist) would be
+``WAVE,WAVE,THAR2``. We will convert ``WAVE,WAVE,THAR2`` to ``thar&thar&none`` with the type_keys next.
+
+type_keys
+~~~~~~~~~
+
+``type_keys`` is by far the most confusing part of configuring an instrument. This may change in a future release.
+``type_keys`` is a dictionary which takes the value of any .fits header value and converts it in place. E.g. if my .fits
+header for my raw data for the ``fiber_state`` was: ``{'ESO DPR TYPE': 'WAVE,WAVE,THAR2'}`` and I set
+``type_keys = {..., 'WAVE,WAVE,THAR2': 'thar&thar&none'}``, then any time ``xwavecal`` reads the ``fiber_state`` item
+it will read 'thar&thar&none'
+
+fiber_state
+~~~~~~~~~~~
+A note on ``fiber_state``: One must convert whatever ``fiber_state`` value in your .fits file to be
+of the string format interpretable by ``wavecal``. This format is always ``fiber0lamp&fiber1lamp&fiber2lamp``.
+Where ``fiberxlamp`` is the type of light coming through that lamp. E.g. if I had a fictional instrument with two
+lamps, quartz and thorium argon and only two fibers, then in type_keys I would have to add all expected permutations thereof:
+
+.. code-block:: python
+
+    type_keys = {...,
+                'quartzANDquartz': 'other&other&none',
+                'tharANDthar': 'thar&thar&none',
+                'unlitANDthar': 'none&thar&none',
+                 ...}
+
+and so forth. It does not matter what you call lampflat or other lamps that are not calibration lamps. All
+wavelength calibration lamp states must be called ``thar`` (regardless of whether the lamp is ThAr, or NeAr, or some other
+gaseous mixture, although be sure to point ``xwavecal`` to an appropriate line list).
+TODO: rename this to ``cal`` so as not to cause confusion.
+
+Important note
+~~~~~~~~~~~~~~
+None of these translations will ever be saved onto the fits header of your output data product. The fits
+header of your data will *not* have ``read_noise`` etc appended as extra headers. Setting header_keys and type_keys
+builds a translator which understands how to interpret your fits header, ``xwavecal`` does not modify existing header keys.
+
+
+time_format
+~~~~~~~~~~~
+
+In [reduction], ``time_format`` is the time format of the observation date from
 the fits header. This must be a string contained in double quotes ``" "`` and understood by
 ``datetime.datetime.strftime``. Then replace single ``%`` with ``%%`` (to fix a quirk of using a config file).
+
+
+Other parameters
+~~~~~~~~~~~~~~~~
+There are other type_keys and header_keys that need to be set only if you run the full data reduction pipeline. Because
+I prefer one to run ``xwavecal`` with extracted spectra, I will cover and document these at a later date.
 
 Wavelength calibration settings
 -------------------------------
 To wavelength calibrate your data, the following settings in config.ini may need to be changed:
 
-- ``line_list_path``
-- ``data_base_path``
 - ``main_spectrum_name``
 - ``blaze_corrected_spectrum_name``
 - ``ref_id``
@@ -108,20 +237,53 @@ To wavelength calibrate your data, the following settings in config.ini may need
 - ``m0_range ``
 - ``flux_tol``
 
-
-
 There are several other parameters you will most likely not need to change.
+Let us go through the pertinant ones in the list above one-by-one:
 
-The ``principle_order_number`` (which we call ``m0``) is the true diffraction order index of the diffraction order
-with reference id 0 (:code:`ref_id`) in the extracted sectrum. If you know it for your instrument,
-great. If not: go to [stages] inside of the config.ini file and uncomment the stage
-:code:`IdentifyPrincipleOrderNumber`. Then set ``m0_range`` to a suitably wide range
-which encompasses your guess for where ``m0`` likely lies. If you have no idea, set ``m0_range = (5, 200)``.
-Most echelle spectrographs have ``m0`` between 10 and 100.
-
-``flux_tol`` is the tolerance (float between 0 and 1) to which two emission
-peaks must agree to be considered a true match in the overlap algorithm.
-Thus, if your blaze correction is poor (or non-existent) you should change ``flux_tol`` to 0.5.
+- ``main_spectrum_name`` : this is the name of the .fits extension that contains
+  the BinTableHDU of the spectrum that ``xwavecal`` will calibrate.
+- ``blaze_corrected_spectrum_name`` : this is the name of the .fits extension that contains
+  the BinTableHDU of the blaze corrected spectrum that ``xwavecal`` will use to aid its
+  calibration of ``main_spectrum_name``. If you do not have a blaze corrected spectrum, set
+  this to some string (that is not in the data) such as ``'None'``.
+- ``template_trace_id `` : this is the trace id (id column in the input spectrum) for the
+  diffraction order that you want to save as a template. This template will be used to identify this same
+  diffraction order in all subsequent spectra you reduce. It will have a ref_id associated with it
+  such that the diffraction order number understood by ``xwavecal`` is ``ref_id + m0`` where
+  ``m0`` is the principle order number. I recommend setting the id to some middle order on the detector.
+- ``ref_id`` : this is the reference id you wish to assign the template spectrum such that the
+  diffraction order number understood by ``xwavecal`` for the template spectrum is ``ref_id + m0`` where
+  ``m0`` is the principle order number.
+- ``overlap_min_peak_snr `` : the minimum signal to noise for an emission peak to be considered in the overlap algorithm.
+  see Brandt et al. 2019 for a discussion of the overlap algorithm. I recommend this be set to something low like 5. In
+  general, overlap fitting works better if more peaks are detected. For NRES we use 5 and detect ~4000 peaks.
+- ``flux_tol`` : If two emission peaks from neighboring orders have flux f1 and f2, ``flux_tol`` is
+  the maximum allowed value of abs(f1 - f2)/(mean(f1, f2)) for two peaks to be considered
+  a matched pair in the overlap algorithm.
+- ``min_peak_snr `` : the minimum signal to noise for an emission peak to be used to constrain the wavelength
+  solution after overlap detection. This should be something reasonable like 10 or 20 so
+  as to detect between 1000 and 2000 emission lines. Weak lines are often contamination from trace elements
+  (which are not in reference line lists and so would throw off our algorithm).
+- ``max_red_overlap `` : The maximum allowed pixel coordinate for a peak to be considered for our overlap algorithm.
+- ``max_blue_overlap `` :
+  * The overlap algorithm will try to match peaks from
+    (0, max_red_overlap) to (max_pixel, max_pixel - max_blue_overlap). Where max_pixel is the width of
+    your detector (in x, i.e. number of columns, e.g. 4096).
+- ``approx_detector_range_angstroms ``: If the spectrograph covers the spectral range 3000A to 9000A, then
+  ``approx_detector_range_angstroms = 5000``. Note this value does not need to be precise.
+- ``approx_num_orders `` : approximate number of distinct diffraction orders in the spectrum. E.g. 67 for NRES.
+  Note this is not the number of traces (visible light streaks on the echelle detector) but the number of diffraction orders.
+  I.e. num_of_traces/num_of_lit_fibers. This does not need to be precise either.
+- ``global_scale_range ``: See Brandt et al. 2019 for a discussion of the global scale.
+  This is the range about the initial guess where ``xwavecal`` will search for the global scale.
+  * For example: if the guess generated by ``xwavecal`` is ``K`` and if ``global_scale_range = (0.8, 1.2)``
+    then ``xwavecal`` will search for the global scale between ``0.8K`` and ``1.2K``.
+- ``principle_order_number``: This needs to exactly correct. This is the true diffraction order
+  number of the diffraction order with ref_id = 0. If you do not know this, insert the m0 identification stage
+  (I will cover how to do this in a following section), and set ``m0_range`` to a reasonable range of values.
+- ``m0_range ``: the range of possible ``m0`` (principle order number) values. This is only used if you
+  are searching for ``m0`` (i.e. if you have included 'xwavecal.wavelength.IdentifyPrincipleOrderNumber' in
+  the set of stages for wavecal frames). I will discuss this more later.
 
 
 Reducing a directory of data
@@ -167,8 +329,8 @@ to force using a lampflat which is very far away. Again, files can be compressed
 :code:`libcfitsio`) by adding :code:`--fpack` to the command line call.
 
 
-Reducing Raw Data (experimental)
-================================
+Configuring for full data reduction (experimental)
+==================================================
 
 One can use ``xwavecal`` to fully reduce their data by adding stages to the [stages] section, and
 by adding options to the [reduction] section of the config.ini file. The pipeline is
