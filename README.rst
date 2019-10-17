@@ -38,8 +38,8 @@ While in the root directory of this repository. It can also be installed by runn
 
 Wavelength Calibrating Spectrum
 ===============================
-This section covers how to wavelength calibrate data which already have a spectrum, and a blaze
-corrected spectrum. Using ``xwavecal`` with spectra is preferred.
+This section covers how to wavelength calibrate data which already have a spectrum and a blaze
+corrected version of the same spectrum. Using ``xwavecal`` with spectra is preferred.
 
 If you have raw data only and extracting a spectrum is difficult, you may try the experimental data
 reduction pipeline included with ``xwavecal``, see section "Configuring for full data reduction".
@@ -126,28 +126,29 @@ I describe the four items above with examples of setting them. See the full conf
 
 - ``primary_data_extension`` is the fits extension where all the relevant header data is stored such as
 the observation date, instrument name etc. These are used for writing out the file with an informative name.
-- ``files_contain`` is a list of strings, where each string must be present in the input file types. The default
-is ['.fits'] in which case only files with '.fits' in the name are reduced. For example:
-  * If I had two files: 'IRDA003.fits' and 'IRDB002.fits', and I wanted to only process IRDA and .fits files,
-    I would set ``files_contain = ['.fits', 'IRDA']``
+- ``files_contain`` is a list of strings, where each string must be present in the input file types. The default is ['.fits'] in which case only files with '.fits' in the name are reduced. For example:
+
+  * If I had two files: 'IRDA003.fits' and 'IRDB002.fits', and I wanted to only process IRDA and .fits files, I would set ``files_contain = ['.fits', 'IRDA']``
+
 
 header_keys
 ~~~~~~~~~~~
 
 ``header_keys`` is a python dictionary. The values of the dictionary are the header keywords
 in your raw data that give things like the read noise, the observation date, etc. The keys
-are the standard keys understood by ``xwavecal``. Some of these keys are
-  * 'type' (the frame type e.g. lampflat)
-  * 'gain' (the gain in e-/ADU)
-  * 'read_noise' (the read noise in e-)
-  * 'fiber_state' (the string which gives which fibers are lit and with what. See more later)
-  * 'observation_date' (observation date, see time_format later.)
-  * 'instrument'
-  * 'instrument2'
-  * 'site_name'
-  * 'unique_id'
+are the standard keys understood by ``xwavecal``. Some of these keys are:
 
-``instrument``, ``instrument2``, ``site_name`` are designators which are how the data base would look up
+- 'type' : the frame type e.g. lampflat
+- 'gain' : the gain in e-/ADU
+- 'read_noise' : the read noise in e-
+- 'fiber_state' : the string which gives which fibers are lit and with what. See fiber_state in its subsection.
+- 'observation_date' : observation date, see time_format in its subsection.
+- 'instrument'
+- 'instrument2'
+- 'site_name'
+- 'unique_id'
+
+``instrument``, ``instrument2``, ``site_name`` are designators which are how the sqlite database indexes
 processed data. E.g. for NRES, I set
 
 .. code-block:: python
@@ -241,48 +242,52 @@ To wavelength calibrate your data, the following settings in config.ini may need
 There are several other parameters you will most likely not need to change.
 Let us go through the pertinant ones in the list above one-by-one:
 
-- ``main_spectrum_name`` : this is the name of the .fits extension that contains
+- main_spectrum_name : this is the name of the .fits extension that contains
   the BinTableHDU of the spectrum that ``xwavecal`` will calibrate.
-- ``blaze_corrected_spectrum_name`` : this is the name of the .fits extension that contains
+- blaze_corrected_spectrum_name : this is the name of the .fits extension that contains
   the BinTableHDU of the blaze corrected spectrum that ``xwavecal`` will use to aid its
   calibration of ``main_spectrum_name``. If you do not have a blaze corrected spectrum, set
   this to some string (that is not in the data) such as ``'None'``.
-- ``template_trace_id `` : this is the trace id (id column in the input spectrum) for the
+- template_trace_id : this is the trace id (id column in the input spectrum) for the
   diffraction order that you want to save as a template. This template will be used to identify this same
   diffraction order in all subsequent spectra you reduce. It will have a ref_id associated with it
   such that the diffraction order number understood by ``xwavecal`` is ``ref_id + m0`` where
   ``m0`` is the principle order number. I recommend setting the id to some middle order on the detector.
-- ``ref_id`` : this is the reference id you wish to assign the template spectrum such that the
+- ref_id : this is the reference id you wish to assign the template spectrum such that the
   diffraction order number understood by ``xwavecal`` for the template spectrum is ``ref_id + m0`` where
   ``m0`` is the principle order number.
-- ``overlap_min_peak_snr `` : the minimum signal to noise for an emission peak to be considered in the overlap algorithm.
+- overlap_min_peak_snr : the minimum signal to noise for an emission peak to be considered in the overlap algorithm.
   see Brandt et al. 2019 for a discussion of the overlap algorithm. I recommend this be set to something low like 5. In
   general, overlap fitting works better if more peaks are detected. For NRES we use 5 and detect ~4000 peaks.
-- ``flux_tol`` : If two emission peaks from neighboring orders have flux f1 and f2, ``flux_tol`` is
+- flux_tol : If two emission peaks from neighboring orders have flux f1 and f2, ``flux_tol`` is
   the maximum allowed value of abs(f1 - f2)/(mean(f1, f2)) for two peaks to be considered
   a matched pair in the overlap algorithm.
-- ``min_peak_snr `` : the minimum signal to noise for an emission peak to be used to constrain the wavelength
+- min_peak_snr : the minimum signal to noise for an emission peak to be used to constrain the wavelength
   solution after overlap detection. This should be something reasonable like 10 or 20 so
   as to detect between 1000 and 2000 emission lines. Weak lines are often contamination from trace elements
   (which are not in reference line lists and so would throw off our algorithm).
-- ``max_red_overlap `` : The maximum allowed pixel coordinate for a peak to be considered for our overlap algorithm.
-- ``max_blue_overlap `` :
+- max_red_overlap : The maximum allowed pixel coordinate for a red-side peak to be considered for our overlap algorithm.
+- max_blue_overlap : The minimum allowed pixel coordinate for a blue-side peak to be considered for our overlap algorithm.
+
   * The overlap algorithm will try to match peaks from
     (0, max_red_overlap) to (max_pixel, max_pixel - max_blue_overlap). Where max_pixel is the width of
     your detector (in x, i.e. number of columns, e.g. 4096).
-- ``approx_detector_range_angstroms ``: If the spectrograph covers the spectral range 3000A to 9000A, then
+
+- approx_detector_range_angstroms : If the spectrograph covers the spectral range 3000A to 9000A, then
   ``approx_detector_range_angstroms = 5000``. Note this value does not need to be precise.
-- ``approx_num_orders `` : approximate number of distinct diffraction orders in the spectrum. E.g. 67 for NRES.
+- approx_num_orders : approximate number of distinct diffraction orders in the spectrum. E.g. 67 for NRES.
   Note this is not the number of traces (visible light streaks on the echelle detector) but the number of diffraction orders.
   I.e. num_of_traces/num_of_lit_fibers. This does not need to be precise either.
-- ``global_scale_range ``: See Brandt et al. 2019 for a discussion of the global scale.
+- global_scale_range : See Brandt et al. 2019 for a discussion of the global scale.
   This is the range about the initial guess where ``xwavecal`` will search for the global scale.
+
   * For example: if the guess generated by ``xwavecal`` is ``K`` and if ``global_scale_range = (0.8, 1.2)``
     then ``xwavecal`` will search for the global scale between ``0.8K`` and ``1.2K``.
-- ``principle_order_number``: This needs to exactly correct. This is the true diffraction order
+
+- principle_order_number: This needs to exactly correct. This is the true diffraction order
   number of the diffraction order with ref_id = 0. If you do not know this, insert the m0 identification stage
   (I will cover how to do this in a following section), and set ``m0_range`` to a reasonable range of values.
-- ``m0_range ``: the range of possible ``m0`` (principle order number) values. This is only used if you
+- m0_range : the range of possible ``m0`` (principle order number) values. This is only used if you
   are searching for ``m0`` (i.e. if you have included 'xwavecal.wavelength.IdentifyPrincipleOrderNumber' in
   the set of stages for wavecal frames). I will discuss this more later.
 
