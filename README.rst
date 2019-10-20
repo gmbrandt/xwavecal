@@ -107,7 +107,7 @@ provide a valid path in the config.ini file.
 
 
 Data settings
----------------
+-------------
 Here we tell ``xwavecal`` via the config file where various information lies in the header of
 your input data.
 
@@ -492,6 +492,18 @@ These output files will be a .fits file with one extension. This extension will 
 of the spectrum processed when ``'xwavecal.fibers.MakeFiberTemplate'`` was uncommented. consequently,
 that extension will be in the exact same format as one of the spectrum extensions of the input data.
 
+Notes on reduction
+------------------
+
+The ``xwavecal`` database handles instruments independently. You can safely reduce data from
+separate instruments simulataneously, provided the .fits keywords provided in :code:`config.ini` are enough
+to specify each input .fits file to the appropriate instrument. By default, ``xwavecal`` uses the instrument
+name (nres03 for instance) and the site name (cpt for instance) and a third designator ``instrument2``. All three
+ identifiers are pulled from the header of the primary .fits extension of the raw data.
+
+One sets in the :code:`config.ini` where to find these specifiers in a .fits header and under what keywords. See
+Section 'Data settings'.
+
 
 Configuring for full data reduction (experimental)
 ==================================================
@@ -505,8 +517,7 @@ on a limited set of IRD and HARPS data. The pipeline may not function well on al
 using my example configuration files. The value of each configuration parameter will in those example files will
 change often as I tweak the files.
 
-I will document this at a later release (perhaps much later). If you have interest in using ``xwavecal`` as a partial pipeline
-(remember we do not generate radial velocities) please contact me.
+I will document this at a later release (perhaps much later).
 
 
 Orientating the frames
@@ -534,14 +545,7 @@ Lampflats
 Wavelength calibration files
 ----------------------------
 
-Notes on reduction
-------------------
 
-The ``xwavecal`` database handles instruments independently. You can safely reduce data from
-separate instruments simulataneously, provided the .fits keywords provided in :code:`config.ini` are enough
-to specify each input .fits file to the appropriate instrument. By default, ``xwavecal`` uses the instrument
-name (nres03 for instance) and the site name (cpt for instance). One sets in the :code:`config.ini` where
-to find these specifiers in a .fits header and under what keywords.
 
 Accessing Data Products
 =======================
