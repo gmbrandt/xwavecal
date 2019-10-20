@@ -125,10 +125,12 @@ I describe the four items above with examples of setting them. See the full conf
 ``xwavecal/example_config/nres_config_wcs_only.ini`` for an example of setting all the above.
 
 - ``primary_data_extension`` is the fits extension where all the relevant header data is stored such as
-the observation date, instrument name etc. These are used for writing out the file with an informative name.
-- ``files_contain`` is a list of strings, where each string must be present in the input file types. The default is ['.fits'] in which case only files with '.fits' in the name are reduced. For example:
+  the observation date, instrument name etc. These are used for writing out the file with an informative name.
+- ``files_contain`` is a list of strings, where each string must be present in the input file types. The default is
+  ['.fits'] in which case only files with '.fits' in the name are reduced. For example:
 
-  * If I had two files: 'IRDA003.fits' and 'IRDB002.fits', and I wanted to only process IRDA and .fits files, I would set ``files_contain = ['.fits', 'IRDA']``
+ * If I had two files: 'IRDA003.fits' and 'IRDB002.fits', and I wanted to only process IRDA and .fits files, I would set ``files_contain = ['.fits', 'IRDA']``
+
 
 
 header_keys
@@ -138,18 +140,18 @@ header_keys
 in your raw data that give things like the read noise, the observation date, etc. The keys
 are the standard keys understood by ``xwavecal``. Some of these keys are:
 
-- 'type' : the frame type e.g. lampflat
-- 'gain' : the gain in e-/ADU
-- 'read_noise' : the read noise in e-
-- 'fiber_state' : the string which gives which fibers are lit and with what. See fiber_state in its subsection.
-- 'observation_date' : observation date, see time_format in its subsection.
-- 'instrument'
-- 'instrument2'
-- 'site_name'
-- 'unique_id'
+- ``type`` : the frame type e.g. lampflat
+- ``gain`` : the gain in e-/ADU
+- ``read_noise`` : the read noise in e-
+- ``fiber_state`` : the string which gives which fibers are lit and with what. See fiber_state in its subsection.
+- ``observation_date`` : observation date, see time_format in its subsection.
+- ``instrument``
+- ``instrument2``
+- ``site_name``
+- ``unique_id``
 
 ``instrument``, ``instrument2``, ``site_name`` are designators which are how the sqlite database indexes
-processed data. E.g. for NRES, I set
+processed data. E.g. for NRES, I set:
 
 .. code-block:: python
 
@@ -227,67 +229,68 @@ To wavelength calibrate your data, the following settings in config.ini may need
 - ``main_spectrum_name``
 - ``blaze_corrected_spectrum_name``
 - ``ref_id``
-- ``template_trace_id ``
-- ``overlap_min_peak_snr ``
-- ``max_red_overlap ``
-- ``max_blue_overlap ``
-- ``global_scale_range ``
-- ``min_peak_snr ``
-- ``approx_detector_range_angstroms ``
-- ``approx_num_orders ``
+- ``template_trace_id``
+- ``overlap_min_peak_snr``
+- ``max_red_overlap``
+- ``max_blue_overlap``
+- ``global_scale_range``
+- ``min_peak_snr``
+- ``approx_detector_range_angstroms``
+- ``approx_num_orders``
 - ``principle_order_number``
-- ``m0_range ``
+- ``m0_range``
 - ``flux_tol``
 
 There are several other parameters you will most likely not need to change.
 Let us go through the pertinant ones in the list above one-by-one:
 
-- main_spectrum_name : this is the name of the .fits extension that contains
+- ``main_spectrum_name`` : this is the name of the .fits extension that contains
   the BinTableHDU of the spectrum that ``xwavecal`` will calibrate.
-- blaze_corrected_spectrum_name : this is the name of the .fits extension that contains
+- ``blaze_corrected_spectrum_name`` : this is the name of the .fits extension that contains
   the BinTableHDU of the blaze corrected spectrum that ``xwavecal`` will use to aid its
   calibration of ``main_spectrum_name``. If you do not have a blaze corrected spectrum, set
   this to some string (that is not in the data) such as ``'None'``.
-- template_trace_id : this is the trace id (id column in the input spectrum) for the
+- ``template_trace_id`` : this is the trace id (id column in the input spectrum) for the
   diffraction order that you want to save as a template. This template will be used to identify this same
   diffraction order in all subsequent spectra you reduce. It will have a ref_id associated with it
   such that the diffraction order number understood by ``xwavecal`` is ``ref_id + m0`` where
   ``m0`` is the principle order number. I recommend setting the id to some middle order on the detector.
-- ref_id : this is the reference id you wish to assign the template spectrum such that the
+- ``ref_id`` : this is the reference id you wish to assign the template spectrum such that the
   diffraction order number understood by ``xwavecal`` for the template spectrum is ``ref_id + m0`` where
   ``m0`` is the principle order number.
-- overlap_min_peak_snr : the minimum signal to noise for an emission peak to be considered in the overlap algorithm.
+- ``overlap_min_peak_snr`` : the minimum signal to noise for an emission peak to be considered in the overlap algorithm.
   see Brandt et al. 2019 for a discussion of the overlap algorithm. I recommend this be set to something low like 5. In
   general, overlap fitting works better if more peaks are detected. For NRES we use 5 and detect ~4000 peaks.
-- flux_tol : If two emission peaks from neighboring orders have flux f1 and f2, ``flux_tol`` is
+- ``flux_tol`` : If two emission peaks from neighboring orders have flux f1 and f2, ``flux_tol`` is
   the maximum allowed value of abs(f1 - f2)/(mean(f1, f2)) for two peaks to be considered
   a matched pair in the overlap algorithm.
-- min_peak_snr : the minimum signal to noise for an emission peak to be used to constrain the wavelength
+- ``min_peak_snr`` : the minimum signal to noise for an emission peak to be used to constrain the wavelength
   solution after overlap detection. This should be something reasonable like 10 or 20 so
   as to detect between 1000 and 2000 emission lines. Weak lines are often contamination from trace elements
   (which are not in reference line lists and so would throw off our algorithm).
-- max_red_overlap : The maximum allowed pixel coordinate for a red-side peak to be considered for our overlap algorithm.
-- max_blue_overlap : The minimum allowed pixel coordinate for a blue-side peak to be considered for our overlap algorithm.
+- ``max_red_overlap`` : The maximum allowed pixel coordinate for a red-side peak to be considered for our overlap algorithm.
+- ``max_blue_overlap`` : The minimum allowed pixel coordinate for a blue-side peak to be considered for our overlap algorithm.
 
   * The overlap algorithm will try to match peaks from
-    (0, max_red_overlap) to (max_pixel, max_pixel - max_blue_overlap). Where max_pixel is the width of
+    (0, ``max_red_overlap``) to (max_pixel, max_pixel - ``max_blue_overlap``). Where max_pixel is the width of
     your detector in x (i.e. the number of columns; e.g. 4096).
 
-- approx_detector_range_angstroms : If the spectrograph covers the spectral range 3000A to 9000A, then
+- ``approx_detector_range_angstroms`` : If the spectrograph covers the spectral range 3000A to 9000A, then
   ``approx_detector_range_angstroms = 5000``. Note this value does not need to be precise.
-- approx_num_orders : approximate number of distinct diffraction orders in the spectrum. E.g. 67 for NRES.
+- ``approx_num_orders`` : approximate number of distinct diffraction orders in the spectrum. E.g. 67 for NRES.
   Note this is not the number of traces (visible light streaks on the echelle detector) but the number of diffraction orders.
   I.e. num_of_traces/num_of_lit_fibers. This does not need to be precise either.
-- global_scale_range : See Brandt et al. 2019 for a discussion of the global scale.
-  This is the range about the initial guess where ``xwavecal`` will search for the global scale.
+- ``global_scale_range`` : See Brandt et al. 2019 for a discussion of the global scale.
+  This is the range about the initial guess where ``xwavecal`` will search for the global scale. We
+  recommend ``global_scale_range = (0.5, 1.5)``.
 
   * For example: if the guess generated by ``xwavecal`` is ``K`` and if ``global_scale_range = (0.8, 1.2)``
     then ``xwavecal`` will search for the global scale between ``0.8K`` and ``1.2K``.
 
-- principle_order_number: This needs to exactly correct. This is the true diffraction order
+- ``principle_order_number``: This needs to exactly correct. This is the true diffraction order
   number of the diffraction order with ref_id = 0. If you do not know this, insert the m0 identification stage
   (I will cover how to do this in a following section), and set ``m0_range`` to a reasonable range of values.
-- m0_range : the range of possible ``m0`` (principle order number) values. This is only used if you
+- ``m0_range`` : the range of possible ``m0`` (principle order number) values. This is only used if you
   are searching for ``m0`` (i.e. if you have included 'xwavecal.wavelength.IdentifyPrincipleOrderNumber' in
   the set of stages for wavecal frames). I will discuss this more later.
 
@@ -297,11 +300,11 @@ Formatting the input data
 The input data should be a .fits file with three data extensions:
 
 - A primary data extension (e.g. one that contains the raw 2d frame). It's header must contain all the necessary
-information like ``fiber_state`` etc. If this data is in extension 0, then set `` =0``
+  information like ``fiber_state`` etc. If this data is in extension 0, then set `` =0``
 - An extracted spectrum (e.g. box or optimally extracted) as a ``astropy.fits.BinTableHDU``.
-Set ``main_spectrum_name`` in the config.ini to the extension name of this spectrum.
+  Set ``main_spectrum_name`` in the config.ini to the extension name of this spectrum.
 - A blaze corrected version of the same above spectrum as a ``astropy.fits.BinTableHDU``.
-Set ``blaze_corrected_spectrum_name`` in the config.ini to the name of this spectrum.
+  Set ``blaze_corrected_spectrum_name`` in the config.ini to the name of this spectrum.
 
 For example, below is an exploration of an NRES frame with the spectra attached.
 
@@ -475,19 +478,21 @@ For clarity, a00 is a ThAr exposure.
 
 Output files
 ------------
+
 If you are using ``xwavecal`` with 1D extracted spectra, the only output files will be
 the wavelength calibrated spectrum and fiber template(s).
 
 Spectra
 ~~~~~~~
- the wavelength calibrated files
-will be written to the output directory specified in the command line call. The output file
-will be exactly that as shown in Section 'Formatting the input data', in that the wavelength column
-of the 'main' spectrum is now populated. Nothing else will be changed. The blaze corrected spectrum will not have the wavelength
-column filled in.
+
+the wavelength calibrated files will be written to the output directory specified in the command
+line call. The output file will be exactly that as shown in Section 'Formatting the input data',
+in that the wavelength column of the 'main' spectrum is now populated. Nothing else will be changed.
+The blaze corrected spectrum will not have the wavelength column filled in.
 
 Fiber templates
 ~~~~~~~~~~~~~~~
+
 These output files will be a .fits file with one extension. This extension will contain 3 rows (three orders)
 of the spectrum processed when ``'xwavecal.fibers.MakeFiberTemplate'`` was uncommented. consequently,
 that extension will be in the exact same format as one of the spectrum extensions of the input data.
@@ -499,7 +504,7 @@ The ``xwavecal`` database handles instruments independently. You can safely redu
 separate instruments simulataneously, provided the .fits keywords provided in :code:`config.ini` are enough
 to specify each input .fits file to the appropriate instrument. By default, ``xwavecal`` uses the instrument
 name (nres03 for instance) and the site name (cpt for instance) and a third designator ``instrument2``. All three
- identifiers are pulled from the header of the primary .fits extension of the raw data.
+identifiers are pulled from the header of the primary .fits extension of the raw data.
 
 One sets in the :code:`config.ini` where to find these specifiers in a .fits header and under what keywords. See
 Section 'Data settings'.
