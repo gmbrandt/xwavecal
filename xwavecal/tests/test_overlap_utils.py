@@ -49,6 +49,15 @@ class TestOverlapFitter:
             assert np.isclose(overlaps['ref_id'][i], i + 1)
             assert np.isclose(overlaps['matched_ref_id'][i], i + 2)
 
+    def test_fit_overlaps_skips_on_no_lines(self):
+        spectrum = {'flux': np.zeros((3, 3)), 'pixel': np.array([np.arange(3), np.arange(1, 4), np.arange(3)]),
+                    'ref_id': np.arange(1, 4)}
+        lines = {'corrected_flux': np.zeros(spectrum['pixel'].size), 'pixel': spectrum['pixel'].flatten(),
+                 'order': (np.arange(1, 4).reshape(-1, 1) * np.ones_like(spectrum['pixel'])).flatten()}
+        overlaps = overlapu.fit_overlaps(spectrum, lines, max_overlap_red=2, max_overlap_blue=2,
+                                         linear_scale_range=(0.5, 2), deg=10)
+        assert len(overlaps) == 0
+
     @mock.patch('xwavecal.utils.overlap_utils._is_bad', side_effect=min)
     def test_flag_bad_overlaps(self, fake_overlap_check):
         overlaps = Table({'pixel': np.array([0, 1, 1, 0]), 'good': np.array([True, True, True, True])})
