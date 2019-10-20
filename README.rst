@@ -271,7 +271,7 @@ Let us go through the pertinant ones in the list above one-by-one:
 
   * The overlap algorithm will try to match peaks from
     (0, max_red_overlap) to (max_pixel, max_pixel - max_blue_overlap). Where max_pixel is the width of
-    your detector (in x, i.e. number of columns, e.g. 4096).
+    your detector in x (i.e. the number of columns; e.g. 4096).
 
 - approx_detector_range_angstroms : If the spectrograph covers the spectral range 3000A to 9000A, then
   ``approx_detector_range_angstroms = 5000``. Note this value does not need to be precise.
@@ -292,22 +292,167 @@ Let us go through the pertinant ones in the list above one-by-one:
   the set of stages for wavecal frames). I will discuss this more later.
 
 
+Formatting the input data
+-------------------------
+The input data should be a .fits file with three data extensions:
+
+- A primary data extension (e.g. one that contains the raw 2d frame). It's header must contain all the necessary
+information like ``fiber_state`` etc. If this data is in extension 0, then set `` =0``
+- An extracted spectrum (e.g. box or optimally extracted) as a ``astropy.fits.BinTableHDU``.
+Set ``main_spectrum_name`` in the config.ini to the extension name of this spectrum.
+- A blaze corrected version of the same above spectrum as a ``astropy.fits.BinTableHDU``.
+Set ``blaze_corrected_spectrum_name`` in the config.ini to the name of this spectrum.
+
+For example, below is an exploration of an NRES frame with the spectra attached.
+
+.. code-block:: python
+
+    from astropy.io import fits
+    from astropy.table import table
+
+    im = fits.open('/some/example/image.fits.fz')
+    im.info()
+    >>> No.    Name      Ver    Type      Cards   Dimensions   Format
+    >>> 0  SPECTRUM      1 PrimaryHDU     186   (4096, 4096)   float64
+    >>> 1  SPECBOX       1 BinTableHDU     24   135R x 7C   [K, 4096D, 4096D, 4096K, K, K, 4096D]
+    >>> 2  BLZCORR       1 BinTableHDU     24   135R x 7C   [K, 4096D, 4096D, 4096K, K, K, 4096D]
+
+I have three extensions here. ``im[0].data`` would gives the 2d frame of raw data. ``im[0].header['OBSTYPE']`` would
+give the observation type (remember your data does not have to have the key 'OBSTYPE', you set those in config.ini).
+Ignore the fact that the raw 2d data is named ``SPECTRUM`` yet the 1D spectra have names ``SPECBOX`` and ``BLZCORR``.
+Now let us look at the 1D spectra extension closely (the blaze corrected 1D spectrum im['BLZCORR'] has the same format).
+
+.. code-block:: python
+
+    type(im['SPECBOX'])
+    >>> astropy.io.fits.hdu.table.BinTableHDU
+    # The type must be a table, so that we can do the following.
+    spec = Table(im['SPECBOX'].data)
+    spec.info()
+    >>> <Table length=135>
+    >>>    name     dtype   shape
+    >>> ---------- ------- -------
+    >>>         id   int64
+    >>>     ref_id   int64
+    >>>       flux float64 (4096,)
+    >>>     stderr float64 (4096,)
+    >>>      pixel   int64 (4096,)
+    >>>      fiber   int64
+    >>> wavelength float64 (4096,)
+
+Every spectrum attached to the image must have this format with these columns. Let N be the number of traces.
+For NRES, N~135 for 2 lit fibers (so ~67 orders per fiber). ``id, ref_id`` and  ``fiber`` are
+1d columns of length N.
+``id`` is an arbitrary identification number for each trace. ``ref_id`` is the absolute identifcation number for that
+trace. The ``id`` of a diffraction order may change, however the ``ref_id`` will not because that is found by cross
+correlating the spectrum with a template (which ``xwavecal`` will create automatically). ``fiber`` is the fiber id
+for each row of the spectrum. If you only have one fiber lit, this column can be all 0's or 1's as long as it is consistent
+with your .fits header ``fiber_state``.
+
+Let the detector be X pixels wide, where the echelle grating has dispersed each order across the width. For NRES, X=4096,
+where pixel 0 is bluer than pixel 1. ``flux`` are the counts as a function of ``pixel`` (Both shape (N, X) (rows, columns).
+``stderr`` is the 1-sigma error for each point in ``flux``. ``wavelength`` is the wavelength of each pixel in ``pixel``.
+Of course, ``wavelength`` can be set to 0's or ``np.nan`` or whatever you like -- ``xwavecal`` will populate ``wavelength``
+for you.
+
+The spectrum **have to be ordered** such that ``spec[0]`` is redder than ``spec[1]`` (on average) and such that
+``spec[0]['flux'][0]`` is bluer than ``spec[0]['flux'][1]``. In other words, the spectrum get bluer on average as one
+proceeds down the table, and within an order: pixels on the left are bluer than pixels on the right. If you have no
+idea which way is which, make the four possible trial spectra which are flipped relative to each other and run ``xwavecal``
+on all of them. The one where ``xwavecal`` succeeds has the correct orientation.
+
+For perspective, here is a print of an NRES spectrum. It is wavelength calibrated so the ``wavelength`` column has meaningful
+values here (in Angstroms).
+
+.. code-block:: python
+
+    spec = Table(im['SPECBOX'].data)
+    print(spec)
+
+    >>>  id               flux [4096]                            stderr [4096]              pixel [4096] fiber ref_id            wavelength [4096]
+    >>> --- --------------------------------------- --------------------------------------- ------------ ----- ------ ----------------------------------------
+    >>>   0                     1236.144 .. 567.132  46.16381699989722 .. 33.45280257317763    0 .. 4095     2      0   8875.365322050326 .. 9052.794682947573
+    >>>   1            906.7319999999999 .. 455.064  46.49367698945739 .. 33.45280257317763    0 .. 4095     1      1    8707.754989719553 .. 8881.80763072762
+    >>>   2                      1120.68 .. 652.032  48.00306240230929 .. 34.35430104077217    0 .. 4095     2      1    8707.822142311728 .. 8881.94973673945
+    >>>   3            967.8600000000004 .. 736.932  45.83158299688109 .. 40.22812449021207    0 .. 4095     1      2     8546.46058531058 .. 8717.32420220928
+    >>>   4          1161.4319999999998 .. 1124.076 48.285215128442786 .. 45.19736717995861    0 .. 4095     2      2    8546.478280151588 .. 8717.42523057298
+    >>>   5                    1008.612 .. 1134.264 48.565728657150814 .. 50.31725350215371    0 .. 4095     1      3   8391.017900052297 .. 8558.812280103835
+    >>>   6          1208.976 .. 1630.0800000000004  50.24971641711026 .. 54.74557516366048    0 .. 4095     2      3   8390.995629540508 .. 8558.876525008069
+    >>> ...                                     ...                                     ...          ...   ...    ...                                      ...
+    >>> 128          1008.612 .. 125.65200000000002  38.41445040606464 .. 33.45280257317763    0 .. 4095     2     64   3963.128098400572 .. 4046.554824188698
+    >>> 129 910.1279999999998 .. 146.02800000000005  34.30483930876225 .. 33.45280257317763    0 .. 4095     1     65 3928.6597621432047 .. 4011.7277354354555
+    >>> 130            937.2959999999999 .. 139.236  35.13622062772261 .. 33.45280257317763    0 .. 4095     2     65  3928.593357878421 .. 4011.4417999949746
+    >>> 131                       47.544 .. 149.424  33.45280257317763 .. 33.45280257317763    0 .. 4095     1     66  3894.679458299859 .. 3977.1857184717724
+    >>> 132               0.0 .. 203.75999999999993  33.45280257317763 .. 33.45280257317763    0 .. 4095     2     66  3894.623034269695 .. 3976.9033509112373
+    >>> 133               0.0 .. 247.90799999999996  33.45280257317763 .. 33.45280257317763    0 .. 4095     1     67  3861.250017262523 .. 3943.2015758208286
+    >>> 134                           0.0 .. 220.74  33.45280257317763 .. 33.45280257317763    0 .. 4095     2     67 3861.2025523440852 .. 3942.9243187156476
+
+
+Note that if you do not have a blaze corrected spectrum (so your input data only has 2 extensions),
+go into the config.ini file and set:
+``flux_tol = 0.5`` (to account for bad blaze correction); and ``blaze_corrected_spectrum_name`` to 'None'
+or 'empty', or some extension which does not exist.
+
+Now that the input data is a .fits file with the appropriate data extensions, we proceed.
+
+The reference line list
+-----------------------
+We include the original ThAr (Thorium-Argon) atlas from the European Southern Observatory (ESO). This was retrieved
+from http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html in late
+2019. This line list was designed for spectrographs with a resolving power (R) of 100,000, and thus
+it may not be suited for your instrument if it has a lower or larger R. Moreover, the wavelengths are air wavelengths.
+It is up to you to download a line list suitable for your instrument (if the ThAr atlas is not suitable)
+and correct the line list for the index of refraction of air if necessary.
+
+
+Setting the reduction stages
+----------------------------
+In nres_config_wcs_only.ini you will see the section [stages]. This section contains the ordered list of operations
+to be done to each input image. You should only need to toggle on or off a few optional stages. The list
+looks something like:
+
+.. code-block:: python
+
+    [stages]
+    # Reduction stages for a wavelength calibration frame, in order.
+    wavecal = [
+              #'xwavecal.fibers.MakeFiberTemplate',
+              'xwavecal.fibers.IdentifyFibers',
+              ...
+              'xwavecal.wavelength.IdentifyArcEmissionLines',
+              #'xwavecal.wavelength.IdentifyPrincipleOrderNumber',
+              ...
+              'xwavecal.wavelength.TabulateArcEmissionLines']
+
+I have shortened the list in places with ... to be brief. This is a list of xwavecal.stages.Stage objects from
+``xwavecal``. In principle, they can come from any package you want that conforms to the xwavecal.stages.Stage template.
+
+On your first reduction, you will want to uncomment ``'xwavecal.fibers.MakeFiberTemplate'``. This will make
+and write out a few orders of your input spectra as templates. These templates are cross correlated with
+later spectra so that the same diffraction order always has the same ``ref_id``. See Section Wavelength calibration settings
+for how to change the settings in the config.ini file to select which diffraction orders are saved.
+
+If you do not know the principle order number m0, then uncomment  ``'xwavecal.wavelength.IdentifyPrincipleOrderNumber'``.
+This will iterate the entire ``xwavecal`` procedure over the range of trial m0 specified in the config.ini file.
+
+Now we can reduce data.
+
 Reducing a directory of data
 ----------------------------
-To reduce a batch of example data containing lampflats and wavelength calibrations (hereafter wavecal),
+To reduce a batch of example wavelength calibrations (hereafter wavecal),
 we would run (if in the root directory of this repo):
 
 .. code-block:: bash
 
     xwavecal_reduce_dir --input-dir xwavecal/tests/data/
-     --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
+     --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini --frame-type wavecal
 
-This will output the reduced data files and intermediate data products (e.g. Trace files) into
-~/Downloads. A .db file will be created in the place specified in :code:`nres_config.ini`. If you
-re-reduce the same data, the entries in the .db will be updated appropriately.
+A .db file will be created in the place specified in :code:`nres_config.ini`. If you
+re-reduce the same data, the entries in the .db will be updated appropriately. A fiber_template file
+will be written out for each wavecal file (and it's path saved in the .db) if you have that stage enabled.
 
-When reducing wavecals, ``xwavecal`` will automatically select the trace files created
-from lampflats which have the nearest observation date.
+When reducing wavecals, ``xwavecal`` will automatically select the fiber_template
+files created which have the nearest observation date.
 
 If you want to fpack (.fz) the output files. You must first install :code:`libcfitsio`.
 E.g. via :code:`sudo apt install libcfitsio-bin` on linux.
@@ -322,17 +467,30 @@ To reduce files by specifying paths, specify the data paths separated by spaces:
 .. code-block:: bash
 
     xwavecal_reduce --data-paths
-     xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0004-w00.fits.fz
       xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0014-a00.fits.fz
        --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
 
-For clarity, w00 is a lampflat and a00 is a ThAr exposure. Again, ``xwavecal`` will automatically reduce lampflats and
-generate trace files first.
-Note that if the lampflat specified is further from the wavecal in observation date than another lampflat
-you already reduced which is in the database, ``xwavecal`` will find the closest lampflat
-in the data base and use that instead. You would want to specify a different (blank) database in order
-to force using a lampflat which is very far away. Again, files can be compressed with fpack (after installing
-:code:`libcfitsio`) by adding :code:`--fpack` to the command line call.
+For clarity, a00 is a ThAr exposure.
+
+
+Output files
+------------
+If you are using ``xwavecal`` with 1D extracted spectra, the only output files will be
+the wavelength calibrated spectrum and fiber template(s).
+
+Spectra
+~~~~~~~
+ the wavelength calibrated files
+will be written to the output directory specified in the command line call. The output file
+will be exactly that as shown in Section 'Formatting the input data', in that the wavelength column
+of the 'main' spectrum is now populated. Nothing else will be changed. The blaze corrected spectrum will not have the wavelength
+column filled in.
+
+Fiber templates
+~~~~~~~~~~~~~~~
+These output files will be a .fits file with one extension. This extension will contain 3 rows (three orders)
+of the spectrum processed when ``'xwavecal.fibers.MakeFiberTemplate'`` was uncommented. consequently,
+that extension will be in the exact same format as one of the spectrum extensions of the input data.
 
 
 Configuring for full data reduction (experimental)
@@ -347,28 +505,9 @@ on a limited set of IRD and HARPS data. The pipeline may not function well on al
 using my example configuration files. The value of each configuration parameter will in those example files will
 change often as I tweak the files.
 
+I will document this at a later release (perhaps much later). If you have interest in using ``xwavecal`` as a partial pipeline
+(remember we do not generate radial velocities) please contact me.
 
-Configuring a new instrument
-----------------------------
-
-
-Indicating header keywords
---------------------------
-We need to tell ``xwavecal`` where the read_noise, etc... lies in the fits headers
-of the input raw data files.
-
-We first copy one of the example config.ini files inside of :code:`xwavecal/data/`. Next
-we uncomment out the stage :code:`MakeFiberTemplate` in the section [stages].
-
-In the section [data] of the config file, specify in header_keys which header keys
-in the fits file correspond to which observables (e.g. read_noise for harps is RON).
-
-In the type_keys, specify which outputs of the :code:`type` header key correspond to
-a lampflat or a wavecal. E.g. for nres, wavecal frames have the value :code:`DOUBLE` under the header key :code:`OBSTYPE`. Therefore in type_keys, I would
-have an entry :code:`{'DOUBLE': 'wavecal'}`, and in header_keys, I would have an entry
-:code:`{'type': 'OBSTYPE'}`. One can insert tuples into header_keys. I.e. if you need information
-from more than one field. E.g. for HARPS, I made my unique identifier (mjd-obs, chip id) because
-each raw harps frame has both the blue and the red parts of the spectra as different chips.
 
 Orientating the frames
 ----------------------
@@ -380,25 +519,6 @@ Prior to tracing, but after overscan trimming, every frame must be orientated so
 The wavelength of any given diffraction order increases from left to right in pixel (x=0 to x=Nx), and:
 The diffraction orders become overall bluer as one heads up the detector (bottom to top, y=0 to y=Ny).
 
-Making the template prior to first reduction
---------------------------------------------
-In section [reduction], :code:`template_trace_id` gives the trace id (:code:`id` in the trace.fits files created)
-for the diffraction order
-that ``xwavecal`` will use to make a template from on the first wavecal frame you reduce. For HARPS,
-I set :code:`template_trace_id = 10` arbitrarily. I recommend you don't select diffraction orders
-that are known to be problematic (e.g. are near the edge). Specify the paths in the config.ini file
-so that they are where you want them. Namely, you need to specify the line list path and the .db database path.
-
-Next, reduce a lampflat and wavecal via :code:`xwavecal_reduce_dir`, or with  :code:`xwavecal_reduce`. The lampflat
-reduction will make a trace file, a blaze file, and a processed lampflat file.
-
-Reducing any wavecal will produce a template. The template is a . For all wavecal files which resemble
-those you just processed, for all of time (provided you don't delete the database or the fibers.fits file)
-you will never need to make another template. This template is just the 1d spectrum of the
-order specified by :code:`template_trace_id`. Echelle looks for an order with a matching spectrum, and labels
-it with the reference id (:code:`ref_id`) given in [reduction] of the config.ini. This template, along with
-any processed files (e.g. the trace files etc) will be saved in the database .db file at the path
-specified in the config.ini file.
 
 Reduction
 =========
@@ -486,15 +606,10 @@ ID keywords: IDTRACE, IDBLAZE, IDLIST, IDTEMPL
 
 What is :code:`ref_id`
 
-
-The reference line list
------------------------
-We include the original ThAr (Thorium-Argon) atlas from the European Southern Observatory (ESO). This was retrieved
-from http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html in late
-2019. This line list was designed for spectrographs with a resolving power (R) of 100,000, and thus
-it may not be suited for your instrument if it has a lower or larger R. Moreover, the wavelengths are air wavelengths.
-It is up to you to download a line list suitable for your instrument (if the ThAr atlas is not suitable)
-and correct the line list for the index of refraction of air if necessary.
+End note
+========
+Please contact me if you have issues or find the documentation confusing. I will respond to your
+email as quickly as possible, although it could take some time.
 
 Contributions
 =============
@@ -505,3 +620,4 @@ One approving review from an administrator is required before the branch can be 
 License
 =======
 MIT license, see LICENSE for more details.
+
