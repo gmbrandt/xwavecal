@@ -15,7 +15,8 @@ extracted 1D spectra.
 
 :Author: Mirek Brandt
 
-If you use this code, please cite **Brandt, G.M. et al. (2019)** which can be found on ArXiv here: XXX
+If you use this code, please cite **Brandt, G.M. et al. (2019)** which can be found
+on ArXiv here: https://arxiv.org/abs/1910.08079
 
 As well, please cite the Zendo DOI: https://zenodo.org/record/3494618
 
