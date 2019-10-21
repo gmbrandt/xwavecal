@@ -53,13 +53,13 @@ I now cover how to wavelength calibrate data, using the Network of Robotic Echel
 as an example.
 
 To reduce the directory of NRES test data included
-in this repo, you would run from the command line (after modifying a couple paths
-in the config.ini file):
+in this repo, you would run from the command line (after modifying the two paths ``line_list_path`` 
+and ``database_path`` in the nres_config.ini file):
 
 .. code-block:: bash
 
-    xwavecal_reduce_dir --input-dir xwavecal/tests/data/
-     --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
+    xwavecal_reduce_dir --input-dir xwavecal/tests/data/nres_test_data/
+     --output-dir ~/Downloads --config-file xwavecal/example_config/nres_config.ini
 
 To do the same reduction by specifying paths, you would run:
 
@@ -68,7 +68,7 @@ To do the same reduction by specifying paths, you would run:
     xwavecal_reduce --data-paths
      xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0004-w00.fits.fz
       xwavecal/tests/data/nres_test_data/cptnrs03-fa13-20190405-0014-a00.fits.fz
-       --output-dir ~/Downloads --config-file xwavecal/data/nres_config.ini
+       --output-dir ~/Downloads --config-file xwavecal/example_config/nres_config.ini
 
 For NRES, ``a00.fits.fz`` files are ThAr wavelength calibrations, ``w00.fits.fz`` are lampflats.
 Configuring this wavelength solution to work for your instrument should only involve
