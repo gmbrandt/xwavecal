@@ -163,7 +163,7 @@ class Initialize(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         self.logger.info('Appending blank WavelengthSolution object to image for this fiber. '
-                    'fiber={0}'.format(str(fiber)))
+                         'fiber={0}'.format(str(fiber)))
         spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
         single_fiber_spectrum = spectrum[spectrum['fiber'] == fiber]
         image.wavelength_solution[fiber] = WavelengthSolution(model=self.runtime_context.initial_wavelength_model,
@@ -177,12 +177,19 @@ class Initialize(WavelengthStage):
     def on_no_valid_fibers(self, image):
         for fiber in lit_wavecal_fibers(image):
             image.wavelength_solution[fiber] = None
-        self.logger.error('Image spectrum missing ref_id or fiber column. Aborting wavelength calibration')
+        self.logger.error('Aborting wavelength calibration and setting wavelength solution to None.')
 
     def _valid_fibers(self, image):
-        spectrum_ok = all([key in image.data_tables[self.runtime_context.main_spectrum_name].colnames
-                           for key in ['ref_id', 'fiber']])
-        return lit_wavecal_fibers(image) if spectrum_ok else []
+        if image.data_tables.get(self.runtime_context.main_spectrum_name) is None:
+            self.logger.error('No main spectrum on image.')
+            return []
+
+        colnames_present = all([key in image.data_tables[self.runtime_context.main_spectrum_name].colnames
+                                for key in ['ref_id', 'fiber']])
+        if not colnames_present:
+            self.logger.error('Main spectrum on image is missing ref_id and fiber columns')
+            return []
+        return lit_wavecal_fibers(image)
 
 
 class LoadReferenceLineList(ApplyCalibration):

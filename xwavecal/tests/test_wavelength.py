@@ -171,12 +171,24 @@ class TestWavelengthStage:
 
 
 class TestInitialize:
+    CONTEXT = FakeContext()
+
     def test_on_no_valid_fibers(self):
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
         image.wavelength_solution = {1: 'not none', 2: 'not none'}
         Initialize(None).on_no_valid_fibers(image)
         assert image.wavelength_solution == {1: None, 2: None}
+
+    def test_all_fibers_invalid_without_spectrum(self):
+        image = FakeImage()
+        image.data_tables = {}
+        assert len(Initialize(self.CONTEXT)._valid_fibers(image)) == 0
+
+    def test_all_fibers_invalid_without_ref_id_and_fiber_cols(self):
+        image = FakeImage()
+        image.data_tables[self.CONTEXT.main_spectrum_name] = Table({'col1': [1]})
+        assert len(Initialize(self.CONTEXT)._valid_fibers(image)) == 0
 
 
 class TestFitOverlaps:
