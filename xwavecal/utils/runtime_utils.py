@@ -29,6 +29,8 @@ def parse_args(args=None):
     args = parser.parse_args(args)
     if args.data_paths is None and args.input_dir is None:
         raise ValueError('both input_dir and data_paths are None. Must specify raw data or a directory of raw data to process.')
+    if not os.path.exists(args.config_file):
+        raise FileNotFoundError('{0} not found.'.format(args.config_file))
     return args
 
 

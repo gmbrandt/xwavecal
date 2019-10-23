@@ -74,7 +74,8 @@ class OverlapFitter:
                           of the peak from the blue order.
         :param deg: polynomial degree of the mapping g(x)
         :return: ndarray
-                 coefficients for g(x), [a, b, c,...] which best fit every matched peak in the overlap.
+                 coefficients for g(x), [a, b, c,...] which minimize the chi^2 of (g(xr) - xb) for all
+                 matched peaks (xr, xb) within the overlap.
         """
         peaks = poly.polyval(r_lines, coeffs)
         blue_peaks = interpolate.interp1d(b_lines, b_lines, kind='nearest', bounds_error=False,
