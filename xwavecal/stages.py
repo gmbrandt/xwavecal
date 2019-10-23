@@ -32,6 +32,7 @@ class ApplyCalibration(Stage):
         elif not os.path.exists(master_calibration_path):
             self.on_missing_master_calibration(image)
             return image
+        self.logger.info('Template/calibration loaded: {0}'.format(master_calibration_path))
         return self.apply_master_calibration(image, master_calibration_path)
 
     def on_missing_master_calibration(self, image):

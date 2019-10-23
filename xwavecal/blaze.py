@@ -30,7 +30,7 @@ class ApplyBlaze(ApplyCalibration):
             self.logger.error('Shape of blaze data and image data do not agree. Aborting blaze correction. Wavelength'
                          'solution may suffer.')  # pragma: no cover
         else:
-            self.logger.info('Dividing by blaze from file {0}'.format(master_calibration_path))
+            self.logger.info('Dividing by blaze from file')
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
             # TODO full error propagation. The above does not hold for low (< 5) signal-to-noise pixels.
             image.data = np.divide(image.data, blaze.data, out=image.data.astype(float), where=~np.isclose(blaze.data, 0))
