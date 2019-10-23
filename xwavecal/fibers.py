@@ -21,7 +21,7 @@ class MakeFiberTemplate(Stage):
 
     def do_stage(self, image):
         order = self.runtime_context.template_trace_id
-        logger.info('Generating a template with center order {0}'.format(order))
+        self.logger.info('Generating a template with center order {0}'.format(order))
         spec = image.data_tables[self.runtime_context.main_spectrum_name]
         num_fibers = len(lit_fibers(image))
         orders = [order - num_fibers, order, order + num_fibers]
@@ -55,9 +55,9 @@ class IdentifyFibers(ApplyCalibration):
         NOTE: This stage relies on the fact that only 2 fibers are lit at one time.
         """
         if len(image.data_tables[self.runtime_context.main_spectrum_name]['flux']) == 0:
-            logger.error('Image has length 0 spectrum. Skipping fiber identification')
+            self.logger.error('Image has length 0 spectrum. Skipping fiber identification')
         elif image.num_wavecal_fibers() >= 1:
-            logger.info('Identifying fibers via cross correlation.')
+            self.logger.info('Identifying fibers via cross correlation.')
             spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
 
             read_noise = image.get_header_val('read_noise')
@@ -79,7 +79,7 @@ class IdentifyFibers(ApplyCalibration):
                     image.data_tables[key]['fiber'] = fiber_ids
                     image.data_tables[key]['ref_id'] = ref_ids
         else:
-            logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
+            self.logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image
 
     @staticmethod

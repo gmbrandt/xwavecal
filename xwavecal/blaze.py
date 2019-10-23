@@ -5,8 +5,6 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import numpy as np
-import logging
-logger = logging.getLogger(__name__)
 from copy import deepcopy
 
 from xwavecal.stages import Stage, ApplyCalibration
@@ -29,10 +27,10 @@ class ApplyBlaze(ApplyCalibration):
         blaze = Image.load(master_calibration_path, extension_name=self.runtime_context.blaze_name,
                            translator=image.translator)
         if not np.allclose(image.data.shape, blaze.data.shape):
-            logger.error('Shape of blaze data and image data do not agree. Aborting blaze correction. Wavelength'
+            self.logger.error('Shape of blaze data and image data do not agree. Aborting blaze correction. Wavelength'
                          'solution may suffer.')  # pragma: no cover
         else:
-            logger.info('Dividing by blaze from file {0}'.format(master_calibration_path))
+            self.logger.info('Dividing by blaze from file')
             image.ivar = None if image.ivar is None else image.ivar * np.power(blaze.data, 2)
             # TODO full error propagation. The above does not hold for low (< 5) signal-to-noise pixels.
             image.data = np.divide(image.data, blaze.data, out=image.data.astype(float), where=~np.isclose(blaze.data, 0))
@@ -49,7 +47,7 @@ class BlazeMaker(Stage):
         return 'BLAZE'
 
     def do_stage(self, image):
-        logger.info('Making blaze file.')
+        self.logger.info('Making blaze file.')
         blaze = Image(data=deepcopy(image.data), translator=image.translator,
                       trace=image.trace, header=deepcopy(image.header), data_name=self.runtime_context.blaze_name)
         blaze.data = blaze.data / normalize_orders(blaze.data, blaze.trace, half_window=self.runtime_context.max_extraction_half_window)

@@ -17,7 +17,7 @@ def parse_args(args=None):
     parser.add_argument('--data-paths', nargs='+', required=False, default=None,
                         help="path(s) to data, usage: '--data_paths path/to/first.fits path/to/second.fits'")
     parser.add_argument("--fpack", required=False, action='store_true',
-                        help="fpack output files with default quantization of 64")
+                        help="fpack output files with the default quantization.")
     parser.add_argument("--config-file", required=True,
                         help="Path to the instrument specific configuration file.")
     parser.add_argument("--frame-type", required=False, default='any',
@@ -29,6 +29,8 @@ def parse_args(args=None):
     args = parser.parse_args(args)
     if args.data_paths is None and args.input_dir is None:
         raise ValueError('both input_dir and data_paths are None. Must specify raw data or a directory of raw data to process.')
+    if not os.path.exists(args.config_file):
+        raise FileNotFoundError('{0} not found.'.format(args.config_file))
     return args
 
 
