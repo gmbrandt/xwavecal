@@ -617,7 +617,7 @@ the reference wavelength. Printing this table gives:
     >>> Length = 4875 rows
 
 
-We imagine that one can use this table to initilize any other pipeline's wavelength solution.
+We imagine that one can use this table to initialize any other pipeline's wavelength solution.
 
 Fiber templates
 ~~~~~~~~~~~~~~~
@@ -645,13 +645,13 @@ Configuring for full data reduction (experimental)
 One can use ``xwavecal`` to fully reduce their data by adding stages to the [stages] section, and
 by adding options to the [reduction] section of the config.ini file. The pipeline is
 automatic, however you have to change roughly twice the number of options in the config.ini file and so
-errors are more likely to occur. Example configuration files for IRD (Subaru), HARPS, and NRES spectrographs
-are in the ``xwavecal/example_config/``. The IRD and HARPS configuration files are meant to be examples only:
-they were made on a limited set of IRD and HARPS data. The value of each configuration parameter will in
+errors are more likely to occur. Example configuration files for HARPS and NRES spectrographs
+are in the ``xwavecal/example_config/``. The HARPS configuration files are meant to be examples only:
+they were made on a limited set of HARPS data. The value of each configuration parameter in
 those example files will change often as I tweak the files.
 
 I may document the full data reduction pipeline a later release (perhaps much later). Or, I may move that functionality
-to a new repo.
+to a new git repository.
 
 End note
 ========

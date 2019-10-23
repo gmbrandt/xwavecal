@@ -4,12 +4,12 @@ import os
 from xwavecal.database import query_db_for_nearest
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 class Stage(object):
     def __init__(self, runtime_context):
         self.runtime_context = runtime_context
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     @abc.abstractmethod
     def do_stage(self, image):
@@ -35,7 +35,7 @@ class ApplyCalibration(Stage):
         return self.apply_master_calibration(image, master_calibration_path)
 
     def on_missing_master_calibration(self, image):
-        logger.error('Master calibration file not found.')
+        self.logger.error('Master calibration file not found.')
 
     def get_calibration_filename(self, image):
         return query_db_for_nearest(self.runtime_context.database_path,

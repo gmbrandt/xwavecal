@@ -175,7 +175,7 @@ class TestInitialize:
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
         image.wavelength_solution = {1: 'not none', 2: 'not none'}
-        Initialize.on_no_valid_fibers(image)
+        Initialize(None).on_no_valid_fibers(image)
         assert image.wavelength_solution == {1: None, 2: None}
 
 
