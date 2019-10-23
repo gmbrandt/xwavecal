@@ -14,6 +14,7 @@ class OverlapFitter:
         """
         coeffs = self._fit_overlap(b_lines, r_lines, b_lines_flux, r_lines_flux,
                                    linear_scale_range, pixel_tol=2, flux_tol=flux_tol, deg=deg)
+        coeffs = self._refine_fit(coeffs, b_lines, r_lines, pixel_tol=10, deg=deg)
         # TODO Separate refine function.
         red_peaks = match_peaks(b_lines, r_lines, coeffs, pixel_tol=1)
         return {'pixel': red_peaks, 'matched_pixel': coordinate_transform(red_peaks, coeffs), 'peaks': len(red_peaks)}
@@ -56,15 +57,32 @@ class OverlapFitter:
                     match_count.append(np.max(num_matched_peaks))
                     all_coeffs.append(coeffs[np.argmax(num_matched_peaks)])
         if len(match_count) > 0:
-            # refine coeffs using all the matching peaks from the overlap.
             best_coeffs = all_coeffs[np.argmax(match_count)]
-            peaks = poly.polyval(r_lines_f, best_coeffs.flatten())
-            blue_peaks = nearest_blue(peaks)
-            nearby = 5 * pixel_tol
-            if np.count_nonzero(np.isclose(blue_peaks, peaks, atol=nearby)) >= deg+1:
-                best_coeffs = poly.polyfit(r_lines_f[np.isclose(blue_peaks, peaks, atol=nearby)],
-                                           blue_peaks[np.isclose(blue_peaks, peaks, atol=nearby)], deg)
-        return best_coeffs.flatten()
+        return np.array(best_coeffs).flatten()
+
+    def _refine_fit(self, coeffs, b_lines, r_lines, pixel_tol=10, deg=2):
+        """
+        :param coeffs: array-like.
+                       array of coefficients [a, b, c, ...] for g(x) = a + b*x + c*x^2 etc..
+        :param b_lines: array-like
+                        x-locations (pixel-locations) of emission lines from the blue order.
+        :param r_lines: array-like
+                        x-locations (pixel-locations) of emission lines from the red order.
+        :param pixel_tol: tolerance for g(xr) - xb for the peaks at xr and xb to be considered
+                          a matched-peak (i.e. duplicates of one-another). Where xr is the pixel
+                          coordinate of the peak from the red order, and xb is the pixel coordinate
+                          of the peak from the blue order.
+        :param deg: polynomial degree of the mapping g(x)
+        :return: ndarray
+                 coefficients for g(x), [a, b, c,...] which best fit every matched peak in the overlap.
+        """
+        peaks = poly.polyval(r_lines, coeffs)
+        blue_peaks = interpolate.interp1d(b_lines, b_lines, kind='nearest', bounds_error=False,
+                                          fill_value=(np.min(b_lines), np.max(b_lines)))(peaks)
+        if np.count_nonzero(np.isclose(blue_peaks, peaks, atol=pixel_tol)) >= deg + 1:
+            coeffs = poly.polyfit(r_lines[np.isclose(blue_peaks, peaks, atol=pixel_tol)],
+                                  blue_peaks[np.isclose(blue_peaks, peaks, atol=pixel_tol)], deg)
+        return coeffs
 
     @staticmethod
     def _blue_matches(blue_lines, match_matrix, red_index):
