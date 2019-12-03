@@ -24,8 +24,9 @@ def parse_args(args=None):
                         help="Frame type to either fit traces to or wavelength calibrate."
                              "Make sure frame type settings are appropriately set in the config file."
                              "lampflat files are used for tracing, wavecals are wavelength calibration"
-                             "frames such as ThAr exposures.",
-                        choices=['lampflat', 'wavecal', 'any'], type=str.lower)
+                             "frames such as ThAr exposures. Must agree with the frame names in [stages],"
+                             "e.g. lampflat, wavecal etc. Ignore to reduce all valid files",
+                        type=str.lower)
     args = parser.parse_args(args)
     if args.data_paths is None and args.input_dir is None:
         raise ValueError('both input_dir and data_paths are None. Must specify raw data or a directory of raw data to process.')
@@ -49,7 +50,7 @@ def order_data(data_paths, data_class, primary_ext, header_keys, type_keys):
 def select_data_of_type(data_paths, data_class, primary_ext, header_keys, type_keys, frame_type='any'):
     is_type = lambda x: x == frame_type
     if frame_type == 'any':
-        is_type = lambda x: x == 'lampflat' or x == 'wavecal'
+        is_type = lambda x: type(x) is str
     translator = Translator(header_keys, type_keys)
     correct = lambda path: 1 if is_type(data_class.load(path, primary_ext, translator).get_header_val('type')) else 0
     return np.array(data_paths)[np.where([correct(path) for path in data_paths])]
