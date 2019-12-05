@@ -72,8 +72,10 @@ class IdentifyFibers(ApplyCalibration):
             matched_ids = self.identify_matching_orders(spectrum_to_search, template,
                                                         num_arc_lamp_fibers=image.num_wavecal_fibers())
 
-            fiber_ids = self.build_fiber_column(matched_ids, image, spectrum)
-            ref_ids = self.build_ref_id_column(matched_ids, fiber_ids, self.runtime_context.ref_id)
+            fiber_ids = self.build_fiber_column(matched_ids, image, spectrum,
+                                                low_fiber_first=getattr(self.runtime_context, 'low_fiber_first', True))
+            ref_ids = self.build_ref_id_column(matched_ids, fiber_ids, self.runtime_context.ref_id,
+                                               low_fiber_first=getattr(self.runtime_context, 'low_fiber_first', True))
             # TODO refactor storing information about which spectra exist.
             image.set_header_val('IDTEMPL', (template_path, 'ID of the fiber template.'))
             for key in [self.runtime_context.main_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
@@ -110,13 +112,14 @@ class IdentifyFibers(ApplyCalibration):
         return fiber_sequence[sequence_ids % num_lit]
 
     @staticmethod
-    def build_ref_id_column(matched_ids, fiber_ids, ref_id):
+    def build_ref_id_column(matched_ids, fiber_ids, ref_id, low_fiber_first=True):
         """
         :param matched_ids: array: the indices of spectrum who are spectrally matched to ref_id
         :param ref_id: the reference id which is to be assigned to those orders which have been spectrally
         matched with the template and whose row id is given in matched_ids.
         :param fiber_ids: array: integers which designate to each row of spectrum, a fiber id. See
         IdentifyFibers.build_fiber_column().
+        :param low_fiber_first: bool. See IdentifyFibers.build_fiber_column()
         :return: array:
                  array of reference ids (order indices), each entry corresponding
                  to each row of the spectrum, to be used in 1/(m0+i) of the grating equation.
@@ -125,7 +128,13 @@ class IdentifyFibers(ApplyCalibration):
                  This array is such that ref_ids[matched_ids[k]] = ref_id for all valid indices k
                  of matched_ids.
         """
-        ref_ids = np.ones_like(fiber_ids)
+        fiber_sequence = list(set(fiber_ids)) if low_fiber_first else list(set(fiber_ids))[::-1]
+        group_start = np.where(fiber_ids == fiber_sequence[0])[0][0]
+        ref_ids = np.zeros_like(fiber_ids)
+        num_lit = len(set(fiber_ids))
+        for i in range(num_lit):
+            ref_ids[i + group_start::num_lit] = np.arange(1, len(ref_ids[i + group_start::num_lit]) + 1)
+        ref_ids += ref_id - ref_ids[matched_ids[0]]
         return ref_ids
 
     @staticmethod

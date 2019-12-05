@@ -65,6 +65,12 @@ class TestIdentifyFibers:
         fiber_ids = np.array([0, 1, 2, 0, 1])
         ref_ids = IdentifyFibers.build_ref_id_column([1, 2], fiber_ids, ref_id=50)
         assert np.allclose(ref_ids, [50, 50, 50, 51, 51])
+        fiber_ids = np.array([0, 2, 1, 0, 2, 1])
+        ref_ids = IdentifyFibers.build_ref_id_column([1, 2], fiber_ids, ref_id=50, low_fiber_first=False)
+        assert np.allclose(ref_ids, [49, 50, 50, 50, 51, 51])
+        fiber_ids = np.array([0, 0, 0, 0, 0, 0])
+        ref_ids = IdentifyFibers.build_ref_id_column([1], fiber_ids, ref_id=50, low_fiber_first=False)
+        assert np.allclose(ref_ids, [49, 50, 51, 52, 53, 54])
 
     def test_calibration_type(self):
         assert IdentifyFibers(self.CONTEXT).calibration_type == 'FIBERS'
@@ -125,7 +131,7 @@ class TestIdentifyFibers:
         image.set_header_val('read_noise', 0)
         spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30)),
                       'fiber': [1, 1, 1], 'ref_id': [0, 0, 0]})
-        mock_load.return_value = {'fibers': DataProduct(data=spec[1:3])}  # fake fiber template
+        mock_load.return_value = {'fibers': DataProduct(data=spec[1])}  # fake fiber template
         image.data_tables = {context.main_spectrum_name: spec}
         image = IdentifyFibers(context).apply_master_calibration(image, '')
         spec = image.data_tables[context.main_spectrum_name]
