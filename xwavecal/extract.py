@@ -5,9 +5,6 @@ from astropy.table import Table
 from xwavecal.utils import extract_utils
 from xwavecal.stages import Stage
 
-import logging
-logger = logging.getLogger(__name__)
-
 
 class BoxExtract(Stage):
     def __init__(self, runtime_context=None):
@@ -66,7 +63,7 @@ class BoxExtract(Stage):
         return None
 
     def do_stage(self, image):
-        logger.info('Extracting spectrum')
+        self.logger.info('Extracting spectrum')
         rectified_2d_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
         rectified_ivar = self._trim_rectified_2d_spectrum(image.rectified_ivar)
         spectrum = self.extract(rectified_2d_spectrum, rectified_ivar)
@@ -90,7 +87,7 @@ class BoxExtract(Stage):
         trimmed_rectified_spectrum = copy.deepcopy(rectified_2d_spectrum)
         if self.extraction_half_window >= self.max_extraction_half_window:
             # short circuit
-            logger.warning('Extraction window was chosen to be >= the max extraction window defined in settings.py.'
+            self.logger.warning('Extraction window was chosen to be >= the max extraction window defined in settings.py.'
                            ' Defaulting to the max extraction window.')
             return rectified_2d_spectrum
         trim = self.max_extraction_half_window - self.extraction_half_window
@@ -133,9 +130,9 @@ class RectifyTwodSpectrum(Stage):
         self.max_extraction_half_window = runtime_context.max_extraction_half_window
 
     def do_stage(self, image):
-        logger.info('Rectifying the 2d spectrum')
+        self.logger.info('Rectifying the 2d spectrum')
         if image.trace is None:
-            logger.error('Image has empty trace attribute. Aborting extraction.')
+            self.logger.error('Image has empty trace attribute. Aborting extraction.')
             image.is_bad = True
             image.rectified_2d_spectrum = {}
             image.rectified_ivar = {}

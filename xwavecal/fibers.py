@@ -21,7 +21,7 @@ class MakeFiberTemplate(Stage):
 
     def do_stage(self, image):
         order = self.runtime_context.template_trace_id
-        logger.info('Generating a template with center order {0}'.format(order))
+        self.logger.info('Generating a template with center order {0}'.format(order))
         spec = image.data_tables[self.runtime_context.main_spectrum_name]
         num_fibers = len(lit_fibers(image))
         orders = [order - num_fibers, order, order + num_fibers]

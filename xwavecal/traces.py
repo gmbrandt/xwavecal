@@ -10,9 +10,6 @@ from copy import deepcopy, copy
 from xwavecal.utils.trace_utils import Trace, AllTraceFitter
 from xwavecal.stages import Stage, ApplyCalibration
 
-import logging
-logger = logging.getLogger(__name__)
-
 
 class TraceMaker(Stage):
     def __init__(self, runtime_context):
@@ -30,7 +27,7 @@ class TraceMaker(Stage):
         return 'TRACE'
 
     def do_stage(self, image):
-        logger.info('fitting traces order by order', )
+        self.logger.info('fitting traces order by order', )
         fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                 min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                 min_snr=self.min_snr)
@@ -42,7 +39,7 @@ class TraceMaker(Stage):
                                   image_noise_estimate=image.get_header_val('read_noise'))
         trace.set_header_val('type', self.calibration_type.lower())
         trace.fiber0_lit, trace.fiber1_lit, trace.fiber2_lit = image.fiber0_lit, image.fiber1_lit, image.fiber2_lit
-        logger.info('Created master trace')
+        self.logger.info('Created master trace')
         image.trace = trace
         return image, trace
 
@@ -62,5 +59,5 @@ class LoadTrace(ApplyCalibration):
         image.trace = Trace.load(master_calibration_path, extension_name=self.runtime_context.trace_table_name)
         master_trace_filename = os.path.basename(master_calibration_path)
         image.set_header_val('IDTRACE', (master_trace_filename, 'ID of trace centers file'))
-        logger.info('Loading trace centers from {0}'.format(image.get_header_val('IDTRACE')))
+        self.logger.info('Applied loaded trace centers to image')
         return image
