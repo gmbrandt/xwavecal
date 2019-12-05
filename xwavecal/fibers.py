@@ -56,7 +56,9 @@ class IdentifyFibers(ApplyCalibration):
         """
         if len(image.data_tables[self.runtime_context.main_spectrum_name]['flux']) == 0:
             logger.error('Image has length 0 spectrum. Skipping fiber identification')
-        elif image.num_wavecal_fibers() >= 1:
+        elif image.num_wavecal_fibers() == 0:
+            logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
+        else:
             logger.info('Identifying fibers via cross correlation.')
             spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
 
@@ -71,43 +73,66 @@ class IdentifyFibers(ApplyCalibration):
                                                         num_arc_lamp_fibers=image.num_wavecal_fibers())
 
             fiber_ids = self.build_fiber_column(matched_ids, image, spectrum)
-            ref_ids = self.build_ref_id_column(matched_ids, image, spectrum, self.runtime_context.ref_id)
+            ref_ids = self.build_ref_id_column(matched_ids, fiber_ids, self.runtime_context.ref_id)
             # TODO refactor storing information about which spectra exist.
             image.set_header_val('IDTEMPL', (template_path, 'ID of the fiber template.'))
             for key in [self.runtime_context.main_spectrum_name, self.runtime_context.blaze_corrected_spectrum_name]:
                 if image.data_tables.get(key) is not None:
                     image.data_tables[key]['fiber'] = fiber_ids
                     image.data_tables[key]['ref_id'] = ref_ids
-        else:
-            logger.info('Image does not have any fibers lit with ThAr, skipping fiber identification.', )
         return image
 
     @staticmethod
-    def build_fiber_column(matched_ids, image, spectrum):
-        # note this assumes that 2 fibers are lit. other_fiber = lit... will fail if only one is lit.
-        fiber_ids = np.ones_like((spectrum['id']), dtype=np.int) * (-1)
-        fiber_ids[min(matched_ids) % 2:: 2] = min(lit_wavecal_fibers(image))
-        other_fiber = lit_fibers(image)[lit_fibers(image) != min(lit_wavecal_fibers(image))][0]
-        fiber_ids[(min(matched_ids) + 1) % 2:: 2] = other_fiber
-        return fiber_ids
+    def build_fiber_column(matched_ids, image, spectrum, low_fiber_first=True):
+        """
+        :param matched_ids: array: the indices of spectrum who are spectrally matched to ref_id
+        :param image: xwavecal.images.DataProduct
+        :param spectrum: astropy.tables.Table: the extracted spectrum.
+        :param low_fiber_first: whether the lowest lying fiber (lowest in terms of row index in spectrum)
+        should be associated with the first lit fiber. For example:
+           if lit_wavecal_fibers(image) = [1, 2] (fibers 1 and 2 are lit with a wavelength calibration lamp)
+           and matched_ids = [10, 11] (the rows 10 and 11 in the spectrum have been matched to the template)
+           then if label_low_fiber:
+              spectrum[10]['fiber_id'] will equal 1, and spectrum[11]['fiber_id'] will equal 2
+           If not label_low_fiber:
+              spectrum[10]['fiber_id'] will equal 2, and spectrum[11]['fiber_id'] will equal 1
+
+        :return: array:
+                 array of fiber identification numbers such that spectrum[fiber_ids == 1] would yield a complete
+                 extracted spectrum for the 1 fiber on the echelle spectrograph. spectrum[fiber_ids == 2] would
+                 be the spectrum for fiber 2.
+        """
+        fiber_sequence = lit_fibers(image) if low_fiber_first else lit_fibers(image)[::-1]
+        match_fiber = lit_wavecal_fibers(image)[0] if low_fiber_first else lit_wavecal_fibers(image)[-1]
+        num_lit = len(lit_fibers(image))
+        sequence_ids = np.arange(len(spectrum['id'])) % num_lit
+        sequence_ids += np.where(fiber_sequence == match_fiber)[0] - sequence_ids[matched_ids[0]]
+        return fiber_sequence[sequence_ids % num_lit]
 
     @staticmethod
-    def build_ref_id_column(matched_ids, image, spectrum, ref_id):
-        # note this assumes that 2 fibers are lit. other_fiber = lit... will fail if only one is lit.
-        lowest_lying_arc = min(lit_wavecal_fibers(image))
-        ref_ids = np.ones_like((spectrum['id']))
-        ref_ids[1::2], ref_ids[::2] = np.arange(len(ref_ids[1::2])), np.arange(len(ref_ids[::2]))
-        ref_ids[min(matched_ids) % 2:: 2] += ref_id - ref_ids[min(matched_ids)]
-        other_fiber = lit_fibers(image)[lit_fibers(image) != lowest_lying_arc][0]
-        other_fiber_match = min(matched_ids) + other_fiber - lowest_lying_arc
-        ref_ids[other_fiber_match % 2:: 2] += ref_id - ref_ids[other_fiber_match]
+    def build_ref_id_column(matched_ids, fiber_ids, ref_id):
+        """
+        :param matched_ids: array: the indices of spectrum who are spectrally matched to ref_id
+        :param ref_id: the reference id which is to be assigned to those orders which have been spectrally
+        matched with the template and whose row id is given in matched_ids.
+        :param fiber_ids: array: integers which designate to each row of spectrum, a fiber id. See
+        IdentifyFibers.build_fiber_column().
+        :return: array:
+                 array of reference ids (order indices), each entry corresponding
+                 to each row of the spectrum, to be used in 1/(m0+i) of the grating equation.
+                 We assume that spectrum is such that spectrum[i] is bluer than spectrum[j] if i > j.
+                 Thus, ref_ids[i] > ref_ids[j] (where ref_ids[i] is the reference id of the single order spectrum[i]).
+                 This array is such that ref_ids[matched_ids[k]] = ref_id for all valid indices k
+                 of matched_ids.
+        """
+        ref_ids = np.ones_like(fiber_ids)
         return ref_ids
 
     @staticmethod
     def construct_single_fiber_template(template_path, ext_name, num_lit_fibers=2):
         template = DataProduct.load(template_path, extension_name=ext_name)
         single_fiber = template.data['flux'].data
-        template = np.zeros((num_lit_fibers * single_fiber.shape[0] - 1, single_fiber.shape[1]))
+        template = np.zeros((num_lit_fibers * (single_fiber.shape[0] - 1) + 1, single_fiber.shape[1]))
         template[::num_lit_fibers] = single_fiber
         return template
 
