@@ -29,58 +29,48 @@ def test_fiber_state_to_filename():
 
 class TestIdentifyFibers:
     CONTEXT = FakeContext()
-    def test_build_fiber_column_double(self):
-        # frames with two arc fibers lit.
+
+    def test_build_fiber_column(self):
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
-        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
-        spectrum = {'id': np.arange(5)}
-        matched_ids = [2, 3]
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)
-        assert np.allclose(fiber_ids, [1, 2, 1, 2, 1])
-        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)
-        assert np.allclose(fiber_ids, [0, 1, 0, 1, 0])
-        spectrum = {'id': np.arange(6)}
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)
-        assert np.allclose(fiber_ids, [0, 1, 0, 1, 0, 1])
+        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 1, 1, 1
+        spectrum = {'id': np.arange(7)}
+        for matched_ids in [[2], [3], [4]]:
+            assert IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)[matched_ids[0]] == 1
+            assert IdentifyFibers.build_fiber_column(matched_ids, image, spectrum,
+                                                     low_fiber_first=False)[matched_ids[0]] == 2
 
-    def test_build_fiber_column_single(self):
-        # frames with one arc fiber lit.
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], image, spectrum),
+                           [1, 2, 0, 1, 2, 0, 1])
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], image, spectrum, low_fiber_first=False),
+                           [2, 1, 0, 2, 1, 0, 2])
+
+    def test_build_fiber_column_single_fiber(self):
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
-        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
-        spectrum = {'id': np.arange(5)}
-        matched_ids = [2]
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)
-        assert np.allclose(fiber_ids, [1, 2, 1, 2, 1])
-        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 0, 1
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)
-        assert np.allclose(fiber_ids, [2, 1, 2, 1, 2])
+        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 0
+        spectrum = {'id': np.arange(7)}
+        for matched_ids in [[2], [3], [4]]:
+            assert IdentifyFibers.build_fiber_column(matched_ids, image, spectrum)[matched_ids[0]] == 1
+            assert IdentifyFibers.build_fiber_column(matched_ids, image, spectrum,
+                                                     low_fiber_first=False)[matched_ids[0]] == 1
 
-    def test_build_ref_id_column_double(self):
-        # frames with two arc fibers lit.
-        image = FakeImage()
-        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
-        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
-        spectrum = {'id': np.arange(5)}
-        matched_ids = [2, 3]
-        ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, image, spectrum=spectrum, ref_id=50)
-        assert np.allclose(ref_ids, [49, 49, 50, 50, 51])
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], image, spectrum), np.ones(7))
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], image, spectrum, low_fiber_first=False), np.ones(7))
 
-    def test_build_ref_id_column_single(self):
-        # frames with one arc fiber lit.
-        image = FakeImage()
-        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 0, 1
-        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
-        spectrum = {'id': np.arange(5)}
-        matched_ids = [3]
-        ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, image, spectrum=spectrum, ref_id=50)
+    def test_build_ref_id_column(self):
+        fiber_ids = np.array([1, 2, 1, 2, 1])
+        ref_ids = IdentifyFibers.build_ref_id_column([2, 3], fiber_ids, ref_id=50)
         assert np.allclose(ref_ids, [49, 49, 50, 50, 51])
-        matched_ids = [2]
-        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
-        ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, image, spectrum=spectrum, ref_id=50)
-        assert np.allclose(ref_ids, [49, 49, 50, 50, 51])
+        fiber_ids = np.array([0, 1, 2, 0, 1])
+        ref_ids = IdentifyFibers.build_ref_id_column([1, 2], fiber_ids, ref_id=50)
+        assert np.allclose(ref_ids, [50, 50, 50, 51, 51])
+        fiber_ids = np.array([0, 2, 1, 0, 2, 1])
+        ref_ids = IdentifyFibers.build_ref_id_column([1, 2], fiber_ids, ref_id=50, low_fiber_first=False)
+        assert np.allclose(ref_ids, [49, 50, 50, 50, 51, 51])
+        fiber_ids = np.array([0, 0, 0, 0, 0, 0])
+        ref_ids = IdentifyFibers.build_ref_id_column([1], fiber_ids, ref_id=50, low_fiber_first=False)
+        assert np.allclose(ref_ids, [49, 50, 51, 52, 53, 54])
 
     def test_calibration_type(self):
         assert IdentifyFibers(self.CONTEXT).calibration_type == 'FIBERS'
@@ -122,13 +112,31 @@ class TestIdentifyFibers:
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 1
         image.set_header_val('read_noise', 0)
         spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30)),
-                      'fiber': [0, 0, 0], 'ref_id': [0, 0, 0]})
-        mock_load.return_value = {'fibers': DataProduct(data=spec[1])}
+                      'fiber': [1, 1, 1], 'ref_id': [0, 0, 0]})
+        mock_load.return_value = {'fibers': DataProduct(data=spec[1])}  # fake fiber template
         image.data_tables = {context.main_spectrum_name: spec}
         image = IdentifyFibers(context).apply_master_calibration(image, '')
         spec = image.data_tables[context.main_spectrum_name]
         assert np.allclose(spec['ref_id'], [0, 1, 1])
         assert np.allclose(spec['fiber'], [2, 1, 2])
+
+    @pytest.mark.integration
+    @mock.patch('xwavecal.images.fits.open')
+    def test_apply_master_calibration_single_fiber(self, mock_load):
+        image = FakeImage()
+        context = FakeContext()
+        context.ref_id = 1
+        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
+        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 0, 1, 0
+        image.set_header_val('read_noise', 0)
+        spec = Table({'id': [0, 1, 2], 'flux': 100 * np.random.random((3, 30)),
+                      'fiber': [1, 1, 1], 'ref_id': [0, 0, 0]})
+        mock_load.return_value = {'fibers': DataProduct(data=spec[1])}  # fake fiber template
+        image.data_tables = {context.main_spectrum_name: spec}
+        image = IdentifyFibers(context).apply_master_calibration(image, '')
+        spec = image.data_tables[context.main_spectrum_name]
+        assert np.allclose(spec['ref_id'], [0, 1, 2])
+        assert np.allclose(spec['fiber'], [1, 1, 1])
 
 
 class TestMakeFiberTemplate:
@@ -149,6 +157,11 @@ def test_construct_single_fiber_template(mock_load):
     mock_load.return_value = {'fibers': DataProduct(data=Table({'flux': np.array([np.ones(5), np.ones(5)])}))}
     template = IdentifyFibers.construct_single_fiber_template(None, 'fibers', 2)
     assert np.allclose(template, np.array([np.ones(5), np.zeros(5), np.ones(5)]))
+    mock_load.return_value = {'fibers': DataProduct(data=Table({'flux': np.zeros((3, 10))}))}
+    template = IdentifyFibers.construct_single_fiber_template(None, 'fibers', 3)
+    assert np.allclose(template.shape, (7, 10))
+    template = IdentifyFibers.construct_single_fiber_template(None, 'fibers', 1)
+    assert np.allclose(template.shape, (3, 10))
 
 
 @mock.patch('xwavecal.fibers.correlate2d')

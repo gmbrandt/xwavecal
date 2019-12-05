@@ -369,6 +369,11 @@ correlating the spectrum with a template (which ``xwavecal`` will create automat
 for each row of the spectrum. If you only have one fiber lit, this column can be all 0's or 1's as long as it is consistent
 with your .fits header ``fiber_state``.
 
+If you do not want to use ``xwavecal``'s order identification routine: comment out the ``fibers.IdentifyFibers``
+stage in the configuration file. In this case, your input spectrum must have the reference_id (ref_id) column correctly
+filled out with the reference id ``i``: each consecutive diffraction order must have a reference_id of 1 higher
+than the previous. This is important because the grating equation prefactor in the wavelength solution is ``1/(m0 + i)``
+
 Let the detector be X pixels wide, where the echelle grating has dispersed each order across the width. For NRES, X=4096,
 where pixel 0 is bluer than pixel 1. ``flux`` are the counts as a function of ``pixel`` (Both shape (N, X) (rows, columns).
 ``stderr`` is the 1-sigma error for each point in ``flux``. ``wavelength`` is the wavelength of each pixel in ``pixel``.
