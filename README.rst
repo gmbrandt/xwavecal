@@ -13,7 +13,7 @@ A library of routines for automatically wavelength calibrating echelle
 spectrographs for high precision radial velocity work. ``xwavecal`` is designed to operate on data with
 extracted 1D spectra.
 
-:Author: Mirek Brandt
+:Authors: Mirek Brandt, Curtis McCully, and Timothy D. Brandt.
 
 If you use this code, please cite **Brandt, G.M. et al. (2019)** which can be found
 on ArXiv here: https://arxiv.org/abs/1910.08079
