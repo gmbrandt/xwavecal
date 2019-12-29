@@ -4,6 +4,7 @@ import mock
 import pytest
 
 from xwavecal.main import select_data, run, reduce_data, organize_config, make_output_path, import_obj
+from xwavecal.main import RuntimeContext
 from xwavecal.tests.utils import FakeImage
 
 
@@ -95,3 +96,8 @@ def test_make_output_path():
 def test_import_from_string():
     numpyones = import_obj('numpy.ones')
     assert numpyones((5, 5)).shape == (5, 5)
+
+
+def test_runtime_context_raises_attr_error():
+    with pytest.raises(AttributeError):
+        RuntimeContext({}).missing_attribute

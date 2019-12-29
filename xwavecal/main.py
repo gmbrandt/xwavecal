@@ -27,6 +27,10 @@ class RuntimeContext(object):
         for attribute, value in dictionary.items():
             setattr(self, attribute, value)
 
+    def __getattr__(self, attr: str):
+        raise AttributeError('attribute {0} not found. Likely {0} is missing from the configuration file.'.format(attr))
+
+
 
 def reduce_data(data_paths=None, args=None, config=None):
     if args is None:
