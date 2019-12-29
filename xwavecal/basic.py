@@ -94,6 +94,6 @@ class BackgroundSubtractSpectrum(Stage):
                 if len(spectrum) > 0:
                     background = sep.Background(spectrum['flux'].data).back()
                     spectrum['flux'] -= background
-                    spectrum['stderr'] = np.sqrt(spectrum['stderr']**2 + np.abs(background))
+                    #spectrum['stderr'] = np.sqrt(spectrum['stderr']**2 + np.abs(background))
                     image.data_tables[key] = spectrum
         return image

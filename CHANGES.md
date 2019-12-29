@@ -1,3 +1,11 @@
+0.1.3 (2019-12-21)
+-------------------
+- Fixed issue 10 whereby `FitOverlaps` would return illegitimate overlap fits
+that violated one-to-one correspondance between a red side emission feature and
+its 'duplicate' on the blue side.
+- The BackgroundSubtractSpectrum stage no longer adds the background counts
+in quadrature to the error in the 2d spectrum.
+
 0.1.2 (2019-12-06)
 -------------------
 - Fixed xwavecal.fibers.IdentifyFibers to work for instruments with any number
