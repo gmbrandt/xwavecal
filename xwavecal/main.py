@@ -31,7 +31,6 @@ class RuntimeContext(object):
         raise AttributeError('attribute {0} not found. Likely {0} is missing from the configuration file.'.format(attr))
 
 
-
 def reduce_data(data_paths=None, args=None, config=None):
     if args is None:
         args = parse_args()
