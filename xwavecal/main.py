@@ -1,8 +1,6 @@
 """
 main.py: Main driver script for the minimal pipeline included with this package.
 
-Author: G. Mirek Brandt
-
 Note: reduce_data() and run() are console entry points.
 """
 

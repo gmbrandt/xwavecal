@@ -1,8 +1,5 @@
 """
 traces.py: Module for finding xwavecal orders across a CCD.
-
-Authors
-    G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import os
 from copy import deepcopy, copy

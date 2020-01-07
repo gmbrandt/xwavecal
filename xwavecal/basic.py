@@ -1,10 +1,6 @@
 """
 Module for basic reduction steps like overscan subtraction,
 overscan trimming and gain normalization.
-
-Author:
-        G. Mirek Brandt
-
 """
 
 import numpy as np

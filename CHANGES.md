@@ -1,10 +1,10 @@
-0.1.3 (2019-12-21)
+0.1.3 (2020-01-07)
 -------------------
 - Fixed issue 10 whereby `FitOverlaps` would return illegitimate overlap fits
 that violated one-to-one correspondance between a red side emission feature and
 its 'duplicate' on the blue side.
-- The BackgroundSubtractSpectrum stage no longer adds the background counts
-in quadrature to the error in the 2d spectrum.
+- The BackgroundSubtractSpectrum nor the BackgroundSubtract stages no longer effect the statistical uncertainty
+of the image.
 - RuntimeContext raises a custom attribute error if an attribute is missing, this
 error suggests to the user that the attribute name is likely missing from the configuration
 file.
