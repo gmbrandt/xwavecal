@@ -320,7 +320,7 @@ class BlazeCorrectArcEmissionLines(WavelengthStage):
             spectrum = spectrum[spectrum['fiber'] == fiber]
             lines['corrected_flux'] = np.zeros_like(lines['flux'], dtype=float)
             for spec in spectrum:
-                flux = interpolate.interp1d(spec['pixel'], spec['flux'], kind='nearest')
+                flux = interpolate.interp1d(spec['pixel'], spec['flux'], kind='nearest', bounds_error=False, fill_value=0)
                 in_order = np.where(lines['order'] == spec['ref_id'])
                 lines['corrected_flux'][in_order] = flux(lines['pixel'][in_order])
             image.wavelength_solution[fiber].measured_lines = lines

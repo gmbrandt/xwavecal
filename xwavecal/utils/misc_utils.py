@@ -51,11 +51,12 @@ def overlap_region(a, b):
 
 def find_nearest(array_a, array_b):
     """
+    # TODO consider replacing with np.searchsorted.
     :param array_a: ndarray
     :param array_b: ndarray. Must be Sorted.
     :return: a list of elements of B which are closest to each element in A, searched for in order of A.
-    e.g. if A = [1,2,2] and B = [0.99, 1.99,4]
-    then we would return [0.99, 1.99, 1.99]
+    e.g. if A = [1, 2, 2, 2] and B = [0.99, 1.99, 4]
+    then we would return [0.99, 1.99, 1.99, 1.99]
     Believe it or not, this is 1000 times faster (for a list of length 10000) then a python implementation
     of bisection-searching array_b for every element in array_a.
     """
