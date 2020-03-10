@@ -1,8 +1,5 @@
 """
 blaze.py: Module for making blaze calibration files for xwavecal spectrographs.
-
-Authors
-    G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import numpy as np
 from copy import deepcopy

@@ -1,8 +1,6 @@
 """
 main.py: Main driver script for the minimal pipeline included with this package.
 
-Author: G. Mirek Brandt
-
 Note: reduce_data() and run() are console entry points.
 """
 
@@ -26,6 +24,9 @@ class RuntimeContext(object):
     def __init__(self, dictionary):
         for attribute, value in dictionary.items():
             setattr(self, attribute, value)
+
+    def __getattr__(self, attr: str):
+        raise AttributeError('attribute {0} not found. Likely {0} is missing from the configuration file.'.format(attr))
 
 
 def reduce_data(data_paths=None, args=None, config=None):

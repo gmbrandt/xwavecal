@@ -9,13 +9,14 @@ import itertools
 class OverlapFitter:
     def fit(self, b_lines, r_lines, b_lines_flux, r_lines_flux, linear_scale_range, flux_tol=0.2, deg=2):
         """
+        :param deg. int
+               deg >= 2.
         :return: (x, xp), a tuple of 1d ndarrays of equal length. For a given index i, x[i] maps to xp[i] in wavelength.
                  I.e. x and xp are the set of overlapping pixels in wavelength space for this pair of diffraction orders.
         """
         coeffs = self._fit_overlap(b_lines, r_lines, b_lines_flux, r_lines_flux,
                                    linear_scale_range, pixel_tol=2, flux_tol=flux_tol, deg=deg)
         coeffs = self._refine_fit(coeffs, b_lines, r_lines, pixel_tol=10, deg=deg)
-        # TODO Separate refine function.
         red_peaks = match_peaks(b_lines, r_lines, coeffs, pixel_tol=1)
         return {'pixel': red_peaks, 'matched_pixel': coordinate_transform(red_peaks, coeffs), 'peaks': len(red_peaks)}
 
@@ -25,8 +26,8 @@ class OverlapFitter:
 
         r_lines, r_lines_flux = np.copy(r_lines_f), np.copy(r_lines_flux_f)
 
-        #r_lines = r_lines[np.argsort(r_lines_flux)[::-1]][:min(15, len(r_lines))]
-        #r_lines_flux = np.sort(r_lines_flux)[::-1][:min(15, len(r_lines))]
+        #r_lines = r_lines[np.argsort(r_lines_flux)[::-1]][:15]
+        #r_lines_flux = np.sort(r_lines_flux)[::-1][:15]
         r_lines_flux = r_lines_flux[np.argsort(r_lines)][:15]
         r_lines = np.sort(r_lines)[:15]
         b_lines_flux = b_lines_flux[np.argsort(b_lines)]
@@ -47,6 +48,8 @@ class OverlapFitter:
             potential_matched_blue_lines = self.line_combinations(lines2)
             if len(potential_matched_blue_lines) > 0:
                 coeffs = np.matmul(vander_inv, potential_matched_blue_lines)
+                coeffs[:, 2:, 0] = np.abs(coeffs[:, 2:, 0])  # ensures higher order coeffs are positive and thus
+                # that the mappings are one-to-one.
                 mapped_lines = np.matmul(vander, coeffs)
                 num_matched_peaks = np.count_nonzero(np.isclose(mapped_lines, nearest_blue(mapped_lines),
                                                                 atol=pixel_tol), axis=1).flatten()

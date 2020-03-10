@@ -470,8 +470,8 @@ at the top of this readme for the case of the full reduction pipeline on the inc
 are identical, except for reducing a directory we specify ``--frame-type wavecal`` so that we do not attempt to
 process lampflat files (which is relevant only for the full pipeline).
 
-To reduce a batch of example wavelength calibrations (hereafter wavecal),
-we would run (if in the root directory of this repo):
+To reduce a batch of example wavelength calibrations (wavecal types),
+we would run:
 
 .. code-block:: bash
 
