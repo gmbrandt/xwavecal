@@ -45,6 +45,18 @@ class TestIdentifyFibers:
         assert np.allclose(IdentifyFibers.build_fiber_column([3], image, spectrum, low_fiber_first=False),
                            [2, 1, 0, 2, 1, 0, 2])
 
+    def test_build_fiber_column_multi_match(self):
+        image = FakeImage()
+        image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 1
+        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = 1, 1, 1
+        spectrum = {'id': np.arange(7)}
+        expected_fiber_designations = [1, 2, 0, 1, 2, 0, 1]
+
+        assert np.allclose(IdentifyFibers.build_fiber_column([3, 4], image, spectrum),
+                           expected_fiber_designations)
+        assert np.allclose(IdentifyFibers.build_fiber_column([4, 3], image, spectrum),
+                           expected_fiber_designations)
+
     def test_build_fiber_column_single_fiber(self):
         image = FakeImage()
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 0, 1, 0
@@ -71,6 +83,11 @@ class TestIdentifyFibers:
         fiber_ids = np.array([0, 0, 0, 0, 0, 0])
         ref_ids = IdentifyFibers.build_ref_id_column([1], fiber_ids, ref_id=50, low_fiber_first=False)
         assert np.allclose(ref_ids, [49, 50, 51, 52, 53, 54])
+
+    def test_build_ref_id_column_reversed_match_order(self):
+        fiber_ids = np.array([1, 2, 1, 2, 1])
+        ref_ids = IdentifyFibers.build_ref_id_column([3, 2], fiber_ids, ref_id=50)
+        assert np.allclose(ref_ids, [49, 49, 50, 50, 51])
 
     def test_calibration_type(self):
         assert IdentifyFibers(self.CONTEXT).calibration_type == 'FIBERS'
