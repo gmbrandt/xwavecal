@@ -108,7 +108,7 @@ class IdentifyFibers(ApplyCalibration):
         match_fiber = lit_wavecal_fibers(image)[0] if low_fiber_first else lit_wavecal_fibers(image)[-1]
         num_lit = len(lit_fibers(image))
         sequence_ids = np.arange(len(spectrum['id'])) % num_lit
-        sequence_ids += np.where(fiber_sequence == match_fiber)[0] - sequence_ids[matched_ids[0]]
+        sequence_ids += np.where(fiber_sequence == match_fiber)[0] - sequence_ids[np.min(matched_ids)]
         return fiber_sequence[sequence_ids % num_lit]
 
     @staticmethod
@@ -120,9 +120,10 @@ class IdentifyFibers(ApplyCalibration):
         :param fiber_ids: array: integers which designate to each row of spectrum, a fiber id. See
         IdentifyFibers.build_fiber_column().
         :param low_fiber_first: bool. See IdentifyFibers.build_fiber_column()
-        :return: array:
+        :return: ref_ids. array.
                  array of reference ids (order indices), each entry corresponding
-                 to each row of the spectrum, to be used in 1/(m0+i) of the grating equation.
+                 to each row of the spectrum, where ref_ids[j] is the i in the 1/(m0+i) of the grating equation,
+                 to be used with the jth diffraction order (indexed from 0). E.g. order 0 has i = ref_ids[0].
                  We assume that spectrum is such that spectrum[i] is bluer than spectrum[j] if i > j.
                  Thus, ref_ids[i] > ref_ids[j] (where ref_ids[i] is the reference id of the single order spectrum[i]).
                  This array is such that ref_ids[matched_ids[k]] = ref_id for all valid indices k
@@ -134,7 +135,7 @@ class IdentifyFibers(ApplyCalibration):
         num_lit = len(set(fiber_ids))
         for i in range(num_lit):
             ref_ids[i + group_start::num_lit] = np.arange(1, len(ref_ids[i + group_start::num_lit]) + 1)
-        ref_ids += ref_id - ref_ids[matched_ids[0]]
+        ref_ids += ref_id - ref_ids[np.min(matched_ids)]
         return ref_ids
 
     @staticmethod

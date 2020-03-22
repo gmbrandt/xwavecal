@@ -1,3 +1,10 @@
+0.1.4 (2020-03-22)
+-------------------
+- Fixed bug where two identical diffraction orders had different reference ID assigned by fibers.IdentifyFibers. This 
+bug caused the e2e tests to yield a poor wavelength solution on one fiber of the test data, because
+the principle order number was wrong for that fiber (because the reference id for each order was wrong). 
+- changed required numpy version to >=1.16 .
+
 0.1.3 (2020-01-07)
 -------------------
 - Fixed issue 10 whereby `FitOverlaps` would return illegitimate overlap fits
