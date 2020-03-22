@@ -654,6 +654,14 @@ def wavelength_calibrate(measured_lines, reference_lines, x, orders, wavelength_
                          overlap_settings=None, wavecal_settings=None, stages_todo=None,
                          wavelength_solution=None):
     """
+    A convenience function for any users who want to be able to wavelength calibrate from a list of
+    spectral feature (measured_lines) pixel and order positions and a reference line list (reference_lines).
+    This is not used anywhere in xwavecal, nor the included pipeline, except in
+    xwavecal.tests.test_wavelength. This function can be used to update a wavelength solution
+    as well, if stages_todo = [SolutionRefineOnce].
+
+    This function was designed to be used in Banzai-NRES.
+
     :param measured_lines: dict.
     :param reference_lines: list or ndarray.
     :param x: ndarray.
@@ -661,8 +669,9 @@ def wavelength_calibrate(measured_lines, reference_lines, x, orders, wavelength_
     :param wavelength_models: dict.
     :param overlap_settings: dict.
     :param wavecal_settings: dict.
+    :param stages_todo: list.
     :param wavelength_solution: xwavecal.wavelength.WavelengthSolution
-    :return:
+    :return: xwavecal.wavelength.WavelengthSolution
     """
     if stages_todo is None:
         stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,
