@@ -657,7 +657,7 @@ class TestOnSyntheticData:
         image.wavelength_solution[1].measured_lines = measured_lines
         image.wavelength_solution[1].reference_lines = line_list
         stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,
-                       SolutionRefineFinal, TabulateArcEmissionLines]
+                       SolutionRefineFinal]
         for stage in stages_todo:
             image = stage(context).do_stage(image)
         measured_lines['wavelength'] = image.wavelength_solution[1].wavelength(measured_lines['pixel'],

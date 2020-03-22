@@ -7,6 +7,7 @@ from numpy.polynomial import legendre
 
 from scipy import interpolate
 
+from xwavecal.images import Image
 from xwavecal.stages import Stage, ApplyCalibration
 from xwavecal.utils.wavelength_utils import identify_lines, calc_residuals, restrict, Model, _sigma_clip
 from xwavecal.utils.wavelength_utils import estimate_global_scale, normalize_coordinates, pixel_order_as_array
@@ -647,3 +648,70 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
                 merit.append(median_absolute_deviation(calc_residuals(wcs.wavelength_normed_input(**wcs.measured_lines),
                                                              wcs.reference_lines)))
         return np.array(merit), m0_values
+
+
+def wavelength_calibrate(measured_lines, reference_lines, x, orders, wavelength_models=None,
+                         overlap_settings=None, wavecal_settings=None, stages_todo=None,
+                         wavelength_solution=None):
+    """
+    :param measured_lines: dict.
+    :param reference_lines: list or ndarray.
+    :param x: ndarray.
+    :param orders: ndarray.
+    :param wavelength_models: dict.
+    :param overlap_settings: dict.
+    :param wavecal_settings: dict.
+    :param wavelength_solution: xwavecal.wavelength.WavelengthSolution
+    :return:
+    """
+    if stages_todo is None:
+        stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,
+                       SolutionRefineFinal, TabulateArcEmissionLines]
+    if wavelength_models is None:
+        wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
+                             'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
+                             'final_wavelength_model': {0: [0, 1, 2, 3, 4, 5],
+                                                        1: [0, 1, 2, 3, 4, 5],
+                                                        2: [0, 1, 2, 3, 4, 5],
+                                                        3: [0, 1, 2, 3, 4, 5],
+                                                        4: [0]}}
+    if overlap_settings is None:
+        overlap_settings = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2),
+                            'flux_tol': 0.2}
+    if wavecal_settings is None:
+        wavecal_settings = {'global_scale_range': (0.8, 1.2), 'overlap_linear_scale_range': (0.5, 2),
+                            'approx_detector_range_angstroms': 5000, 'approx_num_orders': 67,
+                            'principle_order_number': 52}
+    # instantiate the context which every WavelengthStage will use to pull the settings from.
+    xcontext = type('xcontext', (), {**wavelength_models, **overlap_settings, **wavecal_settings})
+
+    # make dummy spectrum so that FitOverlaps will run.
+    # TODO: the spectrum is only used in fit_overlaps to get the reference id's etc. It in principle is not
+    #  needed at all. Fix this deeper in the code so that we don't have to make a fake spectrum here.
+    spectrum = Table({'ref_id': orders, 'fiber': np.ones_like(orders),
+                      'flux': np.zeros((orders.shape[0], x.shape[1])),
+                      'pixel': x * np.ones((orders.shape[0], x.shape[1]))})
+    # make a container (called Image) for the spectrum and wavelength solution
+    image = Image(header={'fiber_state': 'none&thar&none'},
+                  data_tables={xcontext.main_spectrum_name: spectrum})
+    # set up the blank wavelength solution object if we are solving from scratch.
+    min_order, max_order = np.min(orders), np.max(orders)
+    min_pixel, max_pixel = np.min(x), np.max(x)
+    if wavelength_solution is None:
+        wavelength_solution = WavelengthSolution(model=xcontext.initial_wavelength_model,
+                                                 min_order=min_order, max_order=max_order,
+                                                 min_pixel=min_pixel, max_pixel=max_pixel, m0=52)
+    image.wavelength_solution = {1: wavelength_solution}
+    # normalize line coordinates for use in every WavelengthStage.
+    measured_lines['normed_pixel'] = normalize_coordinates(measured_lines['pixel'],
+                                                           max_value=max_pixel, min_value=min_pixel)
+    measured_lines['normed_order'] = normalize_coordinates(measured_lines['order'],
+                                                           max_value=max_order, min_value=min_order)
+    # add the measured_lines and reference lines onto the wavelength solution
+    image.wavelength_solution[1].measured_lines = measured_lines
+    image.wavelength_solution[1].reference_lines = np.sort(reference_lines)
+
+    # run the wavelength calibration stages
+    for stage in stages_todo:
+        image = stage(xcontext).do_stage(image)
+    return image.wavelength_solution[1]
