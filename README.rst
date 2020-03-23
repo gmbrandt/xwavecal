@@ -76,6 +76,19 @@ making a new config.ini file. The rest of this readme is devoted to setting the 
 file for a new instrument where the input data are extracted 1D spectra. I use
 NRES as an example.
 
+
+Wavelength Calibrating from a list of spectral features
+=======================================================
+If you do not want to use xwavecal's line identification and spectral reduction utilities (which I will dive into shortly),
+there is a convienience function which will return an ``xwavecal.wavelength.WavelengthSolution`` object from just a list of
+spectral feature coordinates (pixel and order) and a reference line list. This function is
+``xwavecal.wavelength.wavelength_calibrate()`` and is just a wrapper for all the xwavecal stages that
+occur after spectral features have been centroided. This would be useful if your calibration lamp is e.g.
+not a lamp, but an absorption cell, or if you only want to use xwavecal
+as a fallback calibration in the existing pipeline that you use. See the docstring for
+``xwavecal.wavelength.wavelength_calibrate()`` for a use explanation.
+
+
 Configuring for wavelength calibration
 ======================================
 ``xwavecal`` is designed in a modular fashion. Each step of the wavelength
@@ -89,10 +102,12 @@ all the options and settings to reduce NRES data which already has a 1D spectrum
 and a 1D blaze corrected spectrum. This repo includes raw NRES data, which has to
 be reduced with nres_config.ini (which includes all the overscan subtraction, spectral extraction etc. stages).
 
-We start by telling the config.ini where the database for the reduced data should live.
 
 Pointing to the database and line list
 --------------------------------------
+
+We start by telling the config.ini where the database for the reduced data should live.
+
 Before reducing, copy the nres_config_wcs_only.ini file to a new location, rename it for your instrument, and
 change :code:`database_path` under the [reduction] section to the path where you
 want to the database to exist. The parent folder for the database must already exist. E.g. for myself,

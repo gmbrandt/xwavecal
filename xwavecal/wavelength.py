@@ -717,6 +717,10 @@ def wavelength_calibrate(measured_lines, reference_lines, x, orders, principle_o
              Wavelength solution object. See WavelengthSolution.wavelength for how to evaluate the wavelength
              of a given pixel and order coordinate under the model. See WavelengthSolution for more.
 
+    Notes
+    -----
+    See xwavecal.tests.test_wavelength.TestOnSyntheticData.test_performance for a use example of this function.
+     the test can be run from an ipython instance and can provide insight as to how to use this wrapper function.
     """
     if stages_todo is None:
         stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,

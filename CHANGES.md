@@ -1,3 +1,8 @@
+0.1.5 (2020-03-23)
+-------------------
+- Added a convienience function which wavelength calibrates from a list
+of spectral feature pixel and order positions, and a provided reference line list.
+
 0.1.4 (2020-03-22)
 -------------------
 - Fixed bug where two identical diffraction orders had different reference ID assigned by fibers.IdentifyFibers. This 
