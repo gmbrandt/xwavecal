@@ -158,8 +158,8 @@ class SpectrumUtils:
         pixel = np.arange(wcs.min_pixel, wcs.max_pixel + 1)
         for order in np.arange(wcs.min_order, wcs.max_order + 1):
             order_coords = np.ones_like(pixel) * order
-            lam_to_x = UnivariateSpline(wcs.wavelength(pixel, order_coords), pixel, s=0, k=3)
-            in_order = self._restrict(line_lambdas, wcs.wavelength(pixel, order_coords))
+            lam_to_x = UnivariateSpline(wcs(pixel, order_coords), pixel, s=0, k=3)
+            in_order = self._restrict(line_lambdas, wcs(pixel, order_coords))
             lines_x_pos = lam_to_x(line_lambdas[in_order])
             measured_lines['pixel'].extend(list(lines_x_pos))
             measured_lines['order'].extend(list(np.ones_like(lines_x_pos) * order))

@@ -25,10 +25,11 @@ class Model(dict):
 
 def normalize_coordinates(coordinates, max_value, min_value):
     """
-    :param coordinates: ndarray
+    :param coordinates: list or ndarray
     :param max_value: max_value coordinates can achieve. e.g. if normalizing pixels, we would have 4096 as max_value
     :return: coordinates normalized to run from -1 to 1.
     """
+    coordinates = np.array(coordinates)
     if min_value > max_value:
         raise ValueError('min_value > max_value')
     coordinates = 2. * (coordinates - min_value)/(max_value - min_value) - 1.

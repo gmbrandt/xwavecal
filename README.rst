@@ -80,13 +80,14 @@ NRES as an example.
 Wavelength Calibrating from a list of spectral features
 =======================================================
 If you do not want to use xwavecal's line identification and spectral reduction utilities (which I will dive into shortly),
-there is a convienience function which will return an ``xwavecal.wavelength.WavelengthSolution`` object from just a list of
-spectral feature coordinates (pixel and order) and a reference line list. This function is
+there is a convienience function which will return a list of wavelengths from just a list of
+spectral feature coordinates (pixel and order) and a reference line list. The returned wavelengths are the
+ wavelengths of the measured spectral features under the best fit wavelength model. This function is
 ``xwavecal.wavelength.wavelength_calibrate()`` and is just a wrapper for all the xwavecal stages that
 occur after spectral features have been centroided. This would be useful if your calibration lamp is e.g.
 not a lamp, but an absorption cell, or if you only want to use xwavecal
 as a fallback calibration in the existing pipeline that you use. See the docstring for
-``xwavecal.wavelength.wavelength_calibrate()`` for a use explanation.
+``xwavecal.wavelength.wavelength_calibrate()`` for more details.
 
 
 Configuring for wavelength calibration

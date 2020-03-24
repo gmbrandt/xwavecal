@@ -63,10 +63,12 @@ class Image(DataProduct):
     Class for two-dimensional data frames.
     """
     def __init__(self, filepath=None, data=None, header=None, data_tables=None, translator=None, trace=None,
-                 data_name=None, ivar=None):
+                 data_name=None, ivar=None, wavelength_solution=None):
         super(Image, self).__init__(filepath=filepath, data=data, header=header, translator=translator, data_name=data_name)
         if data_tables is None:
             data_tables = {}
+        if wavelength_solution is None:
+            wavelength_solution = {}
         self.data_tables = data_tables
         self.data = data
         self.ivar = ivar
@@ -76,8 +78,7 @@ class Image(DataProduct):
         self.rectified_ivar = None
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.get_header_val('fiber_state'))
         self.fiber0_wavecal, self.fiber1_wavecal, self.fiber2_wavecal = wavecal_fibers_from_header(self.get_header_val('fiber_state'))
-
-        self.wavelength_solution = {}
+        self.wavelength_solution = wavelength_solution
 
     def write(self, fpack=False):
         if self.data_name is None:

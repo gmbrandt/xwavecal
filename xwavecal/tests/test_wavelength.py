@@ -124,7 +124,7 @@ class TestWavelengthSolution:
     def test_wavelength_is_nan_for_no_coefficients(self):
         wcs = Utils.simple_wcs()
         wcs.model_coefficients = None
-        assert np.all(np.isnan(wcs.wavelength(np.arange(5), np.arange(5))))
+        assert np.all(np.isnan(wcs(np.arange(5), np.arange(5))))
 
 
 class TestModel:
@@ -205,7 +205,6 @@ class TestFitOverlaps:
                                             'good': [True, True], 'peaks': [10, 10]})
         image.data_tables = {context.main_spectrum_name: spectrum}
         wcs = WavelengthSolution(min_order=0, max_order=num, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
-        wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
         image = FitOverlaps(FakeContext()).do_stage(image)
@@ -219,7 +218,6 @@ class TestFitOverlaps:
                                                                       'good': [False], 'peaks': [10]})}
         image.data_tables[context.main_spectrum_name] = Table({'fiber': [0, 1]})
         wcs = WavelengthSolution(min_order=0, max_order=10, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
-        wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
         fake_fit.return_value = Table({'ref_id': [0], 'fiber': [1], 'matched_ref_id': [1], 'good': [False], 'peaks': [2]})
         image = FitOverlaps(FakeContext()).do_stage_fiber(image, fiber=1)
@@ -346,7 +344,7 @@ class TestFindGlobalScale:
         wcs = WavelengthSolution(min_order=0, max_order=4, min_pixel=0, max_pixel=1000,
                                  measured_lines=measured_lines, model={0: [0, 1, 2], 1: [0, 1]},
                                  model_coefficients=np.random.normal(2, .3, size=5), m0=m0)
-        reference_lines = wcs.wavelength(pix, orders) * true_scale
+        reference_lines = wcs(pix, orders) * true_scale
         wcs.reference_lines = reference_lines + np.random.normal(0, cntd_error)  # centroiding errors, sort of.
         return wcs, true_scale
 
@@ -641,11 +639,8 @@ class TestOnSyntheticData:
         wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
                              'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
                              'final_wavelength_model': copy.copy(wcs.model)}
-        wavelength_solution = wavelength_calibrate(measured_lines, line_list, np.arange(4096), np.arange(num_orders),
+        measured_lines['wavelength'] = wavelength_calibrate(measured_lines, line_list, np.arange(4096), np.arange(num_orders),
                                                    principle_order_number=52, wavelength_models=wavelength_models)
-        measured_lines = wavelength_solution.measured_lines
-        measured_lines['wavelength'] = wavelength_solution.wavelength(measured_lines['pixel'],
-                                                                      measured_lines['order'])
         assert np.allclose(measured_lines['wavelength'], measured_lines['true_wavelength'], rtol=1e-8)
 
 
