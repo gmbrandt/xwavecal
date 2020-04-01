@@ -33,39 +33,39 @@ class TestIdentifyFibers:
     def test_build_fiber_column(self):
         wavecal_fibers = np.array([1, 2])
         fibers = np.array([0, 1, 2])
-        spectrum = {'id': np.arange(7)}
+        num_traces = 7
         for matched_ids in [[2], [3], [4]]:
-            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, spectrum)[matched_ids[0]] == 1
-            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, spectrum,
+            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, num_traces)[matched_ids[0]] == 1
+            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, num_traces,
                                                      low_fiber_first=False)[matched_ids[0]] == 2
 
-        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, spectrum),
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, num_traces),
                            [1, 2, 0, 1, 2, 0, 1])
-        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, spectrum, low_fiber_first=False),
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, num_traces, low_fiber_first=False),
                            [2, 1, 0, 2, 1, 0, 2])
 
     def test_build_fiber_column_multi_match(self):
         wavecal_fibers = np.array([1, 2])
         fibers = np.array([0, 1, 2])
-        spectrum = {'id': np.arange(7)}
+        num_traces = 7
         expected_fiber_designations = [1, 2, 0, 1, 2, 0, 1]
 
-        assert np.allclose(IdentifyFibers.build_fiber_column([3, 4], fibers, wavecal_fibers, spectrum),
+        assert np.allclose(IdentifyFibers.build_fiber_column([3, 4], fibers, wavecal_fibers, num_traces),
                            expected_fiber_designations)
-        assert np.allclose(IdentifyFibers.build_fiber_column([4, 3], fibers, wavecal_fibers, spectrum),
+        assert np.allclose(IdentifyFibers.build_fiber_column([4, 3], fibers, wavecal_fibers, num_traces),
                            expected_fiber_designations)
 
     def test_build_fiber_column_single_fiber(self):
         wavecal_fibers = np.array([1])
         fibers = np.array([1])
-        spectrum = {'id': np.arange(7)}
+        num_traces = 7
         for matched_ids in [[2], [3], [4]]:
-            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, spectrum)[matched_ids[0]] == 1
-            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, spectrum,
+            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, num_traces)[matched_ids[0]] == 1
+            assert IdentifyFibers.build_fiber_column(matched_ids, fibers, wavecal_fibers, num_traces,
                                                      low_fiber_first=False)[matched_ids[0]] == 1
 
-        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, spectrum), np.ones(7))
-        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, spectrum, low_fiber_first=False), np.ones(7))
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, num_traces), np.ones(7))
+        assert np.allclose(IdentifyFibers.build_fiber_column([3], fibers, wavecal_fibers, num_traces, low_fiber_first=False), np.ones(7))
 
     def test_build_ref_id_column(self):
         fiber_ids = np.array([1, 2, 1, 2, 1])
