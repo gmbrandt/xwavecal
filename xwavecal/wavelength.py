@@ -637,7 +637,7 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         self.logger.info('Looking for the principle order number between {0} and {1}.'
-                    ' fiber={2}'.format(*self.runtime_context.m0_range, str(fiber)))
+                         ' fiber={2}'.format(*self.runtime_context.m0_range, str(fiber)))
         self.logger.disabled = True
         merits, m0_values = self.merit_per_m0(image, fiber, self.runtime_context.m0_range)
         self.logger.disabled = False
@@ -667,7 +667,7 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
         return np.array(merit), m0_values
 
 
-def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, principle_order_number: int,
+def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, m0_range: tuple,
                          wavelength_models: dict = None, overlap_settings: dict = None, scale_settings: dict = None,
                          stages_todo: list = None):
     """
@@ -697,8 +697,10 @@ def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, princip
                orders = np.arange(67)
                for a detector with diffraction orders indexed from 0 to 66. If the principle order number is
                52, then these would correspond to orders 52 through 118.
-    :param principle_order_number: int.
-           The integer which gives the real diffraction order index of the i=0 labelled diffraction order.
+    :param m0_range: tuple.
+           The range of integers possible for the principle order number: (low, high). low is an inclusive bound
+           and high is exclusive.
+           The principle order number gives the real diffraction order index of the i=0 labelled diffraction order.
            See the xwavecal README or Brandt et al. (2019) for more.
     :param wavelength_models: dict.
            Dictionary of models. See the xwavecal README, or wavelength_models below.
@@ -711,18 +713,20 @@ def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, princip
     :param stages_todo: list.
            list of xwavecal.wavelength.WavelengthSolution stages to run on the input list of measured lines.
            If building a new wavelength solution from scratch, then leave the default stages_todo.
-    :return: ndarray. measured_line_wavelengths.
+    :return: measured_line_wavelengths, m0: ndarray, int
              measured_line_wavelengths are the wavelengths of the measured_lines under the calibrated model.
              measured_line_wavelengths is an array with the same length as measured_lines['pixel']
               and measured_lines['order'].
+             m0 is the principle order number. m0 can be added to each order (measured_lines['order']) to obtain their
+             real, diffraction order index.
     Notes
     -----
     See xwavecal.tests.test_wavelength.TestOnSyntheticData.test_performance for a use example of this function.
      the test can be run from an ipython instance and can provide insight as to how to use this wrapper function.
     """
     if stages_todo is None:
-        stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,
-                       SolutionRefineFinal]
+        stages_todo = [FitOverlaps, IdentifyPrincipleOrderNumber, SolveFromOverlaps,
+                       FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal]
     if wavelength_models is None:
         wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
                              'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
@@ -741,8 +745,8 @@ def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, princip
                           'approx_num_orders': 67}
     # instantiate the context which every WavelengthStage will use.
     context = type('context', (), {**wavelength_models, **overlap_settings, **scale_settings,
-                                     'principle_order_number': principle_order_number,
-                                     'main_spectrum_name': 'spectrum', 'overlap_table_name': 'overlap'})
+                                   'm0_range': m0_range, 'main_spectrum_name':
+                                   'spectrum', 'overlap_table_name': 'overlap'})
 
     # make dummy spectrum so that FitOverlaps will run.
     # TODO: the spectrum is only used in fit_overlaps to get the reference id's etc. It in principle is not
@@ -754,7 +758,7 @@ def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, princip
     # Initialize the WavelengthSolution
     wavelength_solution = WavelengthSolution(model=wavelength_models.get('initial_wavelength_model'),
                                              min_order=np.min(orders), max_order=np.max(orders),
-                                             min_pixel=np.min(pixel), max_pixel=np.max(pixel), m0=52,
+                                             min_pixel=np.min(pixel), max_pixel=np.max(pixel),
                                              measured_lines=measured_lines, reference_lines=np.sort(reference_lines))
     # make a container (e.g. the Image object) for the spectrum and wavelength solution
     image = Image(header={'fiber_state': 'none&thar&none'}, wavelength_solution={1: wavelength_solution},
@@ -763,4 +767,4 @@ def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, princip
     for stage in stages_todo:
         image = stage(context).do_stage(image)
     wavelength_solution = image.wavelength_solution[1]
-    return wavelength_solution(measured_lines['pixel'], measured_lines['order'])
+    return wavelength_solution(measured_lines['pixel'], measured_lines['order']), wavelength_solution.m0

@@ -639,9 +639,10 @@ class TestOnSyntheticData:
         wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
                              'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
                              'final_wavelength_model': copy.copy(wcs.model)}
-        measured_lines['wavelength'] = wavelength_calibrate(measured_lines, line_list, np.arange(4096), np.arange(num_orders),
-                                                   principle_order_number=52, wavelength_models=wavelength_models)
+        measured_lines['wavelength'], m0 = wavelength_calibrate(measured_lines, line_list, np.arange(4096), np.arange(num_orders),
+                                                                wavelength_models=wavelength_models, m0_range=(51, 54))
         assert np.allclose(measured_lines['wavelength'], measured_lines['true_wavelength'], rtol=1e-8)
+        assert np.isclose(m0, wcs.m0)
 
 
 class Utils:
