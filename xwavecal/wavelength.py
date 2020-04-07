@@ -767,4 +767,8 @@ def wavelength_calibrate(measured_lines, reference_lines, pixel, orders, m0_rang
     for stage in stages_todo:
         image = stage(context).do_stage(image)
     wavelength_solution = image.wavelength_solution[1]
-    return wavelength_solution(measured_lines['pixel'], measured_lines['order']), wavelength_solution.m0
+
+    if wavelength_solution is not None:
+        return wavelength_solution(measured_lines['pixel'], measured_lines['order']), wavelength_solution.m0
+    else:
+        return None, None
