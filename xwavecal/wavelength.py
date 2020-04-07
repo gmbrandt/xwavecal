@@ -28,7 +28,7 @@ class WavelengthSolution(object):
         WavelengthSolution.model_coefficients gives the coefficients for the current model, in the order
         of WavelengthSolution.model.
     """
-    def __init__(self, model=None, model_coefficients=None, measured_lines=None, reference_lines=None,
+    def __init__(self, model=None, model_coefficients=None, measured_lines: dict = None, reference_lines=None,
                  m0=30, max_pixel=100, max_order=2, min_order=0, min_pixel=0, overlap_range=(),
                  grating_eq=True):
         if model is None:
@@ -53,7 +53,7 @@ class WavelengthSolution(object):
 
     @measured_lines.setter
     def measured_lines(self, lines):
-        if lines is not None and dict(lines).get('order', None) is not None and dict(lines).get('pixel', None) is not None:
+        if lines is not None and lines.get('order', None) is not None and lines.get('pixel', None) is not None:
             lines['normed_pixel'] = normalize_coordinates(lines['pixel'], max_value=self.max_pixel, min_value=self.min_pixel)
             lines['normed_order'] = normalize_coordinates(lines['order'], max_value=self.max_order, min_value=self.min_order)
         self._measured_lines = lines
