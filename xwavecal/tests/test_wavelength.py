@@ -272,15 +272,17 @@ class TestIdentifyArcEmissionLines:
     @pytest.mark.integration
     @mock.patch('xwavecal.wavelength.identify_lines')
     def test_do_stage_fiber(self, fake_measured_lines):
-        fake_measured_lines.return_value = {'pixel': np.array([0, 20]), 'order': np.array([0, 5])}
+        fake_measured_lines.return_value = {'pixel': np.array([0, 20]), 'order': np.array([0, 5]), 'pixel_err': np.array([1, 2])}
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(min_pixel=0, max_pixel=20, min_order=-5,
                                                            max_order=5)}
         image.data_tables = {FakeContext().main_spectrum_name: Table({'fiber': np.array([0, 1]),
                                                                      'stderr': [0, 0]})}
-        image = IdentifyArcEmissionLines(FakeContext()).do_stage_fiber(image, fiber=1)
+        stage = IdentifyArcEmissionLines(FakeContext())
+        image = stage.do_stage_fiber(image, fiber=1)
         measured_lines = image.wavelength_solution[1].measured_lines
         assert np.allclose([measured_lines['pixel'], measured_lines['order']], [[0, 20], [0, 5]])
+        assert np.allclose(measured_lines['weight'], 1 / measured_lines['pixel_err'] ** 2)
         assert np.allclose([measured_lines['normed_pixel'], measured_lines['normed_order']],
                            [[-1, 1], [0, 1]])
 
