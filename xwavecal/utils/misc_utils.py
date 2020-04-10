@@ -64,10 +64,11 @@ def find_nearest(array_a, array_b):
     return find_func(array_a)
 
 
-def find_peaks(y, x, height=0, distance=1, prominence=None, window=6, peak_width=2):
+def find_peaks(y, x, yerr, height=0, distance=1, prominence=None, window=6, peak_width=2):
     """
     :param y: ndarray. float. Amplitude as a function of x
     :param x: ndarray. dtype=int. x coordinates for y.
+    :param yerr: ndarray. float. 1 sigma errors for y.
     :param height: float. peaks with amplitudes below height will be excluded. scalar or ndarray of length y.
     :param distance: int. minimum number of grid points (distance) between two identified peaks.
     :param prominence: float. The vertical distance between the peak and its lowest contour line.
@@ -96,22 +97,23 @@ def find_peaks(y, x, height=0, distance=1, prominence=None, window=6, peak_width
           then we return the initial guess.
     """
     peak_indices = signal.find_peaks(y, distance=distance, prominence=prominence, height=height)[0]  # identify peaks.
-    #peak_indices = peak_indices[~np.logical_or(peak_indices <= window, peak_indices >= np.max(x) - window)]
-    peaks = fit_peaks(x, y, window // 2, peak_indices, std=peak_width)
-    bad_fits = np.where(~np.isclose(peaks[:, 0], x[peak_indices], atol=5))
-    peaks[bad_fits, 0] = x[peak_indices[bad_fits]]
+    peaks = fit_peaks(x, y, yerr, window // 2, peak_indices, std=peak_width)  # fit a Gaussian to each peak.
+    # remove fits that were wildly different from init guess, or have non finite errors:
+    bad_fits = np.where(np.logical_or(~np.isclose(peaks[:, 0], x[peak_indices], atol=5), ~np.isfinite(peaks[:, 1])))
+    peaks[bad_fits, 0], peaks[bad_fits, 1] = x[peak_indices[bad_fits]], 1
     return peaks[:, 0].flatten(), peaks[:, 1].flatten(), peak_indices
 
 
-def fit_peaks(x, y, half_width, init_guess, std):
+def fit_peaks(x, y, yerr, half_width, index_guess, std):
     peaks = []
-    amplitude_guess = y[init_guess]
-    for i, ampl in zip(init_guess, amplitude_guess):
+    amplitude_guess = y[index_guess]
+    for i, ampl in zip(index_guess, amplitude_guess):
         sl = slice(i - half_width, i + half_width + 1)
-        center, err = i, 1
+        center, err = x[i], 1
         if len(x[sl]) >= 3:  # num params in the model
             try:
-                params, pcov = optimize.curve_fit(gaussian, x[sl], y[sl], [ampl, i, std], absolute_sigma=True)
+                params, pcov = optimize.curve_fit(gaussian, x[sl], y[sl], [ampl, center, std],
+                                                  sigma=yerr[sl], absolute_sigma=True)
                 center, err = params[1], np.sqrt(np.diag(pcov))[1]
             except RuntimeError as e:
                 warnings.warn(str(e))

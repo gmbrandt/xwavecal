@@ -11,20 +11,22 @@ def test_find_peaks():
     min_snr = 1
     peak_centers = np.array([15.2, 40.2, 60.2, 80])
     pixel = np.arange(100).astype(float)
+    std = 1.5  # standard deviation of the gaussian peaks.
     flux = array_with_peaks(x=pixel, centroids=peak_centers,
-                            amplitudes=[10, 6, min_snr + 0.1, min_snr - 0.1], stds=[3, 3, 3, 3])
+                            amplitudes=[1000, 6, min_snr + 0.1, min_snr - 0.1], stds=[std, std, std, std])
+    center_uncertainties = std/np.sqrt([np.sum(flux[np.isclose(pixel, cntr, atol=8*std)]) for cntr in peak_centers])
     for min_height in [min_snr, min_snr * np.ones_like(flux)]:
-        found_peak_centers, errs = find_peaks(flux, pixel, height=min_height, distance=10, window=6)[:2]
-        print(found_peak_centers, errs)
-        assert np.allclose(found_peak_centers, peak_centers[:-1], atol=.01)
+        found_peak_centers, errs = find_peaks(flux, pixel, np.sqrt(flux), height=min_height, distance=10, window=6)[:2]
+        assert np.allclose(found_peak_centers, peak_centers[:-1], rtol=.01)
+        assert np.allclose(errs, center_uncertainties[:-1], rtol=.1)
 
 
-@mock.patch('xwavecal.utils.misc_utils.fit_peaks', return_value=np.array([[0.1, 1], [13, 2]]))
+@mock.patch('xwavecal.utils.misc_utils.fit_peaks', return_value=np.array([[0.1, 0.01], [13, 2]]))
 @mock.patch('scipy.signal.find_peaks', return_value=(np.array([0, 1]), {}))
 def test_identify_lines(mock_peaks, mock_refine):
-    peak_x, peak_err, peak_ind = find_peaks(None, np.array([0, 20]))
+    peak_x, peak_err, peak_ind = find_peaks(None, np.array([0, 20]), None)
     assert np.allclose(peak_x, [0.1, 20])
-    assert np.allclose(peak_err, [1, 2])
+    assert np.allclose(peak_err, [0.01, 1])
 
 
 def test_brute_force_min():
