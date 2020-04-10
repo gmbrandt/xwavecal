@@ -286,7 +286,6 @@ class IdentifyArcEmissionLines(WavelengthStage):
     def __init__(self, runtime_context=None):
         super(IdentifyArcEmissionLines, self).__init__(runtime_context=runtime_context)
         self.min_peak_snr = self.runtime_context.min_peak_snr
-        self.build_ivariance_weights = getattr(runtime_context, 'ivariance_weighted_solve', False)
 
     def do_stage_fiber(self, image, fiber):
         spectrum = image.data_tables[self.runtime_context.main_spectrum_name]
@@ -295,8 +294,6 @@ class IdentifyArcEmissionLines(WavelengthStage):
                                         stderr=single_fiber_spectrum['stderr'],
                                         min_snr=self.min_peak_snr,
                                         order_key='ref_id')
-        if self.build_ivariance_weights:
-            measured_lines['weight'] = 1 / measured_lines['pixel_err'] ** 2
 
         measured_lines['normed_order'] = normalize_coordinates(measured_lines['order'],
                                                                image.wavelength_solution[fiber].max_order,

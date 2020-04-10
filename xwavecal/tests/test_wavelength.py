@@ -282,7 +282,6 @@ class TestIdentifyArcEmissionLines:
         image = stage.do_stage_fiber(image, fiber=1)
         measured_lines = image.wavelength_solution[1].measured_lines
         assert np.allclose([measured_lines['pixel'], measured_lines['order']], [[0, 20], [0, 5]])
-        assert np.allclose(measured_lines['weight'], 1 / measured_lines['pixel_err'] ** 2)
         assert np.allclose([measured_lines['normed_pixel'], measured_lines['normed_order']],
                            [[-1, 1], [0, 1]])
 
