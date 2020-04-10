@@ -2,6 +2,9 @@
 -------------------
 - Feature identification stage now fetches the pixel error in the centroid, and the flux error
 of the feature.
+- ivariance_weighted_solve = True will now turn on weighting in every solving iteration, so that the wavelength solutiono
+is solved for via weighted least squares, where each feature is weighted by 1/pix_var where
+pix_var is the variance in the pixel centroid of the line.
 
 0.1.4 (2020-03-22)
 -------------------

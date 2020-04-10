@@ -251,6 +251,7 @@ To wavelength calibrate your data, the following settings in config.ini may need
 - ``principle_order_number``
 - ``m0_range``
 - ``flux_tol``
+- ``ivariance_weighted_solve``
 
 There are several other parameters you will most likely not need to change.
 Let us go through the pertinent ones in the list above one-by-one:
@@ -277,6 +278,11 @@ Let us go through the pertinent ones in the list above one-by-one:
   the maximum allowed value of abs(f1 - f2)/(mean(f1, f2)) for two peaks to be considered
   a matched pair in the overlap algorithm. For decent blaze correction, use 0.2.
   For bad, or an absence of, correction, use 0.5.
+- ``ivariance_weighted_solve`` : This should be True if you want to do weighted least squares when solving for the
+    wavelength solution. True weights each spectral feature by the 1/pix_var where pix_var is the variance in the
+    pixel centroid of the line. False will do binary weights, where outliers are set to 0 and all other lines
+    are set to 1. Default is False. We recommend setting this to True only if xwavecal works well for you already
+    with this set to False. Setting to True may squeeze out a little extra performance.
 - ``min_peak_snr`` : the minimum signal to noise for an emission peak to be used to constrain the wavelength
   solution after overlap detection. This should be something reasonable like 10 or 20 so
   as to detect between 1000 and 2000 emission lines. Weak lines are often contamination from trace elements
