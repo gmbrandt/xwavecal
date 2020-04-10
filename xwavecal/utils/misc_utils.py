@@ -104,20 +104,19 @@ def find_peaks(y, x, height=0, distance=1, prominence=None, window=6, peak_width
 
 
 def fit_peaks(x, y, half_width, init_guess, std):
-    # fit gaussians to each peak. This is basically verbatim the method peakutils.interpolate from PeakUtils==1.3.2
     peaks = []
-    for i in init_guess:
+    amplitude_guess = y[init_guess]
+    for i, ampl in zip(init_guess, amplitude_guess):
         sl = slice(i - half_width, i + half_width + 1)
+        center, err = i, 1
+        if len(x[sl]) >= 3:  # num params in the model
+            try:
+                params, pcov = optimize.curve_fit(gaussian, x[sl], y[sl], [ampl, i, std], absolute_sigma=True)
+                center, err = params[1], np.sqrt(np.diag(pcov))[1]
+            except RuntimeError as e:
+                warnings.warn(str(e))
 
-        try:
-            params, pcov = optimize.curve_fit(gaussian, x[sl], y[sl], [np.max(y[sl]), i, std], absolute_sigma=True)
-            best_idx, err = params[1], np.sqrt(np.diag(pcov))[1]
-        except RuntimeError as e:
-            # catch failed fits and replace them with the initial guess
-            warnings.warn(str(e))
-            best_idx, err = i, 1
-
-        peaks.append([best_idx, err])
+        peaks.append([center, err])
     return np.array(peaks)
 
 
