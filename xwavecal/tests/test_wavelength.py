@@ -540,13 +540,15 @@ def test_normalize_coordinates_raises_error():
 
 
 class TestLineIdentification:
-    @mock.patch('xwavecal.utils.wavelength_utils.find_peaks', return_value=(np.array([0.1, 1.1]), np.array([0, 1])))
+    @mock.patch('xwavecal.utils.wavelength_utils.find_peaks',
+                return_value=(np.array([0.1, 1.1]), np.array([0.01, 0.02]), np.array([0, 1])))
     def test_identify_lines(self, fake_peaks):
         spectrum = Table({'flux': [[10, 20]], 'pixel': [[1, 2]], 'id': [32]})
         lines = wcsu.identify_lines(spectrum, stderr=10, order_key='id')
         assert np.allclose(lines['flux'], [10, 20])
         assert np.allclose(lines['order'], [32, 32])
         assert np.allclose(lines['pixel'], [0.1, 1.1])
+        assert np.allclose(lines['pixel_err'], [0.01, 0.02])
 
 
 class TestRefineUtils:

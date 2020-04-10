@@ -1,3 +1,8 @@
+0.1.5 (2020-03-22)
+-------------------
+- Feature identification stage now fetches the pixel error in the centroid, and the flux error
+of the feature.
+
 0.1.4 (2020-03-22)
 -------------------
 - Fixed bug where two identical diffraction orders had different reference ID assigned by fibers.IdentifyFibers. This 
