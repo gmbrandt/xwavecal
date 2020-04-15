@@ -765,9 +765,11 @@ def find_feature_wavelengths(measured_lines, reference_lines, m0_range: tuple, m
         image = stage(context).do_stage(image)
     measured_lines['wavelength'] = np.zeros_like(measured_lines['pixel'], dtype=float)
     for fiber in all_fibers:
+        this_fiber = measured_lines['fiber'] == fiber
         wavelengths = None
         if image.wavelength_solution[fiber] is not None:
-            wavelengths = image.wavelength_solution[fiber](measured_lines['pixel'], measured_lines['order'])
-        measured_lines['wavelength'][measured_lines['fiber'] == fiber] = wavelengths
+            wavelengths = image.wavelength_solution[fiber](measured_lines['pixel'][this_fiber],
+                                                           measured_lines['order'][this_fiber])
+        measured_lines['wavelength'][this_fiber] = wavelengths
     return measured_lines['wavelength']
 
