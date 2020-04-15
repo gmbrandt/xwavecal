@@ -11,7 +11,7 @@ from xwavecal.utils.overlap_utils import blank_overlap_table
 from xwavecal.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal
 from xwavecal.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
 from xwavecal.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines, Initialize
-from xwavecal.wavelength import IdentifyPrincipleOrderNumber, SolutionRefineOnce, wavelength_calibrate
+from xwavecal.wavelength import IdentifyPrincipleOrderNumber, SolutionRefineOnce, find_feature_wavelengths
 from xwavecal.tests.utils import SpectrumUtils, FakeImage, FakeContext
 
 
@@ -636,13 +636,14 @@ class TestOnSyntheticData:
 
         measured_lines, line_list = SpectrumUtils().generate_measured_lines(n_list=1000, n_true=0,
                                                                             n_garb=0, wcs=wcs)
+        measured_lines['fiber'] = np.ones_like(measured_lines['order'])
         wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
                              'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
                              'final_wavelength_model': copy.copy(wcs.model)}
-        measured_lines['wavelength'], m0 = wavelength_calibrate(measured_lines, line_list, np.arange(4096), np.arange(num_orders),
-                                                                wavelength_models=wavelength_models, m0_range=(51, 54))
+        measured_lines['wavelength'] = find_feature_wavelengths(measured_lines, line_list,
+                                                                m0_range=(51, 54), max_pixel=4096, min_pixel=0,
+                                                                wavelength_models=wavelength_models)
         assert np.allclose(measured_lines['wavelength'], measured_lines['true_wavelength'], rtol=1e-8)
-        assert np.isclose(m0, wcs.m0)
 
 
 class Utils:

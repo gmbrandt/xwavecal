@@ -83,7 +83,7 @@ If you do not want to use xwavecal's line identification and spectral reduction 
 there is a convienience function which will return a list of wavelengths from just a list of
 spectral feature coordinates (pixel and order) and a reference line list. The returned wavelengths are the
  wavelengths of the measured spectral features under the best fit wavelength model. This function is
-``xwavecal.wavelength.wavelength_calibrate()`` and is just a wrapper for all the xwavecal stages that
+``xwavecal.wavelength.wavelength_calibrate()``. It is a wrapper for all the xwavecal stages that
 occur after spectral features have been centroided. This would be useful if your calibration lamp is e.g.
 not a lamp, but an absorption cell, or if you only want to use xwavecal
 as a fallback calibration in the existing pipeline that you use. See the docstring for
