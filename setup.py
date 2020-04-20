@@ -5,9 +5,11 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(name='xwavecal',
-      author=['G. Mirek Brandt, Curtis McCully'],
-      version='0.1.5',
+      author='G. Mirek Brandt, Curtis McCully, Timothy Brandt',
+      author_email='gmbrandt@ucsb.edu',
+      version='0.1.6',
       python_requires='>=3.6',
+      url='https://github.com/gmbrandt/xwavecal',
       packages=find_packages(),
       package_dir={'xwavecal': 'xwavecal'},
       package_data={'xwavecal': ['data/.*']},

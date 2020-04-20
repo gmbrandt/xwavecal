@@ -72,7 +72,7 @@ class IdentifyFibers(ApplyCalibration):
             matched_ids = self.identify_matching_orders(spectrum_to_search, template,
                                                         num_arc_lamp_fibers=image.num_wavecal_fibers())
 
-            fiber_ids = self.build_fiber_column(matched_ids, image, spectrum,
+            fiber_ids = self.build_fiber_column(matched_ids, lit_fibers(image), lit_wavecal_fibers(image), len(spectrum['id']),
                                                 low_fiber_first=getattr(self.runtime_context, 'low_fiber_first', True))
             ref_ids = self.build_ref_id_column(matched_ids, fiber_ids, self.runtime_context.ref_id,
                                                low_fiber_first=getattr(self.runtime_context, 'low_fiber_first', True))
@@ -85,11 +85,12 @@ class IdentifyFibers(ApplyCalibration):
         return image
 
     @staticmethod
-    def build_fiber_column(matched_ids, image, spectrum, low_fiber_first=True):
+    def build_fiber_column(matched_ids, fibers, wavecal_fibers, num_traces, low_fiber_first=True):
         """
         :param matched_ids: array: the indices of spectrum who are spectrally matched to ref_id
-        :param image: xwavecal.images.DataProduct
-        :param spectrum: astropy.tables.Table: the extracted spectrum.
+        :param fibers: ndarray. E.g. [0, 1] if fibers 0 and 1 are lit. [0,1,2,3] if fibers 0 through 3 are lit etc..
+        :param wavecal_fibers: ndarray. E.g. [0, 1] if fibers 0 and 1 are lit with a wavelength calibration source.
+        :param num_traces: int. Number of lit traces, i.e. number of rows in the extracted spectrum.
         :param low_fiber_first: whether the lowest lying fiber (lowest in terms of row index in spectrum)
         should be associated with the first lit fiber. For example:
            if lit_wavecal_fibers(image) = [1, 2] (fibers 1 and 2 are lit with a wavelength calibration lamp)
@@ -104,10 +105,10 @@ class IdentifyFibers(ApplyCalibration):
                  extracted spectrum for the 1 fiber on the echelle spectrograph. spectrum[fiber_ids == 2] would
                  be the spectrum for fiber 2.
         """
-        fiber_sequence = lit_fibers(image) if low_fiber_first else lit_fibers(image)[::-1]
-        match_fiber = lit_wavecal_fibers(image)[0] if low_fiber_first else lit_wavecal_fibers(image)[-1]
-        num_lit = len(lit_fibers(image))
-        sequence_ids = np.arange(len(spectrum['id'])) % num_lit
+        fiber_sequence = fibers if low_fiber_first else fibers[::-1]
+        match_fiber = wavecal_fibers[0] if low_fiber_first else wavecal_fibers[-1]
+        num_lit = len(fibers)
+        sequence_ids = np.arange(num_traces) % num_lit
         sequence_ids += np.where(fiber_sequence == match_fiber)[0] - sequence_ids[np.min(matched_ids)]
         return fiber_sequence[sequence_ids % num_lit]
 

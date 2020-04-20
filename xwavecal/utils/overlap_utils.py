@@ -138,8 +138,8 @@ def _select_lines(lines, spec, ridx, bidx, max_overlap_red, max_overlap_blue):
                               lines['pixel'] < np.max(spec['pixel'][ridx][:max_overlap_red]))
     b_select = np.logical_and(lines['order'] == spec['ref_id'][bidx],
                               lines['pixel'] > np.min(spec['pixel'][bidx][-max_overlap_blue:]))
-    return lines['pixel'][r_select], lines['pixel'][b_select],\
-           lines['corrected_flux'][r_select], lines['corrected_flux'][b_select]
+    fluxkey = 'corrected_flux' if lines.get('corrected_flux', None) is not None else 'flux'
+    return lines['pixel'][r_select], lines['pixel'][b_select], lines[fluxkey][r_select], lines[fluxkey][b_select]
 
 
 def fit_overlaps(spec, lines, max_overlap_red=1000, max_overlap_blue=2000, linear_scale_range=(0.5, 2),

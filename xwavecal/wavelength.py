@@ -7,6 +7,7 @@ from numpy.polynomial import legendre
 
 from scipy import interpolate
 
+from xwavecal.images import Image
 from xwavecal.stages import Stage, ApplyCalibration
 from xwavecal.utils.wavelength_utils import identify_lines, calc_residuals, restrict, Model, _sigma_clip
 from xwavecal.utils.wavelength_utils import estimate_global_scale, normalize_coordinates, pixel_order_as_array
@@ -19,7 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 class WavelengthSolution(object):
-    def __init__(self, model=None, model_coefficients=None, measured_lines=None, reference_lines=None,
+    """
+    Class to evaluate, contain and update the wavelength solution.
+
+    Notable attributes:
+        WavelengthSolution.model gives the current model of the wavelength solution.
+        WavelengthSolution.model_coefficients gives the coefficients for the current model, in the order
+        of WavelengthSolution.model.
+    """
+    def __init__(self, model=None, model_coefficients=None, measured_lines: dict = None, reference_lines=None,
                  m0=30, max_pixel=100, max_order=2, min_order=0, min_pixel=0, overlap_range=(),
                  grating_eq=True):
         if model is None:
@@ -33,11 +42,28 @@ class WavelengthSolution(object):
         self.m0 = m0
         self.overlap_range = overlap_range
         self.model_coefficients = model_coefficients
-        self.measured_lines = measured_lines
         self.reference_lines = reference_lines
         self.grating_eq = grating_eq  # True to use a 1/(m0+i) prefactor.
+        self._measured_lines = None
+        self.measured_lines = measured_lines
 
-    def wavelength(self, pixel, order):
+    @property
+    def measured_lines(self):
+        return self._measured_lines
+
+    @measured_lines.setter
+    def measured_lines(self, lines):
+        if lines is not None and lines.get('order', None) is not None and lines.get('pixel', None) is not None:
+            lines['normed_pixel'] = normalize_coordinates(lines['pixel'], max_value=self.max_pixel, min_value=self.min_pixel)
+            lines['normed_order'] = normalize_coordinates(lines['order'], max_value=self.max_order, min_value=self.min_order)
+        self._measured_lines = lines
+
+    def __call__(self, pixel, order):
+        """
+        :param pixel: ndarray. array (any shape) of pixel coordinates of spectral features.
+        :param order: ndarray. Same length as pixel. array of order indices of spectral features.
+        :return: ndarray. array of wavelengths. Same shape as pixel and order.
+        """
         normed_pixel = normalize_coordinates(pixel, max_value=self.max_pixel, min_value=self.min_pixel)
         normed_order = normalize_coordinates(order, max_value=self.max_order, min_value=self.min_order)
         return self.wavelength_normed_input(normed_pixel, normed_order, order)
@@ -294,13 +320,6 @@ class IdentifyArcEmissionLines(WavelengthStage):
                                         stderr=single_fiber_spectrum['stderr'],
                                         min_snr=self.min_peak_snr,
                                         order_key='ref_id')
-
-        measured_lines['normed_order'] = normalize_coordinates(measured_lines['order'],
-                                                               image.wavelength_solution[fiber].max_order,
-                                                               image.wavelength_solution[fiber].min_order)
-        measured_lines['normed_pixel'] = normalize_coordinates(measured_lines['pixel'],
-                                                               image.wavelength_solution[fiber].max_pixel,
-                                                               image.wavelength_solution[fiber].min_pixel)
         image.wavelength_solution[fiber].measured_lines = measured_lines
         self.logger.info('{0} emission lines identified from {1} unique '
                     'diffraction orders. fiber={2}'
@@ -564,8 +583,7 @@ class ApplyToSpectrum(WavelengthStage):
         fiber_mask = np.where(spectrum['fiber'] == fiber)
         wcs = image.wavelength_solution[fiber]
         pixel_coordinates, order_coordinates = pixel_order_as_array(spectrum[fiber_mask])
-        spectrum['wavelength'][fiber_mask] = wcs.wavelength(pixel=pixel_coordinates,
-                                                            order=order_coordinates)
+        spectrum['wavelength'][fiber_mask] = wcs(pixel=pixel_coordinates, order=order_coordinates)
         spectrum.meta['header'] = {'MODEL': str(wcs.model), 'MCOEFFS': str(list(wcs.model_coefficients))}
         image.data_tables[self.runtime_context.main_spectrum_name] = spectrum
         return image
@@ -588,7 +606,7 @@ class TabulateArcEmissionLines(WavelengthStage):
             for fiber in valid_fibers:
                 wcs = image.wavelength_solution[fiber]
                 fib = np.where(lines['fiber'] == fiber)
-                lines['wavelength'][fib] = wcs.wavelength(lines['pixel'][fib].data, lines['order'][fib].data)
+                lines['wavelength'][fib] = wcs(lines['pixel'][fib].data, lines['order'][fib].data)
                 lines['reference_wavelength'][fib] = find_nearest(lines['wavelength'][fib], wcs.reference_lines)
 
             image.data_tables[self.runtime_context.emission_lines_table_name] = Table(lines)
@@ -620,7 +638,7 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
 
     def do_stage_fiber(self, image, fiber):
         self.logger.info('Looking for the principle order number between {0} and {1}.'
-                    ' fiber={2}'.format(*self.runtime_context.m0_range, str(fiber)))
+                         ' fiber={2}'.format(*self.runtime_context.m0_range, str(fiber)))
         self.logger.disabled = True
         merits, m0_values = self.merit_per_m0(image, fiber, self.runtime_context.m0_range)
         self.logger.disabled = False
@@ -648,3 +666,111 @@ class IdentifyPrincipleOrderNumber(WavelengthStage):
                 merit.append(median_absolute_deviation(calc_residuals(wcs.wavelength_normed_input(**wcs.measured_lines),
                                                              wcs.reference_lines)))
         return np.array(merit), m0_values
+
+
+def find_feature_wavelengths(measured_lines, reference_lines, m0_range: tuple, max_pixel, min_pixel=0,
+                             wavelength_models: dict = None, overlap_settings: dict = None, scale_settings: dict = None,
+                             stages_todo: list = None):
+    """
+    A convenience function for any users who want to be able to wavelength calibrate from a list of
+    spectral feature (measured_lines) pixel and order positions and a reference line list (reference_lines).
+    This is not used anywhere in xwavecal, nor the included pipeline, except in
+    xwavecal.tests.test_wavelength.
+
+    This function was designed to be used in Banzai-NRES. It returns the wavelengths of the spectral features
+    input in measured_lines.
+
+    :param measured_lines: dict.
+           dictionary of ndarrays of pixel and order positions of measured spectral features (e.g. emission lines).
+           Example:
+               measured_lines = {'pixel': np.array([1, 2.5, 6.1]), 'order': np.array([1, 1, 2]), 'fiber': np.array([1, 1, 2])}
+               If the principle order number is 52, then these measured_lines represents 3 spectral features,
+               with (pixel, diffraction order) coordinates of (1, 53), (2.5, 53), (6.1, 54), located in fibers 1, 1, and 2,
+               respectively. The wavelength solution will calibrate each fiber separately.
+    :param reference_lines: list or ndarray. List of reference wavelengths in Angstroms
+           for what features you expect are in measured_lines.
+           Example:
+               reference_lines = [5000, 5001, 5002, 5003.1, 6001.2]
+    :param m0_range: tuple.
+           The range of integers possible for the principle order number: (low, high). low is an inclusive bound
+           and high is exclusive.
+           The principle order number gives the real diffraction order index of the i=0 labelled diffraction order.
+           See the xwavecal README or Brandt et al. (2019) for more.
+    :param max_pixel: int. Maximum pixel coordinate on the detector. Used for finding the overlaps. E.g. 4096
+    :param min_pixel: int. Minimum pixel coordinate on the detector. Used for finding the overlaps. E.g. 0
+    :param wavelength_models: dict.
+           Dictionary of models. See the xwavecal README, or wavelength_models below.
+    :param overlap_settings: dict.
+           Dictionary of settings for the overlap fitting algorithms.
+           See the xwavecal README, or overlap_settings below.
+    :param scale_settings: dict.
+           Dictionary of settings for the global scale fitting algorithms.
+           See the xwavecal README, or scale_settings below.
+    :param stages_todo: list.
+           list of xwavecal.wavelength.WavelengthSolution stages to run on the input list of measured lines.
+           If building a new wavelength solution from scratch, then leave the default stages_todo.
+    :return: measured_line_wavelengths: ndarray. if return_all==False.
+             measured_line_wavelengths are the wavelengths of the measured_lines under the calibrated model.
+             measured_line_wavelengths is an array with the same length as measured_lines['pixel']
+              and measured_lines['order'].
+    Notes
+    -----
+    See xwavecal.tests.test_wavelength.TestOnSyntheticData.test_performance for a use example of this function.
+     the test can be run from an ipython instance and can provide insight as to how to use this wrapper function.
+    """
+    if stages_todo is None:
+        stages_todo = [FitOverlaps, IdentifyPrincipleOrderNumber, SolveFromOverlaps,
+                       FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal]
+    if wavelength_models is None:
+        wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
+                             'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
+                             'final_wavelength_model': {0: [0, 1, 2, 3, 4, 5],
+                                                        1: [0, 1, 2, 3, 4, 5],
+                                                        2: [0, 1, 2, 3, 4, 5],
+                                                        3: [0, 1, 2, 3, 4, 5],
+                                                        4: [0]}}
+    if overlap_settings is None:
+        # settings relevant to fitting the overlaps.
+        overlap_settings = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2),
+                            'flux_tol': 0.2, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+    if scale_settings is None:
+        # settings relevant to finding the global scale.
+        scale_settings = {'global_scale_range': (0.8, 1.2), 'approx_detector_range_angstroms': 5000,
+                          'approx_num_orders': 67}
+    # instantiate the context which every WavelengthStage will use.
+    context = type('context', (), {**wavelength_models, **overlap_settings, **scale_settings,
+                                   'm0_range': m0_range, 'main_spectrum_name':
+                                   'spectrum', 'overlap_table_name': 'overlap'})
+
+    # make dummy spectrum so that FitOverlaps will run.
+    # TODO: the spectrum is only used in fit_overlaps to get the reference id's etc. It in principle is not
+    #  needed at all. Fix this deeper in the code so that we don't have to make a fake spectrum here.
+    pixel = np.arange(min_pixel, max_pixel + 1)
+    orders = np.arange(np.min(measured_lines['order']), np.max(measured_lines['order'])).astype(int)
+    all_fibers = np.array(list(set(measured_lines['fiber'])))
+    spectrum_shape = (len(orders) * len(all_fibers), len(pixel))
+    spectrum = Table({'ref_id': np.repeat(orders, len(all_fibers)),
+                      'fiber': np.tile(all_fibers, len(orders)),
+                      'flux': np.zeros(spectrum_shape),
+                      'pixel': pixel * np.ones(spectrum_shape)})
+    # Initialize the WavelengthSolution
+    wavelength_solution = WavelengthSolution(model=wavelength_models.get('initial_wavelength_model'),
+                                             min_order=np.min(orders), max_order=np.max(orders),
+                                             min_pixel=np.min(pixel), max_pixel=np.max(pixel),
+                                             measured_lines=measured_lines, reference_lines=np.sort(reference_lines))
+    # make a container (e.g. the Image object) for the spectrum and wavelength solution
+    image = Image(header={'fiber_state': 'none&thar&none'}, wavelength_solution={1: wavelength_solution},
+                  data_tables={context.main_spectrum_name: spectrum})
+    # run the wavelength calibration stages
+    for stage in stages_todo:
+        image = stage(context).do_stage(image)
+    measured_lines['wavelength'] = np.zeros_like(measured_lines['pixel'], dtype=float)
+    for fiber in all_fibers:
+        this_fiber = measured_lines['fiber'] == fiber
+        wavelengths = None
+        if image.wavelength_solution[fiber] is not None:
+            wavelengths = image.wavelength_solution[fiber](measured_lines['pixel'][this_fiber],
+                                                           measured_lines['order'][this_fiber])
+        measured_lines['wavelength'][this_fiber] = wavelengths
+    return measured_lines['wavelength']
+

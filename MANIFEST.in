@@ -1,0 +1,2 @@
+recursive-include xwavecal/data *
+recursive-include xwavecal/example_config *

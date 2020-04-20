@@ -11,7 +11,7 @@ from xwavecal.utils.overlap_utils import blank_overlap_table
 from xwavecal.wavelength import WavelengthSolution, FindGlobalScale, SolutionRefineInitial, SolutionRefineFinal
 from xwavecal.wavelength import refine_wcs, FitOverlaps, WavelengthStage, SolveFromOverlaps, IdentifyArcEmissionLines
 from xwavecal.wavelength import ApplyToSpectrum, TabulateArcEmissionLines, BlazeCorrectArcEmissionLines, Initialize
-from xwavecal.wavelength import IdentifyPrincipleOrderNumber, SolutionRefineOnce
+from xwavecal.wavelength import IdentifyPrincipleOrderNumber, SolutionRefineOnce, find_feature_wavelengths
 from xwavecal.tests.utils import SpectrumUtils, FakeImage, FakeContext
 
 
@@ -124,7 +124,7 @@ class TestWavelengthSolution:
     def test_wavelength_is_nan_for_no_coefficients(self):
         wcs = Utils.simple_wcs()
         wcs.model_coefficients = None
-        assert np.all(np.isnan(wcs.wavelength(np.arange(5), np.arange(5))))
+        assert np.all(np.isnan(wcs(np.arange(5), np.arange(5))))
 
 
 class TestModel:
@@ -205,7 +205,6 @@ class TestFitOverlaps:
                                             'good': [True, True], 'peaks': [10, 10]})
         image.data_tables = {context.main_spectrum_name: spectrum}
         wcs = WavelengthSolution(min_order=0, max_order=num, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
-        wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
         image.fiber0_wavecal, image.fiber1_wavecal, image.fiber2_wavecal = 1, 1, 0
         image = FitOverlaps(FakeContext()).do_stage(image)
@@ -219,7 +218,6 @@ class TestFitOverlaps:
                                                                       'good': [False], 'peaks': [10]})}
         image.data_tables[context.main_spectrum_name] = Table({'fiber': [0, 1]})
         wcs = WavelengthSolution(min_order=0, max_order=10, min_pixel=0, max_pixel=500, model={1: [1], 2: [1]})
-        wcs.measured_lines = [1]
         image.wavelength_solution = {0: wcs, 1: wcs}
         fake_fit.return_value = Table({'ref_id': [0], 'fiber': [1], 'matched_ref_id': [1], 'good': [False], 'peaks': [2]})
         image = FitOverlaps(FakeContext()).do_stage_fiber(image, fiber=1)
@@ -347,7 +345,7 @@ class TestFindGlobalScale:
         wcs = WavelengthSolution(min_order=0, max_order=4, min_pixel=0, max_pixel=1000,
                                  measured_lines=measured_lines, model={0: [0, 1, 2], 1: [0, 1]},
                                  model_coefficients=np.random.normal(2, .3, size=5), m0=m0)
-        reference_lines = wcs.wavelength(pix, orders) * true_scale
+        reference_lines = wcs(pix, orders) * true_scale
         wcs.reference_lines = reference_lines + np.random.normal(0, cntd_error)  # centroiding errors, sort of.
         return wcs, true_scale
 
@@ -622,7 +620,6 @@ class TestIdentifyPrincipleOrderNumber:
 class TestOnSyntheticData:
     @pytest.mark.integration
     def test_performance(self):
-        context = FakeContext()
         # Generate emission line positions from a real wavelength solution on NRES.
         num_orders = 67
         wcs = WavelengthSolution(model={0: [0, 1, 2, 3, 4, 5],
@@ -642,29 +639,13 @@ class TestOnSyntheticData:
 
         measured_lines, line_list = SpectrumUtils().generate_measured_lines(n_list=1000, n_true=0,
                                                                             n_garb=0, wcs=wcs)
-        # normalize line coordinates for use in refine.
-        measured_lines['normed_pixel'] = wcsu.normalize_coordinates(measured_lines['pixel'], max_value=wcs.max_pixel,
-                                                                    min_value=wcs.min_pixel)
-        measured_lines['normed_order'] = wcsu.normalize_coordinates(measured_lines['order'],
-                                                                    max_value=wcs.max_order, min_value=wcs.min_order)
-        # make image with fake spectrum (the spectrum is only used in the WCS to get ref_id's)
-        image = FakeImage()
-        spectrum = Table({'ref_id': np.arange(num_orders), 'fiber': np.ones(num_orders),
-                          'flux': np.zeros((num_orders, 4096)),
-                          'pixel': np.arange(4096) * np.ones((num_orders, 4096))})
-        image.data_tables[context.main_spectrum_name] = spectrum
-        image.fiber2_lit, image.fiber2_wavecal = 0, 0
-        image.wavelength_solution = {1: WavelengthSolution(model={1: [0, 1, 2], 2: [0, 1, 2]},
-                                                           min_order=0, max_order=num_orders - 1,
-                                                           min_pixel=0, max_pixel=4095, m0=52)}
-        image.wavelength_solution[1].measured_lines = measured_lines
-        image.wavelength_solution[1].reference_lines = line_list
-        stages_todo = [FitOverlaps, SolveFromOverlaps, FindGlobalScale, SolutionRefineInitial,
-                       SolutionRefineFinal, TabulateArcEmissionLines]
-        for stage in stages_todo:
-            image = stage(context).do_stage(image)
-        measured_lines['wavelength'] = image.wavelength_solution[1].wavelength(measured_lines['pixel'],
-                                                                               measured_lines['order'])
+        measured_lines['fiber'] = np.ones_like(measured_lines['order'])
+        wavelength_models = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
+                             'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
+                             'final_wavelength_model': copy.copy(wcs.model)}
+        measured_lines['wavelength'] = find_feature_wavelengths(measured_lines, line_list,
+                                                                m0_range=(51, 54), max_pixel=4096, min_pixel=0,
+                                                                wavelength_models=wavelength_models)
         assert np.allclose(measured_lines['wavelength'], measured_lines['true_wavelength'], rtol=1e-8)
 
 
