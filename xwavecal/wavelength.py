@@ -58,12 +58,13 @@ class WavelengthSolution(object):
         self.grating_eq = grating_eq
         self.model_coefficients = self.solve(coords, old_wavelengths)
 
-    def solve(self, line_coordinates, wavelengths_to_fit, weights=np.array([1])):
+    def solve(self, line_coordinates, wavelengths_to_fit, weights=None):
         """
         :param weights: array.
                         A 1d array of weights. E.g. the square root of the inverse variance.
         :return: array: best fit coefficients
         """
+        weights = np.array([1]) if weights is None else weights
         A, c = self._construct_wavelength_map_matrices(**line_coordinates)
         c += np.array(wavelengths_to_fit).reshape(-1, 1)
         model_coefficients, residuals = np.linalg.lstsq(A * weights.reshape(-1, 1),
@@ -456,7 +457,7 @@ def refine_wcs(wcs, measured_lines, reference_lines, converged, clip_fun, kwargs
     for iteration in range(max_iter):
         clipped_lines = clip_fun(wcs, measured_lines, reference_lines, **kwargs)
         closest_ref_lines = find_nearest(wcs.wavelength_normed_input(**clipped_lines), array_b=reference_lines)
-        wcs.model_coefficients = wcs.solve(clipped_lines, closest_ref_lines)
+        wcs.model_coefficients = wcs.solve(clipped_lines, closest_ref_lines, clipped_lines.get('weight', None))
         residuals = calc_residuals(wcs.wavelength_normed_input(**measured_lines), reference_lines)
         if converged(residuals, last_residuals, **kwargs):
             break

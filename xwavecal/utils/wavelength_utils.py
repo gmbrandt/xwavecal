@@ -58,18 +58,22 @@ def identify_lines(spectrum, stderr, min_snr=5, min_ptp=5, order_key='ref_id'):
              with keys 'pixel', 'order' and 'flux' giving 1d arrays of the peak (emission lines)
              locations pixel, order and their peak flux.
     """
-    lines = {'order': [], 'pixel': [], 'flux': []}
-    min_peak_height = (np.ones((len(spectrum), 1)) * min_snr) * stderr
+    lines = {'order': [], 'pixel': [], 'pixel_err': [], 'flux': []}
+    std_err = np.ones((len(spectrum), 1)) * stderr
     for row in range(len(spectrum)):
-        peak_coordinates, peak_indices = find_peaks(spectrum['flux'][row], spectrum['pixel'][row],
-                                                    height=min_peak_height[row], distance=min_ptp,
-                                                    prominence=0.5 * np.abs(spectrum['flux'][row]))
+        peak_coordinates, peak_err, peak_indices = find_peaks(spectrum['flux'][row], spectrum['pixel'][row],
+                                                              yerr=std_err[row], height=std_err[row] * min_snr,
+                                                              distance=min_ptp,
+                                                              prominence=0.5 * np.abs(spectrum['flux'][row]),
+                                                              peak_width=2, window=6)
         if len(peak_indices) > 0:
             lines['flux'].extend(list(spectrum['flux'][row][peak_indices]))
             lines['pixel'].extend(list(peak_coordinates))
+            lines['pixel_err'].extend(list(peak_err))
             lines['order'].extend([spectrum[order_key][row]]*len(peak_coordinates))
     # casting as arrays for convenient use.
     lines['pixel'] = np.array(lines['pixel'], dtype=np.float32)
+    lines['pixel_err'] = np.array(lines['pixel_err'], dtype=np.float32)
     lines['order'] = np.array(lines['order'], dtype=np.int)
     lines['flux'] = np.array(lines['flux'], dtype=np.float32)
     return lines

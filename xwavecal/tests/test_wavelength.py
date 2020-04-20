@@ -272,13 +272,14 @@ class TestIdentifyArcEmissionLines:
     @pytest.mark.integration
     @mock.patch('xwavecal.wavelength.identify_lines')
     def test_do_stage_fiber(self, fake_measured_lines):
-        fake_measured_lines.return_value = {'pixel': np.array([0, 20]), 'order': np.array([0, 5])}
+        fake_measured_lines.return_value = {'pixel': np.array([0, 20]), 'order': np.array([0, 5]), 'pixel_err': np.array([1, 2])}
         image = FakeImage()
         image.wavelength_solution = {1: WavelengthSolution(min_pixel=0, max_pixel=20, min_order=-5,
                                                            max_order=5)}
         image.data_tables = {FakeContext().main_spectrum_name: Table({'fiber': np.array([0, 1]),
                                                                      'stderr': [0, 0]})}
-        image = IdentifyArcEmissionLines(FakeContext()).do_stage_fiber(image, fiber=1)
+        stage = IdentifyArcEmissionLines(FakeContext())
+        image = stage.do_stage_fiber(image, fiber=1)
         measured_lines = image.wavelength_solution[1].measured_lines
         assert np.allclose([measured_lines['pixel'], measured_lines['order']], [[0, 20], [0, 5]])
         assert np.allclose([measured_lines['normed_pixel'], measured_lines['normed_order']],
@@ -540,13 +541,15 @@ def test_normalize_coordinates_raises_error():
 
 
 class TestLineIdentification:
-    @mock.patch('xwavecal.utils.wavelength_utils.find_peaks', return_value=(np.array([0.1, 1.1]), np.array([0, 1])))
+    @mock.patch('xwavecal.utils.wavelength_utils.find_peaks',
+                return_value=(np.array([0.1, 1.1]), np.array([0.01, 0.02]), np.array([0, 1])))
     def test_identify_lines(self, fake_peaks):
         spectrum = Table({'flux': [[10, 20]], 'pixel': [[1, 2]], 'id': [32]})
         lines = wcsu.identify_lines(spectrum, stderr=10, order_key='id')
         assert np.allclose(lines['flux'], [10, 20])
         assert np.allclose(lines['order'], [32, 32])
         assert np.allclose(lines['pixel'], [0.1, 1.1])
+        assert np.allclose(lines['pixel_err'], [0.01, 0.02])
 
 
 class TestRefineUtils:
