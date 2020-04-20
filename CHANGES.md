@@ -1,4 +1,4 @@
-0.1.5 (2020-03-23)
+0.1.6 (2020-04-20)
 -------------------
 - Added a convienience function which wavelength calibrates from a list
 of spectral feature pixel and order positions, and a provided reference line list.
