@@ -1,8 +1,7 @@
 import numpy as np
-import math
 
 from scipy import signal, optimize, interpolate
-import peakutils
+import warnings
 
 
 def normalize_by_brightest(two_d_spectrum, n=10):
@@ -65,17 +64,22 @@ def find_nearest(array_a, array_b):
     return find_func(array_a)
 
 
-def find_peaks(y, x, height=0, distance=1, prominence=None):
+def find_peaks(y, x, yerr, height=0, distance=1, prominence=None, window=6, peak_width=2):
     """
-    :param y: ndarray. Amplitude as a function of x
-    :param x: ndarray. x coordinates for y.
-    :param height: peaks with amplitudes below height will be excluded. scalar or ndarray of length y.
-    :param distance: minimum number of grid points (distance) between two identified peaks.
-    :param prominence: The vertical distance between the peak and its lowest contour line.
+    :param y: ndarray. float. Amplitude as a function of x
+    :param x: ndarray. dtype=int. x coordinates for y.
+    :param yerr: ndarray. float. 1 sigma errors for y.
+    :param height: float. peaks with amplitudes below height will be excluded. scalar or ndarray of length y.
+    :param distance: int. minimum number of grid points (distance) between two identified peaks.
+    :param prominence: float. The vertical distance between the peak and its lowest contour line.
                        Recommend prominence = 0.5 * np.abs(y)
-    :return: array, array
-             peak locations in terms of the given x coordinates, and the indices of the closest
-             x coordinate to each location in peak_locations.
+    :param peak_width: estimate for the full width at half max of the peaks.
+    :param window: int. A guassian will be fit around the peak but within a window of width.
+    :return: ndarray, ndarray, ndarray
+             peaks, peak_errs, peak_indices
+             peaks is the peak centroid in the given x coordinates
+             peak_errs is the 1 sigma error on each centroid in peaks.
+             peak_indices the indices of the closest x coordinate to each location in peak_locations.
 
     Note on prominence:
         Strategy to compute a peak’s prominence:
@@ -88,18 +92,38 @@ def find_peaks(y, x, height=0, distance=1, prominence=None):
           then be calculated as the vertical difference between the peaks height itself and
           its lowest contour line.
 
-    Note: peakutils.interpolate is just a python wrapper for iterated scipy.curve_fit calls to gaussian fit.
-    with a simple rewrite of interpolate, we could retrieve the line widths from the fits as well.
     Note: might do better to clip y for all points below height, instead of using signal.find_peaks height argument.
-    Note: If peakutils.interpolate returns a peak position which differs by more than 3 from the initial guess,
+    Note: If the gaussian fit a peak position which differs by more than 3 from the initial guess,
           then we return the initial guess.
     """
     peak_indices = signal.find_peaks(y, distance=distance, prominence=prominence, height=height)[0]  # identify peaks.
-    peak_locations = peakutils.interpolate(x, y, ind=peak_indices, width=3)  # refine peak center via gaussian fit.
-    # TODO: do not hardcode the peak half width as 3 (width = 3).
-    bad_fits = np.where(~np.isclose(peak_locations, x[peak_indices], atol=5))
-    peak_locations[bad_fits] = x[peak_indices[bad_fits]]
-    return peak_locations, peak_indices
+    peaks = fit_peaks(x, y, yerr, window // 2, peak_indices, std=peak_width)  # fit a Gaussian to each peak.
+    # remove fits that were wildly different from init guess, or have non finite errors:
+    bad_fits = np.where(np.logical_or(~np.isclose(peaks[:, 0], x[peak_indices], atol=5), ~np.isfinite(peaks[:, 1])))
+    peaks[bad_fits, 0], peaks[bad_fits, 1] = x[peak_indices[bad_fits]], 1
+    return peaks[:, 0].flatten(), peaks[:, 1].flatten(), peak_indices
+
+
+def fit_peaks(x, y, yerr, half_width, index_guess, std):
+    peaks = []
+    amplitude_guess = y[index_guess]
+    for i, ampl in zip(index_guess, amplitude_guess):
+        sl = slice(i - half_width, i + half_width + 1)
+        center, err = x[i], 1
+        if len(x[sl]) >= 3:  # num params in the model
+            try:
+                params, pcov = optimize.curve_fit(gaussian, x[sl], y[sl], [ampl, center, std],
+                                                  sigma=yerr[sl], absolute_sigma=True)
+                center, err = params[1], np.sqrt(np.diag(pcov))[1]
+            except RuntimeError as e:
+                warnings.warn(str(e))
+
+        peaks.append([center, err])
+    return np.array(peaks)
+
+
+def gaussian(x, ampl, mu, std):
+    return ampl * np.exp(-np.power(x - mu, 2.) / (2 * np.power(std, 2.)))
 
 
 def brute_local_min(fun, x0, args, rrange=(0.1, 10), filtw=501, step=10, finish='Nelder-Mead', **kwargs):

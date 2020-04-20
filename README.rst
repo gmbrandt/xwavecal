@@ -588,9 +588,9 @@ from the order labelled by matched_ref_id=22. Same with 178.88464355 and 2744.41
 13 such peaks were matched and so ``overlaps[21]['pixel']`` will have 13 non ``np.nan`` elements. The rest will be
 ``np.nan``.
 
-Now for the 'LINES' extension. This gives the table of pixel and order (ref_id) positions of emission lines, their wavelengths
+Now for the 'LINES' extension. This gives the table of pixel and order (ref_id) positions of emission lines, the errors on the line centroid in pixels (``pixel_err``), their wavelengths
 under the final model fit by ``xwavecal`` (which you can change in config.ini), and the closest reference wavelength
-in the reference line list.
+in the reference line list. The ``pixel_err`` for any line should be close to the width of the line divided by the square root of the counts in the line.
 
 .. code-block:: python
 
@@ -601,6 +601,7 @@ in the reference line list.
     >>> -------------------- -------
     >>>                order   int64
     >>>                pixel float32
+    >>>            pixel_err float32
     >>>                 flux float32
     >>>         normed_order float64
     >>>         normed_pixel float32

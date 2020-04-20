@@ -3,6 +3,13 @@
 - Added a convienience function which wavelength calibrates from a list
 of spectral feature pixel and order positions, and a provided reference line list.
 
+0.1.5 (2020-03-22)
+-------------------
+- Feature identification stage now fetches the pixel error in the centroid, and the flux error
+of the feature.
+- lines can be weighted. This is not easily implemented yet, but implementing this in the future is easy.
+We now need to only set the 'weight' key of measured_lines in any stage prior to refine_wcs().
+
 0.1.4 (2020-03-22)
 -------------------
 - Fixed bug where two identical diffraction orders had different reference ID assigned by fibers.IdentifyFibers. This 
