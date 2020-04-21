@@ -198,14 +198,15 @@ def coordinate_transform(coordinates, coefficients):
     return poly.polyval(x=coordinates, c=coefficients)
 
 
-def flag_bad_overlaps(overlaps):
+def flag_bad_overlaps(overlaps, min_num_matches):
     """
     :param overlaps: Table of overlaps with ref_id, matched_ref_id, pixel and
     matched_pixel columns
+    :param min_num_matches: int. Minimum number of peak matches for an overlap to count as well fit.
     :return overlaps: Same is input but each bad overlap has had its entry in the 'good' column
                       set to False.
     """
-    bad_overlaps = [idx for idx in range(len(overlaps)) if _is_bad(overlaps[idx])]
+    bad_overlaps = [idx for idx in range(len(overlaps)) if overlaps[idx]['peaks'] < min_num_matches]
     overlaps['good'][bad_overlaps] = False
     return overlaps
 
@@ -217,9 +218,3 @@ def flag_outlier_overlaps(overlaps):
     overlaps['good'][outlier_overlaps] = False
     return overlaps
 
-
-def _is_bad(overlap):
-    is_bad = True
-    if overlap['peaks'] >= 6:
-        is_bad = False
-    return is_bad
