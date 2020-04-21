@@ -684,15 +684,18 @@ def find_feature_wavelengths(measured_lines, reference_lines, m0_range: tuple, m
     This is not used anywhere in xwavecal, nor the included pipeline, except in
     xwavecal.tests.test_wavelength.
 
+    The measured_lines should be for one fiber only. This function should be looped over fibers to calibrate
+    many fibers.
+
     This function was designed to be used in Banzai-NRES. It returns the wavelengths of the spectral features
     input in measured_lines.
 
     :param measured_lines: dict.
            dictionary of ndarrays of pixel and order positions of measured spectral features (e.g. emission lines).
            Example:
-               measured_lines = {'pixel': np.array([1, 2.5, 6.1]), 'order': np.array([1, 1, 2]), 'fiber': np.array([1, 1, 2])}
+               measured_lines = {'pixel': np.array([1, 2.5, 6.1]), 'order': np.array([1, 1, 2])}
                If the principle order number is 52, then these measured_lines represents 3 spectral features,
-               with (pixel, diffraction order) coordinates of (1, 53), (2.5, 53), (6.1, 54), located in fibers 1, 1, and 2,
+               with (pixel, diffraction order) coordinates of (1, 53), (2.5, 53), (6.1, 54).
                respectively. The wavelength solution will calibrate each fiber separately.
     :param reference_lines: list or ndarray. List of reference wavelengths in Angstroms
            for what features you expect are in measured_lines.
@@ -754,30 +757,26 @@ def find_feature_wavelengths(measured_lines, reference_lines, m0_range: tuple, m
     #  needed at all. Fix this deeper in the code so that we don't have to make a fake spectrum here.
     pixel = np.arange(min_pixel, max_pixel + 1)
     orders = np.arange(np.min(measured_lines['order']), np.max(measured_lines['order'])).astype(int)
-    all_fibers = np.array(list(set(measured_lines['fiber'])))
-    spectrum_shape = (len(orders) * len(all_fibers), len(pixel))
-    spectrum = Table({'ref_id': np.repeat(orders, len(all_fibers)),
-                      'fiber': np.tile(all_fibers, len(orders)),
-                      'flux': np.zeros(spectrum_shape),
-                      'pixel': pixel * np.ones(spectrum_shape)})
+    spectrum_shape = (len(orders), len(pixel))
+    spectrum = Table({'ref_id': orders, 'fiber': np.ones_like(orders),
+                      'flux': np.zeros(spectrum_shape), 'pixel': pixel * np.ones(spectrum_shape)})
     # Initialize the WavelengthSolution
     wavelength_solution = WavelengthSolution(model=wavelength_models.get('initial_wavelength_model'),
                                              min_order=np.min(orders), max_order=np.max(orders),
                                              min_pixel=np.min(pixel), max_pixel=np.max(pixel),
-                                             measured_lines=measured_lines, reference_lines=np.sort(reference_lines))
+                                             measured_lines=measured_lines,
+                                             reference_lines=np.sort(reference_lines))
     # make a container (e.g. the Image object) for the spectrum and wavelength solution
-    image = Image(header={'fiber_state': 'none&thar&none'}, wavelength_solution={1: wavelength_solution},
+    image = Image(header={'fiber_state': 'none&thar&none'},
+                  wavelength_solution={1: wavelength_solution},
                   data_tables={context.main_spectrum_name: spectrum})
     # run the wavelength calibration stages
     for stage in stages_todo:
         image = stage(context).do_stage(image)
     measured_lines['wavelength'] = np.zeros_like(measured_lines['pixel'], dtype=float)
-    for fiber in all_fibers:
-        this_fiber = measured_lines['fiber'] == fiber
-        wavelengths = None
-        if image.wavelength_solution[fiber] is not None:
-            wavelengths = image.wavelength_solution[fiber](measured_lines['pixel'][this_fiber],
-                                                           measured_lines['order'][this_fiber])
-        measured_lines['wavelength'][this_fiber] = wavelengths
+    wavelengths = None
+    if image.wavelength_solution[1] is not None:
+        wavelengths = image.wavelength_solution[1](measured_lines['pixel'], measured_lines['order'])
+    measured_lines['wavelength'] = wavelengths
     return measured_lines['wavelength']
 
