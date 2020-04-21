@@ -1,3 +1,9 @@
+0.1.8 (2020-04-21)
+-------------------
+- Hotfix for a bug in ``find_feature_wavelengths`` where the function would work only 
+if the features were marked as belonging to fiber 1. Changed ``find_feature_wavelengths``
+so that it assumes all the features come from a single fiber.
+
 0.1.7 (2020-04-20)
 -------------------
 - Added ``min_num_matches``, ``global_scale_spacing``, ``initial_mad_clip``, ``final_mad_clip``

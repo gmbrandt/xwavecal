@@ -340,6 +340,36 @@ Let us go through the pertinent ones in the list above one-by-one:
   the set of stages for wavecal frames).
 
 
+The Wavelength Models
+---------------------
+The wavelength models at each of the three stages are set by the parameters ``initial_wavelength_model``,
+``intermediate_wavelength_model``, and ``final_wavelength_model`` in the config.ini file. They are dictionaries,
+the format is: {xpower: [ipower, ipower,...],..}. The default basis functions are legendre polynomials: ``P^m(x)`` and ``P^m(i)``, where subscript m denotes the
+mth order basis function, so that ``P^m(x)`` is akin to ``x^m``.
+The default ``initial_wavelength_model`` wavelength model is:
+
+.. code-block:: python
+
+    initial_wavelength_model = {1: [0, 1, 2],
+                                2: [0, 1, 2]}
+
+
+This wavelength solution model above then is:
+:math:`\lambda(x, i) = \frac{1}{m0 + i} \left( P^1(x) * [P^0(i) + P^1(i) + P^2(i)] + P^2(x) *[P^0(i) + P^1(i) + P^2(i)] \right)`
+
+
+The ``(1/(m_0 + i))`` prefactor is always included. If one instead made the model:
+
+.. code-block:: python
+
+    initial_wavelength_model = {1: [0, 1, 2],
+                                2: [0, 1]}
+
+That would set the initial wavelength solution model to
+
+
+:math:`\lambda(x, i) =  \frac{1}{m0 + i} \left( P^1(x) * [P^0(i) + P^1(i) + P^2(i)] + P^2(x) *[P^0(i) + P^1(i)] \right)`
+
 Formatting the input data
 -------------------------
 The input data should be a .fits file with three data extensions:

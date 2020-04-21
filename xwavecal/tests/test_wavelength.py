@@ -619,7 +619,7 @@ class TestIdentifyPrincipleOrderNumber:
 
 class TestOnSyntheticData:
     @pytest.mark.integration
-    def test_performance(self):
+    def test_find_feature_wavelengths(self):
         # Generate emission line positions from a real wavelength solution on NRES.
         num_orders = 67
         wcs = WavelengthSolution(model={0: [0, 1, 2, 3, 4, 5],

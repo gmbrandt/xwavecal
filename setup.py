@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 setup(name='xwavecal',
       author='G. Mirek Brandt, Curtis McCully, Timothy Brandt',
       author_email='gmbrandt@ucsb.edu',
-      version='0.1.7',
+      version='0.1.8',
       python_requires='>=3.6',
       url='https://github.com/gmbrandt/xwavecal',
       packages=find_packages(),
