@@ -267,7 +267,7 @@ class FitOverlaps(WavelengthStage):
                                 linear_scale_range=self.runtime_context.overlap_linear_scale_range,
                                 fiber=fiber,
                                 flux_tol=getattr(self.runtime_context, 'flux_tol', 0.2))
-        overlaps = flag_bad_overlaps(overlaps)
+        overlaps = flag_bad_overlaps(overlaps, getattr(self.runtime_context, 'min_num_matches', 6))
         self.logger.info('{0} overlaps verified. fiber={1}'.format(np.count_nonzero(overlaps['good']), str(fiber)))
         overlaps = flag_outlier_overlaps(overlaps)
         self.logger.info('{0} overlaps will be used. fiber={1}'.format(np.count_nonzero(overlaps['good']), str(fiber)))
@@ -359,12 +359,14 @@ class FindGlobalScale(WavelengthStage):
     """
     def __init__(self, runtime_context=None):
         super(FindGlobalScale, self).__init__(runtime_context=runtime_context)
+        self.step = getattr(self.runtime_context, 'global_scale_spacing', 10)
 
     def do_stage_fiber(self, image, fiber):
         scale_guess = estimate_global_scale(detector_range=self.runtime_context.approx_detector_range_angstroms,
                                             n=self.runtime_context.approx_num_orders,
                                             m0=image.wavelength_solution[fiber].m0)
-        scale = self._find_scale(image.wavelength_solution[fiber], scale_guess, self.runtime_context.global_scale_range)
+        scale = self._find_scale(image.wavelength_solution[fiber], scale_guess, self.runtime_context.global_scale_range,
+                                 step=self.step)
         image.wavelength_solution[fiber].update_model(self.runtime_context.intermediate_wavelength_model)
         image.wavelength_solution[fiber].apply_scale(scale)
         self.logger.info('The scale guess was {0:.6e} and the search yielded {1:.6e}. fiber={2}'
@@ -405,10 +407,12 @@ class SolutionRefineInitial(WavelengthStage):
     """
     def __init__(self, runtime_context=None):
         super(SolutionRefineInitial, self).__init__(runtime_context=runtime_context)
+        self.kappa = getattr(runtime_context, 'initial_mad_clip', 6)
 
     def do_stage_fiber(self, image, fiber):
         image.wavelength_solution[fiber].update_model(new_model=self.runtime_context.intermediate_wavelength_model)
-        image.wavelength_solution[fiber], rsd = self.constrain_solution_over_detector(image.wavelength_solution[fiber])
+        image.wavelength_solution[fiber], rsd = self.constrain_solution_over_detector(image.wavelength_solution[fiber],
+                                                                                      self.kappa)
 
         mad, std = median_absolute_deviation(rsd), np.std(rsd)
         self.logger.info('median absolute deviation is {0} and the standard deviation is {1}.'
@@ -419,9 +423,10 @@ class SolutionRefineInitial(WavelengthStage):
         return image
 
     @staticmethod
-    def constrain_solution_over_detector(wcs):
+    def constrain_solution_over_detector(wcs, kappa=6):
         """
         :param wcs: WavelengthSolution
+        :param kappa: outliers with residuals exceeding kappa m.a.d. from 0 will not be used to constrain the solution.
         :return:     (WavelengthSolution, array)
         wavelength solution, residuals. Each entry of residuals is the difference in
         wavelength between a measured line and its corresponding closest reference line.
@@ -432,7 +437,7 @@ class SolutionRefineInitial(WavelengthStage):
             wcs, residuals = refine_wcs(wcs, wcs.measured_lines, reference_lines,
                                         SolutionRefineInitial._converged_when_max_iter,
                                         SolutionRefineInitial._clip,
-                                        kwargs={'sigma': 6,
+                                        kwargs={'sigma': kappa,
                                                 'stdfunc': median_absolute_deviation,
                                                 'order_range': order_range},
                                         max_iter=5)
@@ -490,10 +495,11 @@ class SolutionRefineFinal(WavelengthStage):
     """
     def __init__(self, runtime_context=None):
         super(SolutionRefineFinal, self).__init__(runtime_context=runtime_context)
+        self.kappa = getattr(runtime_context, 'final_mad_clip', 4)
 
     def do_stage_fiber(self, image, fiber):
         image.wavelength_solution[fiber], rsd = self._refine(image.wavelength_solution[fiber],
-                                                             self.runtime_context.final_wavelength_model)
+                                                             self.runtime_context.final_wavelength_model, self.kappa)
 
         mad, std = median_absolute_deviation(rsd), np.std(rsd)
         self.logger.info('median absolute deviation is {0} and the standard deviation is {1}.'
@@ -504,11 +510,12 @@ class SolutionRefineFinal(WavelengthStage):
         return image
 
     @staticmethod
-    def _refine(wavelength_solution, final_model):
+    def _refine(wavelength_solution, final_model, kappa=4):
         """
         :param wavelength_solution: WavelengthSolution
         :param final_model: dict. The model which describes the form of the mapping from pixel and order
                             to wavelength. See __init__ of WavelengthSolution.
+        :param kappa: outliers with residuals exceeding kappa m.a.d. from 0 will not be used to constrain the solution.
         :return:     (WavelengthSolution, array)
         wavelength solution, residuals. Each entry of residuals is the difference in
         wavelength between a measured line and its corresponding closest reference line.
@@ -529,7 +536,7 @@ class SolutionRefineFinal(WavelengthStage):
                                                                 SolutionRefineFinal._converged,
                                                                 SolutionRefineFinal._clip,
                                                                 max_iter=20,
-                                                                kwargs={'sigma': 4,
+                                                                kwargs={'sigma': kappa,
                                                                         'stdfunc': median_absolute_deviation})
         return wavelength_solution, residuals
 

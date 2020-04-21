@@ -380,7 +380,7 @@ class TestSolutionRefineInitial:
         context.intermediate_wavelength_model = {1: [0], 2: [0, 1]}
         image.wavelength_solution = {1: WavelengthSolution(model_coefficients=np.arange(2), model={1: [0], 2: [0]},
                                                            min_order=0, max_order=5, min_pixel=0, max_pixel=400)}
-        def constrain(wcs):
+        def constrain(wcs, *args, **kwargs):
             return wcs, 1
         fake_constrain.side_effect = constrain
         image = SolutionRefineInitial(context).do_stage_fiber(image, fiber=1)
@@ -410,7 +410,7 @@ class TestSolutionRefineFinal:
         context.final_wavelength_model = {1: [0], 2: [0, 1]}
         image.wavelength_solution = {1: WavelengthSolution(model={1: [0], 2: [0]})}
 
-        def refine(wcs, final_model):
+        def refine(wcs, final_model, *args, **kwargs):
             wcs.model = final_model
             return wcs, 1
         fake_refine.side_effect = refine

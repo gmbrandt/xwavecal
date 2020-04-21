@@ -58,8 +58,7 @@ class TestOverlapFitter:
                                          linear_scale_range=(0.5, 2), deg=10)
         assert len(overlaps) == 0
 
-    @mock.patch('xwavecal.utils.overlap_utils._is_bad', side_effect=min)
-    def test_flag_bad_overlaps(self, fake_overlap_check):
-        overlaps = Table({'pixel': np.array([0, 1, 1, 0]), 'good': np.array([True, True, True, True])})
-        overlaps = overlapu.flag_bad_overlaps(overlaps)
+    def test_flag_bad_overlaps(self):
+        overlaps = Table({'peaks': np.array([[1], [0], [0], [1]]), 'good': [True, True, True, True]})
+        overlaps = overlapu.flag_bad_overlaps(overlaps, 1)
         assert np.allclose(overlaps['good'], [True, False, False, True])

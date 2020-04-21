@@ -1,3 +1,8 @@
+0.1.7 (2020-04-20)
+-------------------
+- Added ``min_num_matches``, ``global_scale_spacing``, ``initial_mad_clip``, ``final_mad_clip``
+as possible options for the config files.
+
 0.1.6 (2020-04-20)
 -------------------
 - Added a convienience function which wavelength calibrates from a list
