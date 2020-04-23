@@ -1,3 +1,7 @@
+0.1.9 (2020-04-23)
+-------------------
+- Removed requirements.txt. Placed requirements directly into install_requires in setup.py
+
 0.1.8 (2020-04-21)
 -------------------
 - Hotfix for a bug in ``find_feature_wavelengths`` where the function would work only 
