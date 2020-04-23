@@ -17,12 +17,5 @@ setup(name='xwavecal',
                         'sep<=1.0.3',
                         'numpy>=1.16',
       ],
-      tests_require=[
-          'pytest>=3.5',
-          'python-coveralls<=2.9.3',
-          'coverage<=4.5.4',
-          'nose<=1.3.7',
-          'mock<=3.0.5',
-      ],
       entry_points={'console_scripts': ['xwavecal_reduce_dir=xwavecal.main:run',
                                         'xwavecal_reduce=xwavecal.main:reduce_data']})
