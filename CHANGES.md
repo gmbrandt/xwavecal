@@ -1,6 +1,10 @@
+0.1.10 (2020-04-23)
+-------------------
+- Removed peakutils requirement. Updated astropy and scipy dependencies.
+
 0.1.9 (2020-04-23)
 -------------------
-- Removed requirements.txt. Placed requirements directly into install_requires in setup.py
+- Removed requirements.txt. Placed requirements directly into install_requires in setup.py****
 
 0.1.8 (2020-04-21)
 -------------------
