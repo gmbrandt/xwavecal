@@ -1,3 +1,7 @@
+0.1.11 (2020-05-21)
+-------------------
+- Limited the number of lines to try to pair during overlap fitting (to 20 from blue and 15 from the red side). This addresses a bug whereby overlap fitting would stall indefinitely if there were too many pairs of lines to try.
+
 0.1.10 (2020-04-23)
 -------------------
 - Removed peakutils requirement. Updated astropy and scipy dependencies.
@@ -65,3 +69,4 @@ in the config.ini file and have associated custom sets of reduction stages.
 0.1.0 (2019-10-20)
 -------------------
 - Initial release.
+
