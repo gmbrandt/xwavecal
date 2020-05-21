@@ -30,8 +30,8 @@ class OverlapFitter:
         #r_lines_flux = np.sort(r_lines_flux)[::-1][:15]
         r_lines_flux = r_lines_flux[np.argsort(r_lines)][:15]
         r_lines = np.sort(r_lines)[:15]
-        b_lines_flux = b_lines_flux[np.argsort(b_lines)]
-        b_lines = np.sort(b_lines)
+        b_lines_flux = b_lines_flux[np.argsort(b_lines)][-20:]
+        b_lines = np.sort(b_lines)[-20:]
         # build nearest function for finding matching blue peaks.
         nearest_blue = interpolate.interp1d(b_lines, b_lines, kind='nearest', bounds_error=False,
                                             fill_value=(np.min(b_lines), np.max(b_lines)))
