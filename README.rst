@@ -29,13 +29,15 @@ Installation
 
 .. code-block:: bash
 
-    pip install .
+    pip install xwavecal
 
-While in the root directory of this repository. It can also be installed by running
+It can also be installed by running
 
 .. code-block:: bash
 
-    pip install git+https://github.com/gmbrandt/xwavecal
+    pip install .
+
+while in the root directory of this repository.
 
 Wavelength Calibrating Spectrum
 ===============================
