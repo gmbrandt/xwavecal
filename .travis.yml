@@ -9,6 +9,7 @@ notifications:
 install:
   - pip install -r test-requirements.txt
   - pip install .
+  - pip install -r test-requirements.txt
 # commands to run tests, generate coverage report, and pipe the report to coveralls:
 # see https://levibostian.com/blog/python-code-coverage-and-coveralls-io/
 script:
