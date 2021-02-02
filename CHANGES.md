@@ -1,3 +1,8 @@
+0.1.13 (2020-05-21)
+-------------------
+- Fixed a bug in misc_utils.py that caused find_peaks() to crash when it tried to refine an empty
+set of features.
+
 0.1.11 (2020-05-21)
 -------------------
 - Limited the number of lines to try to pair during overlap fitting (to 20 from blue and 15 from the red side). This addresses a bug whereby overlap fitting would stall indefinitely if there were too many pairs of lines to try.
