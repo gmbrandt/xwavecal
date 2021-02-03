@@ -97,6 +97,9 @@ def find_peaks(y, x, yerr, height=0, distance=1, prominence=None, window=6, peak
           then we return the initial guess.
     """
     peak_indices = signal.find_peaks(y, distance=distance, prominence=prominence, height=height)[0]  # identify peaks.
+    if len(peak_indices) == 0:
+        # short circuit if we do not find any peaks.
+        return np.array([]), np.array([]), peak_indices
     peaks = fit_peaks(x, y, yerr, window // 2, peak_indices, std=peak_width)  # fit a Gaussian to each peak.
     # remove fits that were wildly different from init guess, or have non finite errors:
     bad_fits = np.where(np.logical_or(~np.isclose(peaks[:, 0], x[peak_indices], atol=5), ~np.isfinite(peaks[:, 1])))
