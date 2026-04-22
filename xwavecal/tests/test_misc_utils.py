@@ -1,5 +1,5 @@
 import numpy as np
-import mock
+from unittest import mock
 from scipy import optimize
 
 from xwavecal.tests.utils import array_with_peaks

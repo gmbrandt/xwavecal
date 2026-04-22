@@ -1,7 +1,7 @@
 from configparser import ConfigParser
 import tempfile
 import os
-import mock
+from unittest import mock
 import numpy as np
 from glob import glob
 import pytest

@@ -9,14 +9,14 @@ import logging.config
 from configparser import ConfigParser
 from datetime import datetime
 from ast import literal_eval
-import pkg_resources
 import os
+from pathlib import Path
 
 from xwavecal.utils.runtime_utils import parse_args, get_data_paths, order_data, select_data_of_type, import_obj, safe_eval
 from xwavecal.utils.fits_utils import Translator
 from xwavecal.database import format_db_info, add_data_to_db
 
-logging.config.fileConfig(pkg_resources.resource_filename('xwavecal', 'data/.logging.ini'))
+logging.config.fileConfig(Path(__file__).parent / 'data' / '.logging.ini')
 logger = logging.getLogger(__name__)
 
 

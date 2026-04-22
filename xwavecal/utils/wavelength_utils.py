@@ -75,7 +75,7 @@ def identify_lines(spectrum, stderr, min_snr=5, min_ptp=5, order_key='ref_id'):
     # casting as arrays for convenient use.
     lines['pixel'] = np.array(lines['pixel'], dtype=np.float32)
     lines['pixel_err'] = np.array(lines['pixel_err'], dtype=np.float32)
-    lines['order'] = np.array(lines['order'], dtype=np.int)
+    lines['order'] = np.array(lines['order'], dtype=int)
     lines['flux'] = np.array(lines['flux'], dtype=np.float32)
     return lines
 

@@ -2,7 +2,7 @@ import tempfile
 import os
 from datetime import datetime, timedelta
 import sqlite3
-import mock
+from unittest import mock
 
 import xwavecal.database as db
 from xwavecal.tests.utils import FakeImage

@@ -144,7 +144,7 @@ def brute_local_min(fun, x0, args, rrange=(0.1, 10), filtw=501, step=10, finish=
     :return: OptimizeResult with OptimizeResult.x = np.array([minimum]).
     Note: this is intended to be used with optimize.minimize with optimize.minimize(..., method=brute_local_min)
     """
-    eval_points = np.arange(x0 * rrange[0], x0 * rrange[1], step=step)
+    eval_points = np.arange(x0[0] * rrange[0], x0[0] * rrange[1], step=step)
     fun_vals = np.array(fun(eval_points, *args))
     fun_vals /= signal.medfilt(fun_vals, filtw)
     minimum_pt = eval_points[fun_vals == np.min(fun_vals[filtw:-filtw])][:1]

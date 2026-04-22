@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "xwavecal"
+version = "0.2.0"
+authors = [
+    {name = "G. Mirek Brandt", email = "gmbrandt@ucsb.edu"},
+    {name = "Curtis McCully"},
+    {name = "Timothy Brandt"},
+]
+readme = "README.rst"
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+dependencies = [
+    "astropy>=7.0",
+    "scipy>=1.3.2",
+    "numpy>=2.0",
+    "sep>=1.0",
+]
+
+[project.urls]
+Repository = "https://github.com/gmbrandt/xwavecal"
+
+[project.scripts]
+xwavecal_reduce_dir = "xwavecal.main:run"
+xwavecal_reduce = "xwavecal.main:reduce_data"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=3.5",
+    "coverage",
+]
+
+[tool.hatch.build.targets.wheel]
+include = ["xwavecal/**"]
+
+[tool.hatch.build.targets.sdist]
+include = ["xwavecal/**"]
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "DEBUG"
+markers = [
+    "e2e: mark a test as end-to-end",
+    "integration: mark a test as integration",
+]

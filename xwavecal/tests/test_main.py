@@ -1,6 +1,6 @@
 import tempfile
 from configparser import ConfigParser
-import mock
+from unittest import mock
 import pytest
 
 from xwavecal.main import select_data, run, reduce_data, organize_config, make_output_path, import_obj

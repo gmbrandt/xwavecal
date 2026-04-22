@@ -1,3 +1,8 @@
+0.2.0 (2026-04-22)
+------------------
+- Update to use the modern pyproject convention
+- Update to make numpy 2 compatible
+
 0.1.13 (2020-05-21)
 -------------------
 - Fixed a bug in misc_utils.py that caused find_peaks() to crash when it tried to refine an empty

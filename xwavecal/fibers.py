@@ -152,4 +152,4 @@ class IdentifyFibers(ApplyCalibration):
         order_likelyhood = correlate2d(two_d_spectrum, template, max_lag=100)
         one_d_likelyhood = np.max(order_likelyhood, axis=1)
         matched_ids = n_largest_elements(one_d_likelyhood, n=num_arc_lamp_fibers)
-        return np.array(matched_ids, dtype=np.int)
+        return np.array(matched_ids, dtype=int)

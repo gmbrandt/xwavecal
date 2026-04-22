@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 import numpy as np
 from astropy.table import Table
 

@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 from astropy.io.fits import HDUList, PrimaryHDU
 from tempfile import TemporaryDirectory
 
